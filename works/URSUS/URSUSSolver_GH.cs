@@ -37,7 +37,7 @@ public class Script_Instance : GH_ScriptInstance
 {
     private void RunScript(
         string       vworldKey,
-        string       seoulKey,
+        string       dataseoulKey,
         List<string> dataSet,
         ref object   legalCodes,
         ref object   names,
@@ -49,12 +49,12 @@ public class Script_Instance : GH_ScriptInstance
     {
         try
         {
-            if (string.IsNullOrEmpty(vworldKey) || string.IsNullOrEmpty(seoulKey))
+            if (string.IsNullOrEmpty(vworldKey) || string.IsNullOrEmpty(dataseoulKey))
             { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "API 키가 비어 있습니다."); return; }
             if (dataSet == null || dataSet.Count == 0)
             { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "데이터셋을 하나 이상 선택하세요."); return; }
 
-            var solver = new URSUSSolver(vworldKey, seoulKey);
+            var solver = new URSUSSolver(vworldKey, dataseoulKey);
             SolverResult result = solver.Run(dataSet);
 
             legalCodes    = result.LegalCodes;

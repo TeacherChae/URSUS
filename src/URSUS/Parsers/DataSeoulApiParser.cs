@@ -101,7 +101,8 @@ namespace URSUS.Parsers
 
         private List<Dictionary<string, string>> FetchAllRecords(string serviceName)
         {
-            const int pageSize = 1000;
+            const int pageSize    = 1000;
+            const int maxParallel = 40;
 
             // 1페이지로 total_count 파악
             string firstUrl  = BuildUrl(serviceName, 1, pageSize);
@@ -109,25 +110,40 @@ namespace URSUS.Parsers
             int?   total     = GetListTotalCount(firstRoot);
             var    all       = XmlToRecords(firstRoot);
 
-            if (total.HasValue)
-                Console.WriteLine($"[INFO] list_total_count = {total.Value}");
+            if (!total.HasValue || all.Count >= total.Value)
+                return all;
 
-            int fetched   = all.Count;
-            int nextStart = pageSize + 1;
-            int target    = total ?? int.MaxValue;
+            Console.WriteLine($"[INFO] list_total_count = {total.Value}, 병렬 페이지 요청 시작");
 
-            while (fetched < target)
+            // 나머지 페이지 범위 계산
+            var ranges = new List<(int start, int end)>();
+            for (int s = pageSize + 1; s <= total.Value; s += pageSize)
+                ranges.Add((s, s + pageSize - 1));
+
+            // maxParallel 단위로 묶어서 병렬 요청
+            var results = new Dictionary<string, string>[ranges.Count][];
+            for (int i = 0; i < ranges.Count; i += maxParallel)
             {
-                int nextEnd = nextStart + pageSize - 1;
-                string url  = BuildUrl(serviceName, nextStart, nextEnd);
-                var    root = FetchXml(url);
-                var    batch = XmlToRecords(root);
+                int batchEnd = Math.Min(i + maxParallel, ranges.Count);
+                var tasks = new System.Threading.Tasks.Task<List<Dictionary<string, string>>>[batchEnd - i];
 
-                if (batch.Count == 0) break;
-                all.AddRange(batch);
-                fetched   += batch.Count;
-                nextStart  = nextEnd + 1;
+                for (int j = i; j < batchEnd; j++)
+                {
+                    int idx = j;
+                    var (s, e) = ranges[idx];
+                    string url = BuildUrl(serviceName, s, e);
+                    tasks[idx - i] = System.Threading.Tasks.Task.Run(() => XmlToRecords(FetchXml(url)));
+                }
+
+                var batchResults = System.Threading.Tasks.Task.WhenAll(tasks).GetAwaiter().GetResult();
+                for (int j = 0; j < batchResults.Length; j++)
+                    results[i + j] = batchResults[j].ToArray();
+
+                Console.WriteLine($"[INFO] {Math.Min(i + maxParallel, ranges.Count)}/{ranges.Count} 페이지 완료");
             }
+
+            foreach (var batch in results)
+                if (batch != null) all.AddRange(batch);
 
             return all;
         }

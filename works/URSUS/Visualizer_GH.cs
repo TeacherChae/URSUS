@@ -1,3 +1,5 @@
+#r "URSUS.dll"
+
 // Grasshopper Script Component — IDWVisualizer wrapper
 // URSUS.dll 참조 후 IDWVisualizer.Build()를 호출해 VisualizerResult를 GH 와이어로 출력한다.
 //
@@ -11,7 +13,6 @@
 //   resolution      double         Mesh 최대 엣지 길이 (기본 100.0)
 //   power           double         IDW 지수 p (기본 3.0)
 //   heightScale     double         Z 높이 배율 (기본 0.5)
-//   edgeFalloff     double         경계 감쇠 지수 (기본 2.0)
 //   heightRatio     double         Z 최대 높이 = bboxWidth × heightRatio (기본 0.25)
 //   legendSteps     int            범례 단계 수 (기본 8)
 //   colorStyle      int            0=Custom 1=BlueRed 2=Heatmap 3=Spectral 4=Viridis 5=Diverging 6=Grayscale
@@ -47,7 +48,6 @@ public class Script_Instance : GH_ScriptInstance
         double        resolution,
         double        power,
         double        heightScale,
-        double        edgeFalloff,
         double        heightRatio,
         int           legendSteps,
         int           colorStyle,
@@ -71,10 +71,9 @@ public class Script_Instance : GH_ScriptInstance
 
             // 기본값 처리
             if (resolution   <= 0) resolution   = 100.0;
-            if (power        <= 0) power        = 3.0;
+            if (power        <= 0) power        = 2.5;
             if (heightScale  <= 0) heightScale  = 0.5;
-            if (edgeFalloff  <= 0) edgeFalloff  = 2.0;
-            if (heightRatio  <= 0) heightRatio  = 0.25;
+            if (heightRatio  <= 0) heightRatio  = 0.5;
             if (legendSteps  <= 1) legendSteps  = 8;
             if (colorLow.A   == 0) colorLow     = Color.FromArgb(44,  123, 182);
             if (colorHigh.A  == 0) colorHigh    = Color.FromArgb(215,  25,  28);
@@ -82,8 +81,7 @@ public class Script_Instance : GH_ScriptInstance
             var visualizer = new IDWVisualizer(
                 centroids, values,
                 resolution, power, heightScale,
-                edgeFalloff, heightRatio,
-                legendSteps, colorStyle,
+                heightRatio, legendSteps, colorStyle,
                 colorLow, colorHigh);
 
             VisualizerResult result = visualizer.Build(boundary);

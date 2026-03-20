@@ -17,7 +17,6 @@ namespace URSUS.Visualization
         private readonly double       _power;
         private readonly double       _heightScale;
         private readonly double       _resolution;
-        private readonly double       _edgeFalloff;
         private readonly double       _heightRatio;
         private readonly int          _legendSteps;
 
@@ -26,7 +25,6 @@ namespace URSUS.Visualization
         /// <param name="resolution">Mesh 최대 엣지 길이</param>
         /// <param name="power">IDW 지수 p (기본 3.0)</param>
         /// <param name="heightScale">Z 높이 배율 (기본 0.5)</param>
-        /// <param name="edgeFalloff">경계 감쇠 지수 (기본 2.0)</param>
         /// <param name="heightRatio">Z 최대 높이 = bboxWidth × heightRatio (기본 0.25)</param>
         /// <param name="legendSteps">범례 단계 수 (기본 8)</param>
         /// <param name="colorStyle">색상 스타일 0~6</param>
@@ -36,12 +34,11 @@ namespace URSUS.Visualization
             List<Point3d> centroids,
             List<double>  values,
             double        resolution  = 100.0,
-            double        power       = 3.0,
+            double        power       = 2.5,
             double        heightScale = 0.5,
-            double        edgeFalloff = 2.0,
-            double        heightRatio = 0.25,
+            double        heightRatio = 0.5,
             int           legendSteps = 8,
-            int           colorStyle  = 1,
+            int           colorStyle  = 4,
             Color?        colorLow    = null,
             Color?        colorHigh   = null)
         {
@@ -60,7 +57,6 @@ namespace URSUS.Visualization
             _power       = power       > 0 ? power       : 3.0;
             _heightScale = heightScale > 0 ? heightScale : 0.5;
             _resolution  = resolution  > 0 ? resolution  : 100.0;
-            _edgeFalloff = edgeFalloff > 0 ? edgeFalloff : 2.0;
             _heightRatio = heightRatio > 0 ? heightRatio : 0.25;
             _legendSteps = legendSteps > 1 ? legendSteps : 8;
         }
@@ -75,7 +71,7 @@ namespace URSUS.Visualization
 
             var builder = new MeshBuilder(
                 _field, _mapper, _power, _heightScale,
-                _resolution, _edgeFalloff, _heightRatio);
+                _resolution, _heightRatio);
 
             var (elevated, flat) = builder.Build(boundary);
 
@@ -231,21 +227,19 @@ namespace URSUS.Visualization
         private readonly double       _power;
         private readonly double       _heightScale;
         private readonly double       _maxEdgeLen;
-        private readonly double       _edgeFalloff;
         private readonly double       _heightRatio;
 
         private const double DEFAULT_TOL = 0.001;
 
         public MeshBuilder(SpatialField field, ColorMapper mapper,
                            double power, double heightScale, double maxEdgeLen,
-                           double edgeFalloff, double heightRatio)
+                           double heightRatio)
         {
             _field       = field;
             _mapper      = mapper;
             _power       = power;
             _heightScale = heightScale;
             _maxEdgeLen  = maxEdgeLen;
-            _edgeFalloff = edgeFalloff;
             _heightRatio = heightRatio;
         }
 
@@ -279,76 +273,46 @@ namespace URSUS.Visualization
             BoundingBox bbox      = boundary.GetBoundingBox(false);
             double      bboxWidth = bbox.IsValid ? (bbox.Max.X - bbox.Min.X) : 1.0;
 
-            // boundary를 미리 포인트 배열로 변환 — 버텍스마다 ClosestPoint 호출 대신 배열 탐색
-            Polyline bPoly;
-            double[] bx, by;
-            if (boundary.TryGetPolyline(out bPoly))
-            {
-                bx = new double[bPoly.Count];
-                by = new double[bPoly.Count];
-                for (int i = 0; i < bPoly.Count; i++) { bx[i] = bPoly[i].X; by[i] = bPoly[i].Y; }
-            }
-            else
-            {
-                // 폴리라인 아닌 경우 100등분
-                bx = new double[101]; by = new double[101];
-                for (int i = 0; i <= 100; i++)
-                {
-                    Point3d p = boundary.PointAtNormalizedLength((double)i / 100.0);
-                    bx[i] = p.X; by[i] = p.Y;
-                }
-            }
-
-            var    interpValues = new double[n];
-            var    colors       = new Color[n];
-            var    dists        = new double[n];
-            double maxDist      = 0.0;
+            // ── 버텍스별 IDW 보간 → Z 계산 ──────────────────────────────
+            var    zValues = new double[n];
+            double zMax    = 0.0;
 
             for (int vi = 0; vi < n; vi++)
             {
                 Point3d q  = baseMesh.Vertices.Point3dAt(vi);
-                double  qx = q.X, qy = q.Y;
-
-                double f         = _field.IDW(new Point3d(qx, qy, 0.0), _power);
-                interpValues[vi] = f;
-                colors[vi]       = _mapper.Map(_field.Normalize(f));
-
-                // 경계까지 최소 거리 — 배열 직접 탐색
-                double minD2 = double.MaxValue;
-                for (int j = 0; j < bx.Length; j++)
-                {
-                    double ddx = qx - bx[j], ddy = qy - by[j];
-                    double d2  = ddx * ddx + ddy * ddy;
-                    if (d2 < minD2) minD2 = d2;
-                }
-                double d = Math.Sqrt(minD2);
-                dists[vi] = d;
-                if (d > maxDist) maxDist = d;
+                double  f  = _field.IDW(new Point3d(q.X, q.Y, 0.0), _power);
+                double  zd = _field.Normalize(f, 0.0, bboxWidth * _heightRatio) * _heightScale;
+                if (double.IsNaN(zd) || double.IsInfinity(zd)) zd = 0.0;
+                zValues[vi] = zd;
+                if (zd > zMax) zMax = zd;
             }
 
-            // flat mesh: Z=0, 컬러만
-            Mesh flat = baseMesh.DuplicateMesh();
-            flat.TextureCoordinates.Clear();
-            ApplyColors(flat, colors);
-            flat.Normals.ComputeNormals();
-            flat.FaceNormals.ComputeFaceNormals();
+            // 색상 = Z 기준 정규화
+            var colors = new Color[n];
+            for (int vi = 0; vi < n; vi++)
+            {
+                double t = zMax > 1e-12 ? zValues[vi] / zMax : 0.0;
+                colors[vi] = _mapper.Map(t);
+            }
 
-            // elevated mesh: Z = IDW_height * pow(dist/maxDist, edgeFalloff)
+            // elevated mesh
             Mesh elevated = baseMesh.DuplicateMesh();
             elevated.TextureCoordinates.Clear();
             for (int vi = 0; vi < n; vi++)
             {
                 Point3d vd = baseMesh.Vertices.Point3dAt(vi);
-                double  dt = maxDist > 0 ? Math.Min(dists[vi] / maxDist, 1.0) : 1.0;
-                double  s  = Math.Pow(dt, _edgeFalloff);
-                double  zd = _field.Normalize(interpValues[vi], 0.0, bboxWidth * _heightRatio)
-                             * _heightScale * s;
-                if (double.IsNaN(zd) || double.IsInfinity(zd)) zd = 0.0;
-                elevated.Vertices.SetVertex(vi, new Point3d(vd.X, vd.Y, zd));
+                elevated.Vertices.SetVertex(vi, new Point3d(vd.X, vd.Y, zValues[vi]));
             }
             ApplyColors(elevated, colors);
             elevated.Normals.ComputeNormals();
             elevated.FaceNormals.ComputeFaceNormals();
+
+            // flat mesh: Z=0, 동일한 색상
+            Mesh flat = baseMesh.DuplicateMesh();
+            flat.TextureCoordinates.Clear();
+            ApplyColors(flat, colors);
+            flat.Normals.ComputeNormals();
+            flat.FaceNormals.ComputeFaceNormals();
 
             return (elevated, flat);
         }
@@ -359,6 +323,7 @@ namespace URSUS.Visualization
             for (int i = 0; i < colors.Length; i++)
                 mesh.VertexColors.SetColor(i, colors[i]);
         }
+
     }
 
     // ═════════════════════════════════════════════════════════════════════
