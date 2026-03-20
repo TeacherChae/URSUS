@@ -18,7 +18,8 @@ namespace URSUS.Parsers
     {
         private const int    CACHE_TTL_DAYS = 30;
         private const string BASE_URL       = "http://openapi.seoul.go.kr:8088";
-        private const string SERVICE_NAME   = "VwsmAdstrdNcmCnsmpW";
+        private const string SVC_AVG_INCOME = "VwsmAdstrdNcmCnsmpW";
+        private const string SVC_LIVING_POP = "SPOP_LOCAL_RESD_DONG";
 
         private readonly string     _apiKey;
         private readonly HttpClient _http;
@@ -35,25 +36,42 @@ namespace URSUS.Parsers
 
         /// <summary>
         /// 행정동 기준 월 평균 소득 맵을 반환한다 (캐시 적용).
-        /// key = adstrd_cd (행정동코드 끝2자리 제거된 값), value = mt_avrg_income_amt
+        /// key = adstrd_cd, value = mt_avrg_income_amt 평균
         /// </summary>
         public Dictionary<string, double> GetAvgIncomeByAdstrd(string? cacheDir = null)
+            => FetchAndCache(SVC_AVG_INCOME, "ADSTRD_CD",      "MT_AVRG_INCOME_AMT", "avg_income.json",  cacheDir);
+
+        /// <summary>
+        /// 행정동 기준 생활인구 맵을 반환한다 (캐시 적용).
+        /// key = adstrd_cd, value = TOT_LVPOP_CO 시간대 평균
+        /// (TMZON_PD_SE 00~23시 × 날짜별 전체 평균 — 동 간 상대 비교용으로 유효)
+        /// </summary>
+        public Dictionary<string, double> GetLivingPopByAdstrd(string? cacheDir = null)
+            => FetchAndCache(SVC_LIVING_POP, "ADSTRD_CODE_SE", "TOT_LVPOP_CO",       "living_pop.json", cacheDir);
+
+        // ─────────────────────────────────────────────────────────────────
+        //  공통 fetch + cache 헬퍼
+        // ─────────────────────────────────────────────────────────────────
+
+        private Dictionary<string, double> FetchAndCache(
+            string serviceName, string keyField, string valueField,
+            string cacheFileName, string? cacheDir)
         {
             string? cachePath = cacheDir != null
-                ? Path.Combine(cacheDir, "avg_income.json")
+                ? Path.Combine(cacheDir, cacheFileName)
                 : null;
 
             if (cachePath != null && IsCacheValid(cachePath))
             {
                 double remaining = CACHE_TTL_DAYS
                     - (DateTime.UtcNow - File.GetLastWriteTimeUtc(cachePath)).TotalDays;
-                Console.WriteLine($"[CACHE] avg_income 캐시 사용 (만료까지 {remaining:F1}일)");
+                Console.WriteLine($"[CACHE] {cacheFileName} 캐시 사용 (만료까지 {remaining:F1}일)");
                 return LoadCache(cachePath);
             }
 
-            Console.WriteLine("[CACHE] avg_income API 호출 중...");
-            var records = FetchAllRecords(SERVICE_NAME);
-            var grouped = AggregateByAdstrd(records);
+            Console.WriteLine($"[CACHE] {cacheFileName} API 호출 중...");
+            var records = FetchAllRecords(serviceName);
+            var grouped = AggregateFieldByAdstrd(records, keyField, valueField);
 
             if (cachePath != null)
                 SaveCache(grouped, cachePath);
@@ -99,19 +117,18 @@ namespace URSUS.Parsers
         }
 
         // ─────────────────────────────────────────────────────────────────
-        //  Aggregate: 행정동 코드 기준 평균 소득 계산
+        //  Aggregate: 행정동 코드 기준 지정 필드 평균 계산
         // ─────────────────────────────────────────────────────────────────
 
-        private static Dictionary<string, double> AggregateByAdstrd(
-            List<Dictionary<string, string>> records)
+        private static Dictionary<string, double> AggregateFieldByAdstrd(
+            List<Dictionary<string, string>> records, string keyField, string valueField)
         {
-            // adstrd_cd → (sum, count)
             var acc = new Dictionary<string, (double sum, int count)>();
 
             foreach (var row in records)
             {
-                if (!row.TryGetValue("ADSTRD_CD", out string? cd)
-                    || !row.TryGetValue("MT_AVRG_INCOME_AMT", out string? amtStr))
+                if (!row.TryGetValue(keyField, out string? cd)
+                    || !row.TryGetValue(valueField, out string? amtStr))
                     continue;
 
                 if (!double.TryParse(amtStr, out double amt)) continue;
