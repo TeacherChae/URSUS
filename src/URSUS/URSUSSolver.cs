@@ -23,9 +23,10 @@ namespace URSUS
         private const string MAPPING_FILENAME = "adstrd_legald_mapping.json";
 
         // dataSet 항목 이름 상수 — GH Value List의 값과 일치해야 함
-        public const string DS_AVG_INCOME  = "월평균 소득";
-        public const string DS_LIVING_POP  = "생활인구";
-        // public const string DS_TRANSIT  = "대중교통 총 승차 승객 수(일일 평균)"; // TBD
+        public const string DS_AVG_INCOME    = "월평균 소득";
+        public const string DS_RESIDENT_POP = "상주인구";
+        public const string DS_LIVING_POP   = "생활인구";
+        // public const string DS_TRANSIT   = "대중교통 총 승차 승객 수(일일 평균)"; // TBD
 
         private readonly string _vworldKey;
         private readonly string _seoulKey;
@@ -65,10 +66,13 @@ namespace URSUS
             var adstrdDatasets = new Dictionary<string, Dictionary<string, double>>();
 
             if (dataSet.Contains(DS_AVG_INCOME))
-                adstrdDatasets[DS_AVG_INCOME] = seoulParser.GetAvgIncomeByAdstrd(_cacheDir);
+                adstrdDatasets[DS_AVG_INCOME]    = seoulParser.GetAvgIncomeByAdstrd(_cacheDir);
+
+            if (dataSet.Contains(DS_RESIDENT_POP))
+                adstrdDatasets[DS_RESIDENT_POP]  = seoulParser.GetResidentPopByAdstrd(_cacheDir);
 
             if (dataSet.Contains(DS_LIVING_POP))
-                adstrdDatasets[DS_LIVING_POP] = seoulParser.GetLivingPopByAdstrd(_cacheDir);
+                adstrdDatasets[DS_LIVING_POP]    = seoulParser.GetLivingPopByAdstrd(_cacheDir);
 
             // ── 3. 행정동↔법정동 매핑 로드 ───────────────────────────────
             var adstrdToLegald = MappingLoader.Load(_mappingJsonPath);

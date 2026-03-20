@@ -18,8 +18,9 @@ namespace URSUS.Parsers
     {
         private const int    CACHE_TTL_DAYS = 30;
         private const string BASE_URL       = "http://openapi.seoul.go.kr:8088";
-        private const string SVC_AVG_INCOME = "VwsmAdstrdNcmCnsmpW";
-        private const string SVC_LIVING_POP = "SPOP_LOCAL_RESD_DONG";
+        private const string SVC_AVG_INCOME   = "VwsmAdstrdNcmCnsmpW";
+        private const string SVC_LIVING_POP   = "SPOP_LOCAL_RESD_DONG";
+        private const string SVC_RESIDENT_POP = "VwsmAdstrdRepopW";
 
         private readonly string     _apiKey;
         private readonly HttpClient _http;
@@ -47,7 +48,14 @@ namespace URSUS.Parsers
         /// (TMZON_PD_SE 00~23시 × 날짜별 전체 평균 — 동 간 상대 비교용으로 유효)
         /// </summary>
         public Dictionary<string, double> GetLivingPopByAdstrd(string? cacheDir = null)
-            => FetchAndCache(SVC_LIVING_POP, "ADSTRD_CODE_SE", "TOT_LVPOP_CO",       "living_pop.json", cacheDir);
+            => FetchAndCache(SVC_LIVING_POP, "ADSTRD_CODE_SE", "TOT_LVPOP_CO",       "living_pop.json",    cacheDir);
+
+        /// <summary>
+        /// 행정동 기준 상주인구 맵을 반환한다 (캐시 적용).
+        /// key = adstrd_cd, value = TOT_REPOP_CO 분기 평균
+        /// </summary>
+        public Dictionary<string, double> GetResidentPopByAdstrd(string? cacheDir = null)
+            => FetchAndCache(SVC_RESIDENT_POP, "ADSTRD_CD", "TOT_REPOP_CO",          "resident_pop.json", cacheDir);
 
         // ─────────────────────────────────────────────────────────────────
         //  공통 fetch + cache 헬퍼
