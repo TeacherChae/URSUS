@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net7.0</TargetFramework>
+    <AssemblyName>URSUS</AssemblyName>
+    <RootNamespace>URSUS</RootNamespace>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
+    <!-- 빌드 출력을 단일 경로로 집중 -->
+    <OutputPath>../../bin/</OutputPath>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Rhino 8 / .NET 7 기반 — runtime DLL은 Rhino가 제공하므로 ExcludeAssets="runtime" -->
+    <PackageReference Include="RhinoCommon" Version="8.17.*" ExcludeAssets="runtime" />
+
+    <!-- 2D Polygon Boolean Union (GeoUnion.cs 대체) -->
+    <PackageReference Include="Clipper2" Version="2.*" />
+
+  </ItemGroup>
+
+</Project>

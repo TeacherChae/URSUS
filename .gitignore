@@ -1,0 +1,17 @@
+# Claude Code
+.claude/
+
+# Build output
+bin/
+src/URSUS/obj/
+
+# Runtime cache
+cache/
+src/URSUS/cache/
+
+# Build artifacts
+*.pdb
+*.deps.json
+
+# Source data (too large / not redistributable)
+*.xlsx

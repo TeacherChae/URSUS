@@ -1,0 +1,3078 @@
+[
+    {
+        "adstrd_cd": "11000000",
+        "legald_cd": "11000000"
+    },
+    {
+        "adstrd_cd": "11110000",
+        "legald_cd": "11110000"
+    },
+    {
+        "adstrd_cd": "11110515",
+        "legald_cd": "11110101"
+    },
+    {
+        "adstrd_cd": "11110515",
+        "legald_cd": "11110102"
+    },
+    {
+        "adstrd_cd": "11110515",
+        "legald_cd": "11110103"
+    },
+    {
+        "adstrd_cd": "11110515",
+        "legald_cd": "11110104"
+    },
+    {
+        "adstrd_cd": "11110515",
+        "legald_cd": "11110105"
+    },
+    {
+        "adstrd_cd": "11110515",
+        "legald_cd": "11110108"
+    },
+    {
+        "adstrd_cd": "11110515",
+        "legald_cd": "11110109"
+    },
+    {
+        "adstrd_cd": "11110515",
+        "legald_cd": "11110110"
+    },
+    {
+        "adstrd_cd": "11110515",
+        "legald_cd": "11110111"
+    },
+    {
+        "adstrd_cd": "11110515",
+        "legald_cd": "11110119"
+    },
+    {
+        "adstrd_cd": "11110530",
+        "legald_cd": "11110106"
+    },
+    {
+        "adstrd_cd": "11110530",
+        "legald_cd": "11110107"
+    },
+    {
+        "adstrd_cd": "11110530",
+        "legald_cd": "11110112"
+    },
+    {
+        "adstrd_cd": "11110530",
+        "legald_cd": "11110113"
+    },
+    {
+        "adstrd_cd": "11110530",
+        "legald_cd": "11110114"
+    },
+    {
+        "adstrd_cd": "11110530",
+        "legald_cd": "11110115"
+    },
+    {
+        "adstrd_cd": "11110530",
+        "legald_cd": "11110116"
+    },
+    {
+        "adstrd_cd": "11110530",
+        "legald_cd": "11110117"
+    },
+    {
+        "adstrd_cd": "11110530",
+        "legald_cd": "11110118"
+    },
+    {
+        "adstrd_cd": "11110530",
+        "legald_cd": "11110119"
+    },
+    {
+        "adstrd_cd": "11110530",
+        "legald_cd": "11110120"
+    },
+    {
+        "adstrd_cd": "11110530",
+        "legald_cd": "11110121"
+    },
+    {
+        "adstrd_cd": "11110540",
+        "legald_cd": "11110139"
+    },
+    {
+        "adstrd_cd": "11110540",
+        "legald_cd": "11110140"
+    },
+    {
+        "adstrd_cd": "11110540",
+        "legald_cd": "11110141"
+    },
+    {
+        "adstrd_cd": "11110540",
+        "legald_cd": "11110142"
+    },
+    {
+        "adstrd_cd": "11110540",
+        "legald_cd": "11110143"
+    },
+    {
+        "adstrd_cd": "11110540",
+        "legald_cd": "11110144"
+    },
+    {
+        "adstrd_cd": "11110540",
+        "legald_cd": "11110145"
+    },
+    {
+        "adstrd_cd": "11110550",
+        "legald_cd": "11110184"
+    },
+    {
+        "adstrd_cd": "11110550",
+        "legald_cd": "11110185"
+    },
+    {
+        "adstrd_cd": "11110550",
+        "legald_cd": "11110186"
+    },
+    {
+        "adstrd_cd": "11110560",
+        "legald_cd": "11110182"
+    },
+    {
+        "adstrd_cd": "11110560",
+        "legald_cd": "11110183"
+    },
+    {
+        "adstrd_cd": "11110570",
+        "legald_cd": "11110187"
+    },
+    {
+        "adstrd_cd": "11110580",
+        "legald_cd": "11110176"
+    },
+    {
+        "adstrd_cd": "11110580",
+        "legald_cd": "11110177"
+    },
+    {
+        "adstrd_cd": "11110580",
+        "legald_cd": "11110178"
+    },
+    {
+        "adstrd_cd": "11110580",
+        "legald_cd": "11110179"
+    },
+    {
+        "adstrd_cd": "11110580",
+        "legald_cd": "11110180"
+    },
+    {
+        "adstrd_cd": "11110580",
+        "legald_cd": "11110181"
+    },
+    {
+        "adstrd_cd": "11110600",
+        "legald_cd": "11110146"
+    },
+    {
+        "adstrd_cd": "11110600",
+        "legald_cd": "11110147"
+    },
+    {
+        "adstrd_cd": "11110600",
+        "legald_cd": "11110148"
+    },
+    {
+        "adstrd_cd": "11110600",
+        "legald_cd": "11110149"
+    },
+    {
+        "adstrd_cd": "11110615",
+        "legald_cd": "11110119"
+    },
+    {
+        "adstrd_cd": "11110615",
+        "legald_cd": "11110122"
+    },
+    {
+        "adstrd_cd": "11110615",
+        "legald_cd": "11110123"
+    },
+    {
+        "adstrd_cd": "11110615",
+        "legald_cd": "11110124"
+    },
+    {
+        "adstrd_cd": "11110615",
+        "legald_cd": "11110125"
+    },
+    {
+        "adstrd_cd": "11110615",
+        "legald_cd": "11110126"
+    },
+    {
+        "adstrd_cd": "11110615",
+        "legald_cd": "11110127"
+    },
+    {
+        "adstrd_cd": "11110615",
+        "legald_cd": "11110128"
+    },
+    {
+        "adstrd_cd": "11110615",
+        "legald_cd": "11110129"
+    },
+    {
+        "adstrd_cd": "11110615",
+        "legald_cd": "11110130"
+    },
+    {
+        "adstrd_cd": "11110615",
+        "legald_cd": "11110131"
+    },
+    {
+        "adstrd_cd": "11110615",
+        "legald_cd": "11110132"
+    },
+    {
+        "adstrd_cd": "11110615",
+        "legald_cd": "11110133"
+    },
+    {
+        "adstrd_cd": "11110615",
+        "legald_cd": "11110134"
+    },
+    {
+        "adstrd_cd": "11110615",
+        "legald_cd": "11110135"
+    },
+    {
+        "adstrd_cd": "11110615",
+        "legald_cd": "11110136"
+    },
+    {
+        "adstrd_cd": "11110615",
+        "legald_cd": "11110137"
+    },
+    {
+        "adstrd_cd": "11110615",
+        "legald_cd": "11110138"
+    },
+    {
+        "adstrd_cd": "11110615",
+        "legald_cd": "11110150"
+    },
+    {
+        "adstrd_cd": "11110615",
+        "legald_cd": "11110151"
+    },
+    {
+        "adstrd_cd": "11110615",
+        "legald_cd": "11110152"
+    },
+    {
+        "adstrd_cd": "11110615",
+        "legald_cd": "11110153"
+    },
+    {
+        "adstrd_cd": "11110615",
+        "legald_cd": "11110154"
+    },
+    {
+        "adstrd_cd": "11110615",
+        "legald_cd": "11110155"
+    },
+    {
+        "adstrd_cd": "11110615",
+        "legald_cd": "11110156"
+    },
+    {
+        "adstrd_cd": "11110615",
+        "legald_cd": "11110157"
+    },
+    {
+        "adstrd_cd": "11110615",
+        "legald_cd": "11110158"
+    },
+    {
+        "adstrd_cd": "11110615",
+        "legald_cd": "11110159"
+    },
+    {
+        "adstrd_cd": "11110615",
+        "legald_cd": "11110161"
+    },
+    {
+        "adstrd_cd": "11110630",
+        "legald_cd": "11110160"
+    },
+    {
+        "adstrd_cd": "11110630",
+        "legald_cd": "11110162"
+    },
+    {
+        "adstrd_cd": "11110630",
+        "legald_cd": "11110163"
+    },
+    {
+        "adstrd_cd": "11110630",
+        "legald_cd": "11110164"
+    },
+    {
+        "adstrd_cd": "11110630",
+        "legald_cd": "11110167"
+    },
+    {
+        "adstrd_cd": "11110640",
+        "legald_cd": "11110165"
+    },
+    {
+        "adstrd_cd": "11110640",
+        "legald_cd": "11110166"
+    },
+    {
+        "adstrd_cd": "11110640",
+        "legald_cd": "11110168"
+    },
+    {
+        "adstrd_cd": "11110650",
+        "legald_cd": "11110130"
+    },
+    {
+        "adstrd_cd": "11110650",
+        "legald_cd": "11110169"
+    },
+    {
+        "adstrd_cd": "11110650",
+        "legald_cd": "11110170"
+    },
+    {
+        "adstrd_cd": "11110650",
+        "legald_cd": "11110171"
+    },
+    {
+        "adstrd_cd": "11110650",
+        "legald_cd": "11110172"
+    },
+    {
+        "adstrd_cd": "11110650",
+        "legald_cd": "11110173"
+    },
+    {
+        "adstrd_cd": "11110670",
+        "legald_cd": "11110174"
+    },
+    {
+        "adstrd_cd": "11110680",
+        "legald_cd": "11110174"
+    },
+    {
+        "adstrd_cd": "11110690",
+        "legald_cd": "11110174"
+    },
+    {
+        "adstrd_cd": "11110700",
+        "legald_cd": "11110175"
+    },
+    {
+        "adstrd_cd": "11110710",
+        "legald_cd": "11110175"
+    },
+    {
+        "adstrd_cd": "11140000",
+        "legald_cd": "11140000"
+    },
+    {
+        "adstrd_cd": "11140520",
+        "legald_cd": "11140111"
+    },
+    {
+        "adstrd_cd": "11140520",
+        "legald_cd": "11140113"
+    },
+    {
+        "adstrd_cd": "11140520",
+        "legald_cd": "11140114"
+    },
+    {
+        "adstrd_cd": "11140520",
+        "legald_cd": "11140115"
+    },
+    {
+        "adstrd_cd": "11140520",
+        "legald_cd": "11140116"
+    },
+    {
+        "adstrd_cd": "11140520",
+        "legald_cd": "11140117"
+    },
+    {
+        "adstrd_cd": "11140520",
+        "legald_cd": "11140119"
+    },
+    {
+        "adstrd_cd": "11140520",
+        "legald_cd": "11140166"
+    },
+    {
+        "adstrd_cd": "11140520",
+        "legald_cd": "11140167"
+    },
+    {
+        "adstrd_cd": "11140520",
+        "legald_cd": "11140168"
+    },
+    {
+        "adstrd_cd": "11140520",
+        "legald_cd": "11140169"
+    },
+    {
+        "adstrd_cd": "11140520",
+        "legald_cd": "11140170"
+    },
+    {
+        "adstrd_cd": "11140540",
+        "legald_cd": "11140112"
+    },
+    {
+        "adstrd_cd": "11140540",
+        "legald_cd": "11140116"
+    },
+    {
+        "adstrd_cd": "11140540",
+        "legald_cd": "11140117"
+    },
+    {
+        "adstrd_cd": "11140540",
+        "legald_cd": "11140118"
+    },
+    {
+        "adstrd_cd": "11140540",
+        "legald_cd": "11140119"
+    },
+    {
+        "adstrd_cd": "11140540",
+        "legald_cd": "11140120"
+    },
+    {
+        "adstrd_cd": "11140540",
+        "legald_cd": "11140121"
+    },
+    {
+        "adstrd_cd": "11140540",
+        "legald_cd": "11140122"
+    },
+    {
+        "adstrd_cd": "11140540",
+        "legald_cd": "11140124"
+    },
+    {
+        "adstrd_cd": "11140540",
+        "legald_cd": "11140168"
+    },
+    {
+        "adstrd_cd": "11140550",
+        "legald_cd": "11140101"
+    },
+    {
+        "adstrd_cd": "11140550",
+        "legald_cd": "11140102"
+    },
+    {
+        "adstrd_cd": "11140550",
+        "legald_cd": "11140103"
+    },
+    {
+        "adstrd_cd": "11140550",
+        "legald_cd": "11140104"
+    },
+    {
+        "adstrd_cd": "11140550",
+        "legald_cd": "11140105"
+    },
+    {
+        "adstrd_cd": "11140550",
+        "legald_cd": "11140106"
+    },
+    {
+        "adstrd_cd": "11140550",
+        "legald_cd": "11140107"
+    },
+    {
+        "adstrd_cd": "11140550",
+        "legald_cd": "11140108"
+    },
+    {
+        "adstrd_cd": "11140550",
+        "legald_cd": "11140109"
+    },
+    {
+        "adstrd_cd": "11140550",
+        "legald_cd": "11140110"
+    },
+    {
+        "adstrd_cd": "11140550",
+        "legald_cd": "11140115"
+    },
+    {
+        "adstrd_cd": "11140550",
+        "legald_cd": "11140121"
+    },
+    {
+        "adstrd_cd": "11140550",
+        "legald_cd": "11140122"
+    },
+    {
+        "adstrd_cd": "11140550",
+        "legald_cd": "11140123"
+    },
+    {
+        "adstrd_cd": "11140550",
+        "legald_cd": "11140124"
+    },
+    {
+        "adstrd_cd": "11140550",
+        "legald_cd": "11140125"
+    },
+    {
+        "adstrd_cd": "11140550",
+        "legald_cd": "11140126"
+    },
+    {
+        "adstrd_cd": "11140550",
+        "legald_cd": "11140127"
+    },
+    {
+        "adstrd_cd": "11140550",
+        "legald_cd": "11140128"
+    },
+    {
+        "adstrd_cd": "11140550",
+        "legald_cd": "11140129"
+    },
+    {
+        "adstrd_cd": "11140550",
+        "legald_cd": "11140130"
+    },
+    {
+        "adstrd_cd": "11140550",
+        "legald_cd": "11140131"
+    },
+    {
+        "adstrd_cd": "11140550",
+        "legald_cd": "11140142"
+    },
+    {
+        "adstrd_cd": "11140570",
+        "legald_cd": "11140132"
+    },
+    {
+        "adstrd_cd": "11140570",
+        "legald_cd": "11140133"
+    },
+    {
+        "adstrd_cd": "11140570",
+        "legald_cd": "11140136"
+    },
+    {
+        "adstrd_cd": "11140570",
+        "legald_cd": "11140137"
+    },
+    {
+        "adstrd_cd": "11140570",
+        "legald_cd": "11140138"
+    },
+    {
+        "adstrd_cd": "11140570",
+        "legald_cd": "11140139"
+    },
+    {
+        "adstrd_cd": "11140570",
+        "legald_cd": "11140140"
+    },
+    {
+        "adstrd_cd": "11140570",
+        "legald_cd": "11140141"
+    },
+    {
+        "adstrd_cd": "11140570",
+        "legald_cd": "11140142"
+    },
+    {
+        "adstrd_cd": "11140570",
+        "legald_cd": "11140144"
+    },
+    {
+        "adstrd_cd": "11140570",
+        "legald_cd": "11140158"
+    },
+    {
+        "adstrd_cd": "11140580",
+        "legald_cd": "11140136"
+    },
+    {
+        "adstrd_cd": "11140580",
+        "legald_cd": "11140143"
+    },
+    {
+        "adstrd_cd": "11140580",
+        "legald_cd": "11140144"
+    },
+    {
+        "adstrd_cd": "11140590",
+        "legald_cd": "11140132"
+    },
+    {
+        "adstrd_cd": "11140590",
+        "legald_cd": "11140133"
+    },
+    {
+        "adstrd_cd": "11140590",
+        "legald_cd": "11140134"
+    },
+    {
+        "adstrd_cd": "11140590",
+        "legald_cd": "11140135"
+    },
+    {
+        "adstrd_cd": "11140590",
+        "legald_cd": "11140145"
+    },
+    {
+        "adstrd_cd": "11140590",
+        "legald_cd": "11140146"
+    },
+    {
+        "adstrd_cd": "11140590",
+        "legald_cd": "11140147"
+    },
+    {
+        "adstrd_cd": "11140590",
+        "legald_cd": "11140148"
+    },
+    {
+        "adstrd_cd": "11140590",
+        "legald_cd": "11140149"
+    },
+    {
+        "adstrd_cd": "11140590",
+        "legald_cd": "11140154"
+    },
+    {
+        "adstrd_cd": "11140605",
+        "legald_cd": "11140150"
+    },
+    {
+        "adstrd_cd": "11140605",
+        "legald_cd": "11140151"
+    },
+    {
+        "adstrd_cd": "11140605",
+        "legald_cd": "11140152"
+    },
+    {
+        "adstrd_cd": "11140605",
+        "legald_cd": "11140153"
+    },
+    {
+        "adstrd_cd": "11140605",
+        "legald_cd": "11140155"
+    },
+    {
+        "adstrd_cd": "11140605",
+        "legald_cd": "11140156"
+    },
+    {
+        "adstrd_cd": "11140605",
+        "legald_cd": "11140157"
+    },
+    {
+        "adstrd_cd": "11140605",
+        "legald_cd": "11140159"
+    },
+    {
+        "adstrd_cd": "11140605",
+        "legald_cd": "11140160"
+    },
+    {
+        "adstrd_cd": "11140605",
+        "legald_cd": "11140161"
+    },
+    {
+        "adstrd_cd": "11140615",
+        "legald_cd": "11140162"
+    },
+    {
+        "adstrd_cd": "11140615",
+        "legald_cd": "11140163"
+    },
+    {
+        "adstrd_cd": "11140615",
+        "legald_cd": "11140164"
+    },
+    {
+        "adstrd_cd": "11140625",
+        "legald_cd": "11140162"
+    },
+    {
+        "adstrd_cd": "11140635",
+        "legald_cd": "11140162"
+    },
+    {
+        "adstrd_cd": "11140645",
+        "legald_cd": "11140162"
+    },
+    {
+        "adstrd_cd": "11140650",
+        "legald_cd": "11140162"
+    },
+    {
+        "adstrd_cd": "11140665",
+        "legald_cd": "11140162"
+    },
+    {
+        "adstrd_cd": "11140670",
+        "legald_cd": "11140165"
+    },
+    {
+        "adstrd_cd": "11140680",
+        "legald_cd": "11140171"
+    },
+    {
+        "adstrd_cd": "11140680",
+        "legald_cd": "11140172"
+    },
+    {
+        "adstrd_cd": "11140680",
+        "legald_cd": "11140173"
+    },
+    {
+        "adstrd_cd": "11140680",
+        "legald_cd": "11140174"
+    },
+    {
+        "adstrd_cd": "11170000",
+        "legald_cd": "11170000"
+    },
+    {
+        "adstrd_cd": "11170510",
+        "legald_cd": "11170101"
+    },
+    {
+        "adstrd_cd": "11170520",
+        "legald_cd": "11170102"
+    },
+    {
+        "adstrd_cd": "11170520",
+        "legald_cd": "11170103"
+    },
+    {
+        "adstrd_cd": "11170530",
+        "legald_cd": "11170104"
+    },
+    {
+        "adstrd_cd": "11170530",
+        "legald_cd": "11170105"
+    },
+    {
+        "adstrd_cd": "11170530",
+        "legald_cd": "11170106"
+    },
+    {
+        "adstrd_cd": "11170530",
+        "legald_cd": "11170107"
+    },
+    {
+        "adstrd_cd": "11170555",
+        "legald_cd": "11170108"
+    },
+    {
+        "adstrd_cd": "11170555",
+        "legald_cd": "11170109"
+    },
+    {
+        "adstrd_cd": "11170555",
+        "legald_cd": "11170110"
+    },
+    {
+        "adstrd_cd": "11170555",
+        "legald_cd": "11170111"
+    },
+    {
+        "adstrd_cd": "11170560",
+        "legald_cd": "11170112"
+    },
+    {
+        "adstrd_cd": "11170560",
+        "legald_cd": "11170113"
+    },
+    {
+        "adstrd_cd": "11170560",
+        "legald_cd": "11170122"
+    },
+    {
+        "adstrd_cd": "11170560",
+        "legald_cd": "11170123"
+    },
+    {
+        "adstrd_cd": "11170570",
+        "legald_cd": "11170114"
+    },
+    {
+        "adstrd_cd": "11170570",
+        "legald_cd": "11170115"
+    },
+    {
+        "adstrd_cd": "11170570",
+        "legald_cd": "11170116"
+    },
+    {
+        "adstrd_cd": "11170570",
+        "legald_cd": "11170117"
+    },
+    {
+        "adstrd_cd": "11170570",
+        "legald_cd": "11170118"
+    },
+    {
+        "adstrd_cd": "11170580",
+        "legald_cd": "11170119"
+    },
+    {
+        "adstrd_cd": "11170590",
+        "legald_cd": "11170120"
+    },
+    {
+        "adstrd_cd": "11170590",
+        "legald_cd": "11170121"
+    },
+    {
+        "adstrd_cd": "11170625",
+        "legald_cd": "11170124"
+    },
+    {
+        "adstrd_cd": "11170625",
+        "legald_cd": "11170125"
+    },
+    {
+        "adstrd_cd": "11170625",
+        "legald_cd": "11170126"
+    },
+    {
+        "adstrd_cd": "11170625",
+        "legald_cd": "11170127"
+    },
+    {
+        "adstrd_cd": "11170625",
+        "legald_cd": "11170128"
+    },
+    {
+        "adstrd_cd": "11170630",
+        "legald_cd": "11170129"
+    },
+    {
+        "adstrd_cd": "11170640",
+        "legald_cd": "11170129"
+    },
+    {
+        "adstrd_cd": "11170650",
+        "legald_cd": "11170130"
+    },
+    {
+        "adstrd_cd": "11170660",
+        "legald_cd": "11170130"
+    },
+    {
+        "adstrd_cd": "11170685",
+        "legald_cd": "11170131"
+    },
+    {
+        "adstrd_cd": "11170690",
+        "legald_cd": "11170132"
+    },
+    {
+        "adstrd_cd": "11170690",
+        "legald_cd": "11170133"
+    },
+    {
+        "adstrd_cd": "11170690",
+        "legald_cd": "11170134"
+    },
+    {
+        "adstrd_cd": "11170690",
+        "legald_cd": "11170135"
+    },
+    {
+        "adstrd_cd": "11170700",
+        "legald_cd": "11170136"
+    },
+    {
+        "adstrd_cd": "11200000",
+        "legald_cd": "11200000"
+    },
+    {
+        "adstrd_cd": "11200520",
+        "legald_cd": "11200102"
+    },
+    {
+        "adstrd_cd": "11200535",
+        "legald_cd": "11200101"
+    },
+    {
+        "adstrd_cd": "11200535",
+        "legald_cd": "11200102"
+    },
+    {
+        "adstrd_cd": "11200535",
+        "legald_cd": "11200103"
+    },
+    {
+        "adstrd_cd": "11200535",
+        "legald_cd": "11200104"
+    },
+    {
+        "adstrd_cd": "11200540",
+        "legald_cd": "11200105"
+    },
+    {
+        "adstrd_cd": "11200550",
+        "legald_cd": "11200106"
+    },
+    {
+        "adstrd_cd": "11200550",
+        "legald_cd": "11200107"
+    },
+    {
+        "adstrd_cd": "11200560",
+        "legald_cd": "11200107"
+    },
+    {
+        "adstrd_cd": "11200570",
+        "legald_cd": "11200107"
+    },
+    {
+        "adstrd_cd": "11200580",
+        "legald_cd": "11200108"
+    },
+    {
+        "adstrd_cd": "11200590",
+        "legald_cd": "11200109"
+    },
+    {
+        "adstrd_cd": "11200615",
+        "legald_cd": "11200110"
+    },
+    {
+        "adstrd_cd": "11200615",
+        "legald_cd": "11200111"
+    },
+    {
+        "adstrd_cd": "11200620",
+        "legald_cd": "11200112"
+    },
+    {
+        "adstrd_cd": "11200645",
+        "legald_cd": "11200113"
+    },
+    {
+        "adstrd_cd": "11200650",
+        "legald_cd": "11200114"
+    },
+    {
+        "adstrd_cd": "11200660",
+        "legald_cd": "11200114"
+    },
+    {
+        "adstrd_cd": "11200670",
+        "legald_cd": "11200115"
+    },
+    {
+        "adstrd_cd": "11200690",
+        "legald_cd": "11200115"
+    },
+    {
+        "adstrd_cd": "11200720",
+        "legald_cd": "11200118"
+    },
+    {
+        "adstrd_cd": "11200790",
+        "legald_cd": "11200118"
+    },
+    {
+        "adstrd_cd": "11200790",
+        "legald_cd": "11200122"
+    },
+    {
+        "adstrd_cd": "11215000",
+        "legald_cd": "11215000"
+    },
+    {
+        "adstrd_cd": "11215710",
+        "legald_cd": "11215107"
+    },
+    {
+        "adstrd_cd": "11215730",
+        "legald_cd": "11215109"
+    },
+    {
+        "adstrd_cd": "11215740",
+        "legald_cd": "11215101"
+    },
+    {
+        "adstrd_cd": "11215750",
+        "legald_cd": "11215101"
+    },
+    {
+        "adstrd_cd": "11215760",
+        "legald_cd": "11215101"
+    },
+    {
+        "adstrd_cd": "11215770",
+        "legald_cd": "11215101"
+    },
+    {
+        "adstrd_cd": "11215780",
+        "legald_cd": "11215102"
+    },
+    {
+        "adstrd_cd": "11215810",
+        "legald_cd": "11215104"
+    },
+    {
+        "adstrd_cd": "11215820",
+        "legald_cd": "11215105"
+    },
+    {
+        "adstrd_cd": "11215830",
+        "legald_cd": "11215105"
+    },
+    {
+        "adstrd_cd": "11215840",
+        "legald_cd": "11215105"
+    },
+    {
+        "adstrd_cd": "11215847",
+        "legald_cd": "11215105"
+    },
+    {
+        "adstrd_cd": "11215850",
+        "legald_cd": "11215103"
+    },
+    {
+        "adstrd_cd": "11215860",
+        "legald_cd": "11215103"
+    },
+    {
+        "adstrd_cd": "11215870",
+        "legald_cd": "11215103"
+    },
+    {
+        "adstrd_cd": "11230000",
+        "legald_cd": "11230000"
+    },
+    {
+        "adstrd_cd": "11230536",
+        "legald_cd": "11230101"
+    },
+    {
+        "adstrd_cd": "11230536",
+        "legald_cd": "11230102"
+    },
+    {
+        "adstrd_cd": "11230545",
+        "legald_cd": "11230103"
+    },
+    {
+        "adstrd_cd": "11230560",
+        "legald_cd": "11230104"
+    },
+    {
+        "adstrd_cd": "11230570",
+        "legald_cd": "11230104"
+    },
+    {
+        "adstrd_cd": "11230600",
+        "legald_cd": "11230105"
+    },
+    {
+        "adstrd_cd": "11230610",
+        "legald_cd": "11230105"
+    },
+    {
+        "adstrd_cd": "11230650",
+        "legald_cd": "11230106"
+    },
+    {
+        "adstrd_cd": "11230660",
+        "legald_cd": "11230106"
+    },
+    {
+        "adstrd_cd": "11230705",
+        "legald_cd": "11230107"
+    },
+    {
+        "adstrd_cd": "11230710",
+        "legald_cd": "11230108"
+    },
+    {
+        "adstrd_cd": "11230720",
+        "legald_cd": "11230109"
+    },
+    {
+        "adstrd_cd": "11230730",
+        "legald_cd": "11230109"
+    },
+    {
+        "adstrd_cd": "11230740",
+        "legald_cd": "11230110"
+    },
+    {
+        "adstrd_cd": "11230750",
+        "legald_cd": "11230110"
+    },
+    {
+        "adstrd_cd": "11260000",
+        "legald_cd": "11260000"
+    },
+    {
+        "adstrd_cd": "11260520",
+        "legald_cd": "11260101"
+    },
+    {
+        "adstrd_cd": "11260540",
+        "legald_cd": "11260101"
+    },
+    {
+        "adstrd_cd": "11260550",
+        "legald_cd": "11260101"
+    },
+    {
+        "adstrd_cd": "11260565",
+        "legald_cd": "11260101"
+    },
+    {
+        "adstrd_cd": "11260570",
+        "legald_cd": "11260101"
+    },
+    {
+        "adstrd_cd": "11260575",
+        "legald_cd": "11260101"
+    },
+    {
+        "adstrd_cd": "11260580",
+        "legald_cd": "11260102"
+    },
+    {
+        "adstrd_cd": "11260590",
+        "legald_cd": "11260102"
+    },
+    {
+        "adstrd_cd": "11260600",
+        "legald_cd": "11260103"
+    },
+    {
+        "adstrd_cd": "11260610",
+        "legald_cd": "11260103"
+    },
+    {
+        "adstrd_cd": "11260620",
+        "legald_cd": "11260104"
+    },
+    {
+        "adstrd_cd": "11260630",
+        "legald_cd": "11260104"
+    },
+    {
+        "adstrd_cd": "11260655",
+        "legald_cd": "11260105"
+    },
+    {
+        "adstrd_cd": "11260660",
+        "legald_cd": "11260105"
+    },
+    {
+        "adstrd_cd": "11260680",
+        "legald_cd": "11260106"
+    },
+    {
+        "adstrd_cd": "11260690",
+        "legald_cd": "11260106"
+    },
+    {
+        "adstrd_cd": "11290000",
+        "legald_cd": "11290000"
+    },
+    {
+        "adstrd_cd": "11290525",
+        "legald_cd": "11290101"
+    },
+    {
+        "adstrd_cd": "11290525",
+        "legald_cd": "11290102"
+    },
+    {
+        "adstrd_cd": "11290525",
+        "legald_cd": "11290104"
+    },
+    {
+        "adstrd_cd": "11290525",
+        "legald_cd": "11290107"
+    },
+    {
+        "adstrd_cd": "11290555",
+        "legald_cd": "11290103"
+    },
+    {
+        "adstrd_cd": "11290555",
+        "legald_cd": "11290105"
+    },
+    {
+        "adstrd_cd": "11290555",
+        "legald_cd": "11290106"
+    },
+    {
+        "adstrd_cd": "11290555",
+        "legald_cd": "11290108"
+    },
+    {
+        "adstrd_cd": "11290555",
+        "legald_cd": "11290111"
+    },
+    {
+        "adstrd_cd": "11290555",
+        "legald_cd": "11290112"
+    },
+    {
+        "adstrd_cd": "11290555",
+        "legald_cd": "11290113"
+    },
+    {
+        "adstrd_cd": "11290555",
+        "legald_cd": "11290114"
+    },
+    {
+        "adstrd_cd": "11290555",
+        "legald_cd": "11290115"
+    },
+    {
+        "adstrd_cd": "11290575",
+        "legald_cd": "11290103"
+    },
+    {
+        "adstrd_cd": "11290575",
+        "legald_cd": "11290109"
+    },
+    {
+        "adstrd_cd": "11290575",
+        "legald_cd": "11290110"
+    },
+    {
+        "adstrd_cd": "11290575",
+        "legald_cd": "11290116"
+    },
+    {
+        "adstrd_cd": "11290575",
+        "legald_cd": "11290117"
+    },
+    {
+        "adstrd_cd": "11290575",
+        "legald_cd": "11290118"
+    },
+    {
+        "adstrd_cd": "11290575",
+        "legald_cd": "11290119"
+    },
+    {
+        "adstrd_cd": "11290575",
+        "legald_cd": "11290120"
+    },
+    {
+        "adstrd_cd": "11290580",
+        "legald_cd": "11290103"
+    },
+    {
+        "adstrd_cd": "11290590",
+        "legald_cd": "11290103"
+    },
+    {
+        "adstrd_cd": "11290600",
+        "legald_cd": "11290121"
+    },
+    {
+        "adstrd_cd": "11290600",
+        "legald_cd": "11290122"
+    },
+    {
+        "adstrd_cd": "11290600",
+        "legald_cd": "11290123"
+    },
+    {
+        "adstrd_cd": "11290600",
+        "legald_cd": "11290124"
+    },
+    {
+        "adstrd_cd": "11290600",
+        "legald_cd": "11290125"
+    },
+    {
+        "adstrd_cd": "11290610",
+        "legald_cd": "11290126"
+    },
+    {
+        "adstrd_cd": "11290610",
+        "legald_cd": "11290127"
+    },
+    {
+        "adstrd_cd": "11290610",
+        "legald_cd": "11290128"
+    },
+    {
+        "adstrd_cd": "11290610",
+        "legald_cd": "11290129"
+    },
+    {
+        "adstrd_cd": "11290610",
+        "legald_cd": "11290130"
+    },
+    {
+        "adstrd_cd": "11290610",
+        "legald_cd": "11290131"
+    },
+    {
+        "adstrd_cd": "11290610",
+        "legald_cd": "11290132"
+    },
+    {
+        "adstrd_cd": "11290620",
+        "legald_cd": "11290103"
+    },
+    {
+        "adstrd_cd": "11290620",
+        "legald_cd": "11290133"
+    },
+    {
+        "adstrd_cd": "11290620",
+        "legald_cd": "11290134"
+    },
+    {
+        "adstrd_cd": "11290630",
+        "legald_cd": "11290103"
+    },
+    {
+        "adstrd_cd": "11290630",
+        "legald_cd": "11290133"
+    },
+    {
+        "adstrd_cd": "11290640",
+        "legald_cd": "11290133"
+    },
+    {
+        "adstrd_cd": "11290650",
+        "legald_cd": "11290133"
+    },
+    {
+        "adstrd_cd": "11290660",
+        "legald_cd": "11290134"
+    },
+    {
+        "adstrd_cd": "11290685",
+        "legald_cd": "11290134"
+    },
+    {
+        "adstrd_cd": "11290685",
+        "legald_cd": "11290136"
+    },
+    {
+        "adstrd_cd": "11290705",
+        "legald_cd": "11290135"
+    },
+    {
+        "adstrd_cd": "11290715",
+        "legald_cd": "11290136"
+    },
+    {
+        "adstrd_cd": "11290725",
+        "legald_cd": "11290136"
+    },
+    {
+        "adstrd_cd": "11290725",
+        "legald_cd": "11290137"
+    },
+    {
+        "adstrd_cd": "11290760",
+        "legald_cd": "11290138"
+    },
+    {
+        "adstrd_cd": "11290770",
+        "legald_cd": "11290138"
+    },
+    {
+        "adstrd_cd": "11290780",
+        "legald_cd": "11290138"
+    },
+    {
+        "adstrd_cd": "11290810",
+        "legald_cd": "11290139"
+    },
+    {
+        "adstrd_cd": "11305000",
+        "legald_cd": "11305000"
+    },
+    {
+        "adstrd_cd": "11305534",
+        "legald_cd": "11305101"
+    },
+    {
+        "adstrd_cd": "11305535",
+        "legald_cd": "11305101"
+    },
+    {
+        "adstrd_cd": "11305545",
+        "legald_cd": "11305101"
+    },
+    {
+        "adstrd_cd": "11305555",
+        "legald_cd": "11305101"
+    },
+    {
+        "adstrd_cd": "11305575",
+        "legald_cd": "11305101"
+    },
+    {
+        "adstrd_cd": "11305595",
+        "legald_cd": "11305102"
+    },
+    {
+        "adstrd_cd": "11305603",
+        "legald_cd": "11305102"
+    },
+    {
+        "adstrd_cd": "11305608",
+        "legald_cd": "11305102"
+    },
+    {
+        "adstrd_cd": "11305615",
+        "legald_cd": "11305103"
+    },
+    {
+        "adstrd_cd": "11305625",
+        "legald_cd": "11305103"
+    },
+    {
+        "adstrd_cd": "11305635",
+        "legald_cd": "11305103"
+    },
+    {
+        "adstrd_cd": "11305645",
+        "legald_cd": "11305103"
+    },
+    {
+        "adstrd_cd": "11305645",
+        "legald_cd": "11305104"
+    },
+    {
+        "adstrd_cd": "11305660",
+        "legald_cd": "11305103"
+    },
+    {
+        "adstrd_cd": "11320000",
+        "legald_cd": "11320000"
+    },
+    {
+        "adstrd_cd": "11320511",
+        "legald_cd": "11320107"
+    },
+    {
+        "adstrd_cd": "11320512",
+        "legald_cd": "11320107"
+    },
+    {
+        "adstrd_cd": "11320513",
+        "legald_cd": "11320107"
+    },
+    {
+        "adstrd_cd": "11320514",
+        "legald_cd": "11320107"
+    },
+    {
+        "adstrd_cd": "11320515",
+        "legald_cd": "11320107"
+    },
+    {
+        "adstrd_cd": "11320521",
+        "legald_cd": "11320108"
+    },
+    {
+        "adstrd_cd": "11320522",
+        "legald_cd": "11320108"
+    },
+    {
+        "adstrd_cd": "11320660",
+        "legald_cd": "11320105"
+    },
+    {
+        "adstrd_cd": "11320670",
+        "legald_cd": "11320105"
+    },
+    {
+        "adstrd_cd": "11320680",
+        "legald_cd": "11320105"
+    },
+    {
+        "adstrd_cd": "11320681",
+        "legald_cd": "11320105"
+    },
+    {
+        "adstrd_cd": "11320690",
+        "legald_cd": "11320106"
+    },
+    {
+        "adstrd_cd": "11320700",
+        "legald_cd": "11320106"
+    },
+    {
+        "adstrd_cd": "11320710",
+        "legald_cd": "11320106"
+    },
+    {
+        "adstrd_cd": "11350000",
+        "legald_cd": "11350000"
+    },
+    {
+        "adstrd_cd": "11350560",
+        "legald_cd": "11350102"
+    },
+    {
+        "adstrd_cd": "11350570",
+        "legald_cd": "11350102"
+    },
+    {
+        "adstrd_cd": "11350580",
+        "legald_cd": "11350102"
+    },
+    {
+        "adstrd_cd": "11350595",
+        "legald_cd": "11350103"
+    },
+    {
+        "adstrd_cd": "11350600",
+        "legald_cd": "11350103"
+    },
+    {
+        "adstrd_cd": "11350611",
+        "legald_cd": "11350104"
+    },
+    {
+        "adstrd_cd": "11350612",
+        "legald_cd": "11350104"
+    },
+    {
+        "adstrd_cd": "11350619",
+        "legald_cd": "11350106"
+    },
+    {
+        "adstrd_cd": "11350621",
+        "legald_cd": "11350106"
+    },
+    {
+        "adstrd_cd": "11350624",
+        "legald_cd": "11350105"
+    },
+    {
+        "adstrd_cd": "11350624",
+        "legald_cd": "11350106"
+    },
+    {
+        "adstrd_cd": "11350625",
+        "legald_cd": "11350106"
+    },
+    {
+        "adstrd_cd": "11350630",
+        "legald_cd": "11350105"
+    },
+    {
+        "adstrd_cd": "11350640",
+        "legald_cd": "11350105"
+    },
+    {
+        "adstrd_cd": "11350665",
+        "legald_cd": "11350105"
+    },
+    {
+        "adstrd_cd": "11350670",
+        "legald_cd": "11350105"
+    },
+    {
+        "adstrd_cd": "11350695",
+        "legald_cd": "11350105"
+    },
+    {
+        "adstrd_cd": "11350700",
+        "legald_cd": "11350105"
+    },
+    {
+        "adstrd_cd": "11350710",
+        "legald_cd": "11350105"
+    },
+    {
+        "adstrd_cd": "11350720",
+        "legald_cd": "11350105"
+    },
+    {
+        "adstrd_cd": "11380000",
+        "legald_cd": "11380000"
+    },
+    {
+        "adstrd_cd": "11380510",
+        "legald_cd": "11380102"
+    },
+    {
+        "adstrd_cd": "11380520",
+        "legald_cd": "11380103"
+    },
+    {
+        "adstrd_cd": "11380530",
+        "legald_cd": "11380103"
+    },
+    {
+        "adstrd_cd": "11380551",
+        "legald_cd": "11380104"
+    },
+    {
+        "adstrd_cd": "11380552",
+        "legald_cd": "11380104"
+    },
+    {
+        "adstrd_cd": "11380560",
+        "legald_cd": "11380105"
+    },
+    {
+        "adstrd_cd": "11380570",
+        "legald_cd": "11380106"
+    },
+    {
+        "adstrd_cd": "11380580",
+        "legald_cd": "11380107"
+    },
+    {
+        "adstrd_cd": "11380590",
+        "legald_cd": "11380107"
+    },
+    {
+        "adstrd_cd": "11380600",
+        "legald_cd": "11380107"
+    },
+    {
+        "adstrd_cd": "11380625",
+        "legald_cd": "11380108"
+    },
+    {
+        "adstrd_cd": "11380631",
+        "legald_cd": "11380109"
+    },
+    {
+        "adstrd_cd": "11380632",
+        "legald_cd": "11380109"
+    },
+    {
+        "adstrd_cd": "11380640",
+        "legald_cd": "11380110"
+    },
+    {
+        "adstrd_cd": "11380650",
+        "legald_cd": "11380101"
+    },
+    {
+        "adstrd_cd": "11380690",
+        "legald_cd": "11380114"
+    },
+    {
+        "adstrd_cd": "11410000",
+        "legald_cd": "11410000"
+    },
+    {
+        "adstrd_cd": "11410520",
+        "legald_cd": "11410105"
+    },
+    {
+        "adstrd_cd": "11410520",
+        "legald_cd": "11410106"
+    },
+    {
+        "adstrd_cd": "11410520",
+        "legald_cd": "11410107"
+    },
+    {
+        "adstrd_cd": "11410520",
+        "legald_cd": "11410108"
+    },
+    {
+        "adstrd_cd": "11410520",
+        "legald_cd": "11410109"
+    },
+    {
+        "adstrd_cd": "11410555",
+        "legald_cd": "11410110"
+    },
+    {
+        "adstrd_cd": "11410555",
+        "legald_cd": "11410112"
+    },
+    {
+        "adstrd_cd": "11410565",
+        "legald_cd": "11410101"
+    },
+    {
+        "adstrd_cd": "11410565",
+        "legald_cd": "11410102"
+    },
+    {
+        "adstrd_cd": "11410565",
+        "legald_cd": "11410103"
+    },
+    {
+        "adstrd_cd": "11410565",
+        "legald_cd": "11410104"
+    },
+    {
+        "adstrd_cd": "11410565",
+        "legald_cd": "11410110"
+    },
+    {
+        "adstrd_cd": "11410585",
+        "legald_cd": "11410112"
+    },
+    {
+        "adstrd_cd": "11410585",
+        "legald_cd": "11410113"
+    },
+    {
+        "adstrd_cd": "11410585",
+        "legald_cd": "11410114"
+    },
+    {
+        "adstrd_cd": "11410585",
+        "legald_cd": "11410115"
+    },
+    {
+        "adstrd_cd": "11410585",
+        "legald_cd": "11410116"
+    },
+    {
+        "adstrd_cd": "11410615",
+        "legald_cd": "11410117"
+    },
+    {
+        "adstrd_cd": "11410620",
+        "legald_cd": "11410111"
+    },
+    {
+        "adstrd_cd": "11410640",
+        "legald_cd": "11410111"
+    },
+    {
+        "adstrd_cd": "11410655",
+        "legald_cd": "11410111"
+    },
+    {
+        "adstrd_cd": "11410660",
+        "legald_cd": "11410118"
+    },
+    {
+        "adstrd_cd": "11410685",
+        "legald_cd": "11410118"
+    },
+    {
+        "adstrd_cd": "11410690",
+        "legald_cd": "11410120"
+    },
+    {
+        "adstrd_cd": "11410700",
+        "legald_cd": "11410120"
+    },
+    {
+        "adstrd_cd": "11410710",
+        "legald_cd": "11410119"
+    },
+    {
+        "adstrd_cd": "11410720",
+        "legald_cd": "11410119"
+    },
+    {
+        "adstrd_cd": "11440000",
+        "legald_cd": "11440000"
+    },
+    {
+        "adstrd_cd": "11440555",
+        "legald_cd": "11440101"
+    },
+    {
+        "adstrd_cd": "11440555",
+        "legald_cd": "11440102"
+    },
+    {
+        "adstrd_cd": "11440555",
+        "legald_cd": "11440109"
+    },
+    {
+        "adstrd_cd": "11440565",
+        "legald_cd": "11440101"
+    },
+    {
+        "adstrd_cd": "11440565",
+        "legald_cd": "11440102"
+    },
+    {
+        "adstrd_cd": "11440565",
+        "legald_cd": "11440103"
+    },
+    {
+        "adstrd_cd": "11440565",
+        "legald_cd": "11440104"
+    },
+    {
+        "adstrd_cd": "11440585",
+        "legald_cd": "11440104"
+    },
+    {
+        "adstrd_cd": "11440585",
+        "legald_cd": "11440107"
+    },
+    {
+        "adstrd_cd": "11440590",
+        "legald_cd": "11440104"
+    },
+    {
+        "adstrd_cd": "11440590",
+        "legald_cd": "11440105"
+    },
+    {
+        "adstrd_cd": "11440590",
+        "legald_cd": "11440106"
+    },
+    {
+        "adstrd_cd": "11440590",
+        "legald_cd": "11440107"
+    },
+    {
+        "adstrd_cd": "11440590",
+        "legald_cd": "11440108"
+    },
+    {
+        "adstrd_cd": "11440590",
+        "legald_cd": "11440109"
+    },
+    {
+        "adstrd_cd": "11440600",
+        "legald_cd": "11440108"
+    },
+    {
+        "adstrd_cd": "11440600",
+        "legald_cd": "11440110"
+    },
+    {
+        "adstrd_cd": "11440600",
+        "legald_cd": "11440111"
+    },
+    {
+        "adstrd_cd": "11440610",
+        "legald_cd": "11440102"
+    },
+    {
+        "adstrd_cd": "11440610",
+        "legald_cd": "11440109"
+    },
+    {
+        "adstrd_cd": "11440630",
+        "legald_cd": "11440108"
+    },
+    {
+        "adstrd_cd": "11440630",
+        "legald_cd": "11440111"
+    },
+    {
+        "adstrd_cd": "11440630",
+        "legald_cd": "11440112"
+    },
+    {
+        "adstrd_cd": "11440630",
+        "legald_cd": "11440113"
+    },
+    {
+        "adstrd_cd": "11440630",
+        "legald_cd": "11440117"
+    },
+    {
+        "adstrd_cd": "11440655",
+        "legald_cd": "11440114"
+    },
+    {
+        "adstrd_cd": "11440655",
+        "legald_cd": "11440115"
+    },
+    {
+        "adstrd_cd": "11440655",
+        "legald_cd": "11440116"
+    },
+    {
+        "adstrd_cd": "11440655",
+        "legald_cd": "11440117"
+    },
+    {
+        "adstrd_cd": "11440655",
+        "legald_cd": "11440118"
+    },
+    {
+        "adstrd_cd": "11440660",
+        "legald_cd": "11440110"
+    },
+    {
+        "adstrd_cd": "11440660",
+        "legald_cd": "11440120"
+    },
+    {
+        "adstrd_cd": "11440660",
+        "legald_cd": "11440121"
+    },
+    {
+        "adstrd_cd": "11440680",
+        "legald_cd": "11440122"
+    },
+    {
+        "adstrd_cd": "11440690",
+        "legald_cd": "11440123"
+    },
+    {
+        "adstrd_cd": "11440700",
+        "legald_cd": "11440123"
+    },
+    {
+        "adstrd_cd": "11440710",
+        "legald_cd": "11440124"
+    },
+    {
+        "adstrd_cd": "11440720",
+        "legald_cd": "11440125"
+    },
+    {
+        "adstrd_cd": "11440730",
+        "legald_cd": "11440125"
+    },
+    {
+        "adstrd_cd": "11440730",
+        "legald_cd": "11440126"
+    },
+    {
+        "adstrd_cd": "11440740",
+        "legald_cd": "11440127"
+    },
+    {
+        "adstrd_cd": "11470000",
+        "legald_cd": "11470000"
+    },
+    {
+        "adstrd_cd": "11470510",
+        "legald_cd": "11470102"
+    },
+    {
+        "adstrd_cd": "11470520",
+        "legald_cd": "11470102"
+    },
+    {
+        "adstrd_cd": "11470530",
+        "legald_cd": "11470102"
+    },
+    {
+        "adstrd_cd": "11470540",
+        "legald_cd": "11470102"
+    },
+    {
+        "adstrd_cd": "11470550",
+        "legald_cd": "11470102"
+    },
+    {
+        "adstrd_cd": "11470560",
+        "legald_cd": "11470103"
+    },
+    {
+        "adstrd_cd": "11470570",
+        "legald_cd": "11470103"
+    },
+    {
+        "adstrd_cd": "11470580",
+        "legald_cd": "11470103"
+    },
+    {
+        "adstrd_cd": "11470590",
+        "legald_cd": "11470103"
+    },
+    {
+        "adstrd_cd": "11470600",
+        "legald_cd": "11470103"
+    },
+    {
+        "adstrd_cd": "11470610",
+        "legald_cd": "11470103"
+    },
+    {
+        "adstrd_cd": "11470611",
+        "legald_cd": "11470103"
+    },
+    {
+        "adstrd_cd": "11470620",
+        "legald_cd": "11470101"
+    },
+    {
+        "adstrd_cd": "11470630",
+        "legald_cd": "11470101"
+    },
+    {
+        "adstrd_cd": "11470640",
+        "legald_cd": "11470101"
+    },
+    {
+        "adstrd_cd": "11470650",
+        "legald_cd": "11470101"
+    },
+    {
+        "adstrd_cd": "11470670",
+        "legald_cd": "11470101"
+    },
+    {
+        "adstrd_cd": "11470680",
+        "legald_cd": "11470101"
+    },
+    {
+        "adstrd_cd": "11500000",
+        "legald_cd": "11500000"
+    },
+    {
+        "adstrd_cd": "11500510",
+        "legald_cd": "11500101"
+    },
+    {
+        "adstrd_cd": "11500510",
+        "legald_cd": "11500104"
+    },
+    {
+        "adstrd_cd": "11500520",
+        "legald_cd": "11500102"
+    },
+    {
+        "adstrd_cd": "11500530",
+        "legald_cd": "11500102"
+    },
+    {
+        "adstrd_cd": "11500535",
+        "legald_cd": "11500102"
+    },
+    {
+        "adstrd_cd": "11500540",
+        "legald_cd": "11500103"
+    },
+    {
+        "adstrd_cd": "11500550",
+        "legald_cd": "11500103"
+    },
+    {
+        "adstrd_cd": "11500560",
+        "legald_cd": "11500103"
+    },
+    {
+        "adstrd_cd": "11500570",
+        "legald_cd": "11500103"
+    },
+    {
+        "adstrd_cd": "11500590",
+        "legald_cd": "11500103"
+    },
+    {
+        "adstrd_cd": "11500591",
+        "legald_cd": "11500103"
+    },
+    {
+        "adstrd_cd": "11500593",
+        "legald_cd": "11500103"
+    },
+    {
+        "adstrd_cd": "11500603",
+        "legald_cd": "11500104"
+    },
+    {
+        "adstrd_cd": "11500603",
+        "legald_cd": "11500105"
+    },
+    {
+        "adstrd_cd": "11500604",
+        "legald_cd": "11500104"
+    },
+    {
+        "adstrd_cd": "11500605",
+        "legald_cd": "11500104"
+    },
+    {
+        "adstrd_cd": "11500611",
+        "legald_cd": "11500105"
+    },
+    {
+        "adstrd_cd": "11500611",
+        "legald_cd": "11500106"
+    },
+    {
+        "adstrd_cd": "11500611",
+        "legald_cd": "11500107"
+    },
+    {
+        "adstrd_cd": "11500615",
+        "legald_cd": "11500103"
+    },
+    {
+        "adstrd_cd": "11500615",
+        "legald_cd": "11500106"
+    },
+    {
+        "adstrd_cd": "11500620",
+        "legald_cd": "11500105"
+    },
+    {
+        "adstrd_cd": "11500620",
+        "legald_cd": "11500108"
+    },
+    {
+        "adstrd_cd": "11500620",
+        "legald_cd": "11500109"
+    },
+    {
+        "adstrd_cd": "11500620",
+        "legald_cd": "11500111"
+    },
+    {
+        "adstrd_cd": "11500620",
+        "legald_cd": "11500112"
+    },
+    {
+        "adstrd_cd": "11500620",
+        "legald_cd": "11500113"
+    },
+    {
+        "adstrd_cd": "11500630",
+        "legald_cd": "11500105"
+    },
+    {
+        "adstrd_cd": "11500630",
+        "legald_cd": "11500108"
+    },
+    {
+        "adstrd_cd": "11500630",
+        "legald_cd": "11500109"
+    },
+    {
+        "adstrd_cd": "11500640",
+        "legald_cd": "11500109"
+    },
+    {
+        "adstrd_cd": "11500640",
+        "legald_cd": "11500110"
+    },
+    {
+        "adstrd_cd": "11500641",
+        "legald_cd": "11500109"
+    },
+    {
+        "adstrd_cd": "11530000",
+        "legald_cd": "11530000"
+    },
+    {
+        "adstrd_cd": "11530510",
+        "legald_cd": "11530101"
+    },
+    {
+        "adstrd_cd": "11530520",
+        "legald_cd": "11530102"
+    },
+    {
+        "adstrd_cd": "11530530",
+        "legald_cd": "11530102"
+    },
+    {
+        "adstrd_cd": "11530540",
+        "legald_cd": "11530102"
+    },
+    {
+        "adstrd_cd": "11530550",
+        "legald_cd": "11530102"
+    },
+    {
+        "adstrd_cd": "11530560",
+        "legald_cd": "11530102"
+    },
+    {
+        "adstrd_cd": "11530595",
+        "legald_cd": "11530103"
+    },
+    {
+        "adstrd_cd": "11530720",
+        "legald_cd": "11530106"
+    },
+    {
+        "adstrd_cd": "11530730",
+        "legald_cd": "11530106"
+    },
+    {
+        "adstrd_cd": "11530740",
+        "legald_cd": "11530107"
+    },
+    {
+        "adstrd_cd": "11530750",
+        "legald_cd": "11530107"
+    },
+    {
+        "adstrd_cd": "11530760",
+        "legald_cd": "11530107"
+    },
+    {
+        "adstrd_cd": "11530770",
+        "legald_cd": "11530108"
+    },
+    {
+        "adstrd_cd": "11530780",
+        "legald_cd": "11530108"
+    },
+    {
+        "adstrd_cd": "11530780",
+        "legald_cd": "11530111"
+    },
+    {
+        "adstrd_cd": "11530790",
+        "legald_cd": "11530109"
+    },
+    {
+        "adstrd_cd": "11530790",
+        "legald_cd": "11530110"
+    },
+    {
+        "adstrd_cd": "11530800",
+        "legald_cd": "11530112"
+    },
+    {
+        "adstrd_cd": "11545000",
+        "legald_cd": "11545000"
+    },
+    {
+        "adstrd_cd": "11545510",
+        "legald_cd": "11545101"
+    },
+    {
+        "adstrd_cd": "11545610",
+        "legald_cd": "11545102"
+    },
+    {
+        "adstrd_cd": "11545620",
+        "legald_cd": "11545102"
+    },
+    {
+        "adstrd_cd": "11545630",
+        "legald_cd": "11545102"
+    },
+    {
+        "adstrd_cd": "11545640",
+        "legald_cd": "11545102"
+    },
+    {
+        "adstrd_cd": "11545670",
+        "legald_cd": "11545103"
+    },
+    {
+        "adstrd_cd": "11545680",
+        "legald_cd": "11545103"
+    },
+    {
+        "adstrd_cd": "11545690",
+        "legald_cd": "11545103"
+    },
+    {
+        "adstrd_cd": "11545700",
+        "legald_cd": "11545103"
+    },
+    {
+        "adstrd_cd": "11545710",
+        "legald_cd": "11545103"
+    },
+    {
+        "adstrd_cd": "11560000",
+        "legald_cd": "11560000"
+    },
+    {
+        "adstrd_cd": "11560515",
+        "legald_cd": "11560101"
+    },
+    {
+        "adstrd_cd": "11560515",
+        "legald_cd": "11560132"
+    },
+    {
+        "adstrd_cd": "11560535",
+        "legald_cd": "11560101"
+    },
+    {
+        "adstrd_cd": "11560535",
+        "legald_cd": "11560102"
+    },
+    {
+        "adstrd_cd": "11560535",
+        "legald_cd": "11560103"
+    },
+    {
+        "adstrd_cd": "11560535",
+        "legald_cd": "11560104"
+    },
+    {
+        "adstrd_cd": "11560535",
+        "legald_cd": "11560105"
+    },
+    {
+        "adstrd_cd": "11560535",
+        "legald_cd": "11560106"
+    },
+    {
+        "adstrd_cd": "11560535",
+        "legald_cd": "11560107"
+    },
+    {
+        "adstrd_cd": "11560535",
+        "legald_cd": "11560108"
+    },
+    {
+        "adstrd_cd": "11560535",
+        "legald_cd": "11560109"
+    },
+    {
+        "adstrd_cd": "11560540",
+        "legald_cd": "11560110"
+    },
+    {
+        "adstrd_cd": "11560550",
+        "legald_cd": "11560111"
+    },
+    {
+        "adstrd_cd": "11560550",
+        "legald_cd": "11560112"
+    },
+    {
+        "adstrd_cd": "11560550",
+        "legald_cd": "11560113"
+    },
+    {
+        "adstrd_cd": "11560560",
+        "legald_cd": "11560114"
+    },
+    {
+        "adstrd_cd": "11560560",
+        "legald_cd": "11560115"
+    },
+    {
+        "adstrd_cd": "11560560",
+        "legald_cd": "11560116"
+    },
+    {
+        "adstrd_cd": "11560560",
+        "legald_cd": "11560117"
+    },
+    {
+        "adstrd_cd": "11560585",
+        "legald_cd": "11560118"
+    },
+    {
+        "adstrd_cd": "11560605",
+        "legald_cd": "11560119"
+    },
+    {
+        "adstrd_cd": "11560605",
+        "legald_cd": "11560120"
+    },
+    {
+        "adstrd_cd": "11560605",
+        "legald_cd": "11560121"
+    },
+    {
+        "adstrd_cd": "11560605",
+        "legald_cd": "11560122"
+    },
+    {
+        "adstrd_cd": "11560605",
+        "legald_cd": "11560123"
+    },
+    {
+        "adstrd_cd": "11560605",
+        "legald_cd": "11560124"
+    },
+    {
+        "adstrd_cd": "11560610",
+        "legald_cd": "11560125"
+    },
+    {
+        "adstrd_cd": "11560610",
+        "legald_cd": "11560126"
+    },
+    {
+        "adstrd_cd": "11560610",
+        "legald_cd": "11560127"
+    },
+    {
+        "adstrd_cd": "11560620",
+        "legald_cd": "11560127"
+    },
+    {
+        "adstrd_cd": "11560620",
+        "legald_cd": "11560128"
+    },
+    {
+        "adstrd_cd": "11560620",
+        "legald_cd": "11560129"
+    },
+    {
+        "adstrd_cd": "11560620",
+        "legald_cd": "11560130"
+    },
+    {
+        "adstrd_cd": "11560620",
+        "legald_cd": "11560131"
+    },
+    {
+        "adstrd_cd": "11560620",
+        "legald_cd": "11560134"
+    },
+    {
+        "adstrd_cd": "11560630",
+        "legald_cd": "11560132"
+    },
+    {
+        "adstrd_cd": "11560650",
+        "legald_cd": "11560132"
+    },
+    {
+        "adstrd_cd": "11560660",
+        "legald_cd": "11560132"
+    },
+    {
+        "adstrd_cd": "11560670",
+        "legald_cd": "11560132"
+    },
+    {
+        "adstrd_cd": "11560670",
+        "legald_cd": "11560133"
+    },
+    {
+        "adstrd_cd": "11560680",
+        "legald_cd": "11560132"
+    },
+    {
+        "adstrd_cd": "11560690",
+        "legald_cd": "11560132"
+    },
+    {
+        "adstrd_cd": "11560700",
+        "legald_cd": "11560133"
+    },
+    {
+        "adstrd_cd": "11560710",
+        "legald_cd": "11560133"
+    },
+    {
+        "adstrd_cd": "11560720",
+        "legald_cd": "11560133"
+    },
+    {
+        "adstrd_cd": "11590000",
+        "legald_cd": "11590000"
+    },
+    {
+        "adstrd_cd": "11590510",
+        "legald_cd": "11590101"
+    },
+    {
+        "adstrd_cd": "11590510",
+        "legald_cd": "11590104"
+    },
+    {
+        "adstrd_cd": "11590520",
+        "legald_cd": "11590101"
+    },
+    {
+        "adstrd_cd": "11590530",
+        "legald_cd": "11590102"
+    },
+    {
+        "adstrd_cd": "11590530",
+        "legald_cd": "11590103"
+    },
+    {
+        "adstrd_cd": "11590540",
+        "legald_cd": "11590102"
+    },
+    {
+        "adstrd_cd": "11590550",
+        "legald_cd": "11590102"
+    },
+    {
+        "adstrd_cd": "11590560",
+        "legald_cd": "11590102"
+    },
+    {
+        "adstrd_cd": "11590605",
+        "legald_cd": "11590105"
+    },
+    {
+        "adstrd_cd": "11590620",
+        "legald_cd": "11590107"
+    },
+    {
+        "adstrd_cd": "11590630",
+        "legald_cd": "11590106"
+    },
+    {
+        "adstrd_cd": "11590630",
+        "legald_cd": "11590107"
+    },
+    {
+        "adstrd_cd": "11590640",
+        "legald_cd": "11590107"
+    },
+    {
+        "adstrd_cd": "11590650",
+        "legald_cd": "11590107"
+    },
+    {
+        "adstrd_cd": "11590651",
+        "legald_cd": "11590107"
+    },
+    {
+        "adstrd_cd": "11590660",
+        "legald_cd": "11590108"
+    },
+    {
+        "adstrd_cd": "11590670",
+        "legald_cd": "11590109"
+    },
+    {
+        "adstrd_cd": "11590680",
+        "legald_cd": "11590109"
+    },
+    {
+        "adstrd_cd": "11620000",
+        "legald_cd": "11620000"
+    },
+    {
+        "adstrd_cd": "11620525",
+        "legald_cd": "11620101"
+    },
+    {
+        "adstrd_cd": "11620545",
+        "legald_cd": "11620101"
+    },
+    {
+        "adstrd_cd": "11620565",
+        "legald_cd": "11620101"
+    },
+    {
+        "adstrd_cd": "11620575",
+        "legald_cd": "11620101"
+    },
+    {
+        "adstrd_cd": "11620585",
+        "legald_cd": "11620101"
+    },
+    {
+        "adstrd_cd": "11620595",
+        "legald_cd": "11620101"
+    },
+    {
+        "adstrd_cd": "11620605",
+        "legald_cd": "11620101"
+    },
+    {
+        "adstrd_cd": "11620615",
+        "legald_cd": "11620101"
+    },
+    {
+        "adstrd_cd": "11620625",
+        "legald_cd": "11620101"
+    },
+    {
+        "adstrd_cd": "11620630",
+        "legald_cd": "11620103"
+    },
+    {
+        "adstrd_cd": "11620645",
+        "legald_cd": "11620102"
+    },
+    {
+        "adstrd_cd": "11620655",
+        "legald_cd": "11620102"
+    },
+    {
+        "adstrd_cd": "11620665",
+        "legald_cd": "11620102"
+    },
+    {
+        "adstrd_cd": "11620685",
+        "legald_cd": "11620102"
+    },
+    {
+        "adstrd_cd": "11620695",
+        "legald_cd": "11620102"
+    },
+    {
+        "adstrd_cd": "11620715",
+        "legald_cd": "11620102"
+    },
+    {
+        "adstrd_cd": "11620725",
+        "legald_cd": "11620102"
+    },
+    {
+        "adstrd_cd": "11620735",
+        "legald_cd": "11620102"
+    },
+    {
+        "adstrd_cd": "11620745",
+        "legald_cd": "11620102"
+    },
+    {
+        "adstrd_cd": "11620765",
+        "legald_cd": "11620102"
+    },
+    {
+        "adstrd_cd": "11620775",
+        "legald_cd": "11620102"
+    },
+    {
+        "adstrd_cd": "11650000",
+        "legald_cd": "11650000"
+    },
+    {
+        "adstrd_cd": "11650510",
+        "legald_cd": "11650108"
+    },
+    {
+        "adstrd_cd": "11650520",
+        "legald_cd": "11650108"
+    },
+    {
+        "adstrd_cd": "11650530",
+        "legald_cd": "11650101"
+    },
+    {
+        "adstrd_cd": "11650530",
+        "legald_cd": "11650108"
+    },
+    {
+        "adstrd_cd": "11650531",
+        "legald_cd": "11650108"
+    },
+    {
+        "adstrd_cd": "11650540",
+        "legald_cd": "11650106"
+    },
+    {
+        "adstrd_cd": "11650550",
+        "legald_cd": "11650107"
+    },
+    {
+        "adstrd_cd": "11650560",
+        "legald_cd": "11650107"
+    },
+    {
+        "adstrd_cd": "11650570",
+        "legald_cd": "11650107"
+    },
+    {
+        "adstrd_cd": "11650580",
+        "legald_cd": "11650106"
+    },
+    {
+        "adstrd_cd": "11650581",
+        "legald_cd": "11650107"
+    },
+    {
+        "adstrd_cd": "11650590",
+        "legald_cd": "11650101"
+    },
+    {
+        "adstrd_cd": "11650600",
+        "legald_cd": "11650101"
+    },
+    {
+        "adstrd_cd": "11650610",
+        "legald_cd": "11650101"
+    },
+    {
+        "adstrd_cd": "11650620",
+        "legald_cd": "11650101"
+    },
+    {
+        "adstrd_cd": "11650621",
+        "legald_cd": "11650101"
+    },
+    {
+        "adstrd_cd": "11650651",
+        "legald_cd": "11650102"
+    },
+    {
+        "adstrd_cd": "11650651",
+        "legald_cd": "11650103"
+    },
+    {
+        "adstrd_cd": "11650652",
+        "legald_cd": "11650102"
+    },
+    {
+        "adstrd_cd": "11650652",
+        "legald_cd": "11650104"
+    },
+    {
+        "adstrd_cd": "11650660",
+        "legald_cd": "11650109"
+    },
+    {
+        "adstrd_cd": "11650660",
+        "legald_cd": "11650110"
+    },
+    {
+        "adstrd_cd": "11650660",
+        "legald_cd": "11650111"
+    },
+    {
+        "adstrd_cd": "11680000",
+        "legald_cd": "11680000"
+    },
+    {
+        "adstrd_cd": "11680510",
+        "legald_cd": "11680107"
+    },
+    {
+        "adstrd_cd": "11680510",
+        "legald_cd": "11680110"
+    },
+    {
+        "adstrd_cd": "11680521",
+        "legald_cd": "11680108"
+    },
+    {
+        "adstrd_cd": "11680531",
+        "legald_cd": "11680108"
+    },
+    {
+        "adstrd_cd": "11680545",
+        "legald_cd": "11680107"
+    },
+    {
+        "adstrd_cd": "11680545",
+        "legald_cd": "11680110"
+    },
+    {
+        "adstrd_cd": "11680565",
+        "legald_cd": "11680104"
+    },
+    {
+        "adstrd_cd": "11680580",
+        "legald_cd": "11680105"
+    },
+    {
+        "adstrd_cd": "11680590",
+        "legald_cd": "11680105"
+    },
+    {
+        "adstrd_cd": "11680600",
+        "legald_cd": "11680106"
+    },
+    {
+        "adstrd_cd": "11680610",
+        "legald_cd": "11680106"
+    },
+    {
+        "adstrd_cd": "11680630",
+        "legald_cd": "11680106"
+    },
+    {
+        "adstrd_cd": "11680640",
+        "legald_cd": "11680101"
+    },
+    {
+        "adstrd_cd": "11680650",
+        "legald_cd": "11680101"
+    },
+    {
+        "adstrd_cd": "11680655",
+        "legald_cd": "11680118"
+    },
+    {
+        "adstrd_cd": "11680656",
+        "legald_cd": "11680118"
+    },
+    {
+        "adstrd_cd": "11680660",
+        "legald_cd": "11680103"
+    },
+    {
+        "adstrd_cd": "11680670",
+        "legald_cd": "11680103"
+    },
+    {
+        "adstrd_cd": "11680670",
+        "legald_cd": "11680114"
+    },
+    {
+        "adstrd_cd": "11680675",
+        "legald_cd": "11680103"
+    },
+    {
+        "adstrd_cd": "11680675",
+        "legald_cd": "11680106"
+    },
+    {
+        "adstrd_cd": "11680675",
+        "legald_cd": "11680114"
+    },
+    {
+        "adstrd_cd": "11680690",
+        "legald_cd": "11680103"
+    },
+    {
+        "adstrd_cd": "11680700",
+        "legald_cd": "11680111"
+    },
+    {
+        "adstrd_cd": "11680700",
+        "legald_cd": "11680112"
+    },
+    {
+        "adstrd_cd": "11680700",
+        "legald_cd": "11680113"
+    },
+    {
+        "adstrd_cd": "11680720",
+        "legald_cd": "11680114"
+    },
+    {
+        "adstrd_cd": "11680720",
+        "legald_cd": "11680115"
+    },
+    {
+        "adstrd_cd": "11680730",
+        "legald_cd": "11680114"
+    },
+    {
+        "adstrd_cd": "11680730",
+        "legald_cd": "11680115"
+    },
+    {
+        "adstrd_cd": "11680750",
+        "legald_cd": "11680115"
+    },
+    {
+        "adstrd_cd": "11710000",
+        "legald_cd": "11710000"
+    },
+    {
+        "adstrd_cd": "11710510",
+        "legald_cd": "11710103"
+    },
+    {
+        "adstrd_cd": "11710520",
+        "legald_cd": "11710103"
+    },
+    {
+        "adstrd_cd": "11710531",
+        "legald_cd": "11710113"
+    },
+    {
+        "adstrd_cd": "11710532",
+        "legald_cd": "11710113"
+    },
+    {
+        "adstrd_cd": "11710540",
+        "legald_cd": "11710114"
+    },
+    {
+        "adstrd_cd": "11710550",
+        "legald_cd": "11710114"
+    },
+    {
+        "adstrd_cd": "11710561",
+        "legald_cd": "11710111"
+    },
+    {
+        "adstrd_cd": "11710562",
+        "legald_cd": "11710111"
+    },
+    {
+        "adstrd_cd": "11710566",
+        "legald_cd": "11710111"
+    },
+    {
+        "adstrd_cd": "11710570",
+        "legald_cd": "11710112"
+    },
+    {
+        "adstrd_cd": "11710580",
+        "legald_cd": "11710104"
+    },
+    {
+        "adstrd_cd": "11710590",
+        "legald_cd": "11710104"
+    },
+    {
+        "adstrd_cd": "11710600",
+        "legald_cd": "11710105"
+    },
+    {
+        "adstrd_cd": "11710610",
+        "legald_cd": "11710106"
+    },
+    {
+        "adstrd_cd": "11710620",
+        "legald_cd": "11710107"
+    },
+    {
+        "adstrd_cd": "11710631",
+        "legald_cd": "11710107"
+    },
+    {
+        "adstrd_cd": "11710632",
+        "legald_cd": "11710107"
+    },
+    {
+        "adstrd_cd": "11710641",
+        "legald_cd": "11710108"
+    },
+    {
+        "adstrd_cd": "11710642",
+        "legald_cd": "11710108"
+    },
+    {
+        "adstrd_cd": "11710642",
+        "legald_cd": "11710109"
+    },
+    {
+        "adstrd_cd": "11710646",
+        "legald_cd": "11710108"
+    },
+    {
+        "adstrd_cd": "11710646",
+        "legald_cd": "11710109"
+    },
+    {
+        "adstrd_cd": "11710647",
+        "legald_cd": "11710109"
+    },
+    {
+        "adstrd_cd": "11710647",
+        "legald_cd": "11710113"
+    },
+    {
+        "adstrd_cd": "11710650",
+        "legald_cd": "11710101"
+    },
+    {
+        "adstrd_cd": "11710670",
+        "legald_cd": "11710101"
+    },
+    {
+        "adstrd_cd": "11710680",
+        "legald_cd": "11710101"
+    },
+    {
+        "adstrd_cd": "11710690",
+        "legald_cd": "11710102"
+    },
+    {
+        "adstrd_cd": "11710710",
+        "legald_cd": "11710102"
+    },
+    {
+        "adstrd_cd": "11710720",
+        "legald_cd": "11710101"
+    },
+    {
+        "adstrd_cd": "11740000",
+        "legald_cd": "11740000"
+    },
+    {
+        "adstrd_cd": "11740515",
+        "legald_cd": "11740110"
+    },
+    {
+        "adstrd_cd": "11740525",
+        "legald_cd": "11740103"
+    },
+    {
+        "adstrd_cd": "11740526",
+        "legald_cd": "11740103"
+    },
+    {
+        "adstrd_cd": "11740530",
+        "legald_cd": "11740101"
+    },
+    {
+        "adstrd_cd": "11740540",
+        "legald_cd": "11740101"
+    },
+    {
+        "adstrd_cd": "11740550",
+        "legald_cd": "11740102"
+    },
+    {
+        "adstrd_cd": "11740560",
+        "legald_cd": "11740102"
+    },
+    {
+        "adstrd_cd": "11740570",
+        "legald_cd": "11740107"
+    },
+    {
+        "adstrd_cd": "11740580",
+        "legald_cd": "11740107"
+    },
+    {
+        "adstrd_cd": "11740590",
+        "legald_cd": "11740107"
+    },
+    {
+        "adstrd_cd": "11740600",
+        "legald_cd": "11740109"
+    },
+    {
+        "adstrd_cd": "11740610",
+        "legald_cd": "11740109"
+    },
+    {
+        "adstrd_cd": "11740620",
+        "legald_cd": "11740109"
+    },
+    {
+        "adstrd_cd": "11740640",
+        "legald_cd": "11740108"
+    },
+    {
+        "adstrd_cd": "11740650",
+        "legald_cd": "11740108"
+    },
+    {
+        "adstrd_cd": "11740660",
+        "legald_cd": "11740108"
+    },
+    {
+        "adstrd_cd": "11740685",
+        "legald_cd": "11740105"
+    },
+    {
+        "adstrd_cd": "11740690",
+        "legald_cd": "11740106"
+    },
+    {
+        "adstrd_cd": "11740700",
+        "legald_cd": "11740106"
+    }
+]
