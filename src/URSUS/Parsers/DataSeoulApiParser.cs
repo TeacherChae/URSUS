@@ -18,9 +18,10 @@ namespace URSUS.Parsers
     {
         private const int    CACHE_TTL_DAYS = 30;
         private const string BASE_URL       = "http://openapi.seoul.go.kr:8088";
-        private const string SVC_AVG_INCOME   = "VwsmAdstrdNcmCnsmpW";
-        private const string SVC_LIVING_POP   = "SPOP_LOCAL_RESD_DONG";
-        private const string SVC_RESIDENT_POP = "VwsmAdstrdRepopW";
+        private const string SVC_AVG_INCOME    = "VwsmAdstrdNcmCnsmpW";
+        private const string SVC_LIVING_POP    = "SPOP_LOCAL_RESD_DONG";
+        private const string SVC_RESIDENT_POP  = "VwsmAdstrdRepopW";
+        private const string SVC_TRANSIT       = "tpssPassengerCnt";
 
         private readonly string     _apiKey;
         private readonly HttpClient _http;
@@ -55,7 +56,14 @@ namespace URSUS.Parsers
         /// key = adstrd_cd, value = TOT_REPOP_CO 분기 평균
         /// </summary>
         public Dictionary<string, double> GetResidentPopByAdstrd(string? cacheDir = null)
-            => FetchAndCache(SVC_RESIDENT_POP, "ADSTRD_CD", "TOT_REPOP_CO",          "resident_pop.json", cacheDir);
+            => FetchAndCache(SVC_RESIDENT_POP, "ADSTRD_CD",  "TOT_REPOP_CO", "resident_pop.json",    cacheDir);
+
+        /// <summary>
+        /// 행정동 기준 일평균 대중교통 승차 승객 수 맵을 반환한다 (캐시 적용).
+        /// key = dong_id (= adstrd_cd 체계), value = PSNG_NO 일평균
+        /// </summary>
+        public Dictionary<string, double> GetTransitBoardingByAdstrd(string? cacheDir = null)
+            => FetchAndCache(SVC_TRANSIT,      "DONG_ID",    "PSNG_NO",      "transit_boarding.json", cacheDir);
 
         // ─────────────────────────────────────────────────────────────────
         //  공통 fetch + cache 헬퍼

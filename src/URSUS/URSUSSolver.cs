@@ -26,7 +26,7 @@ namespace URSUS
         public const string DS_AVG_INCOME    = "월평균 소득";
         public const string DS_RESIDENT_POP = "상주인구";
         public const string DS_LIVING_POP   = "생활인구";
-        // public const string DS_TRANSIT   = "대중교통 총 승차 승객 수(일일 평균)"; // TBD
+        public const string DS_TRANSIT      = "대중교통 총 승차 승객 수(일일 평균)";
 
         private readonly string _vworldKey;
         private readonly string _seoulKey;
@@ -73,6 +73,9 @@ namespace URSUS
 
             if (dataSet.Contains(DS_LIVING_POP))
                 adstrdDatasets[DS_LIVING_POP]    = seoulParser.GetLivingPopByAdstrd(_cacheDir);
+
+            if (dataSet.Contains(DS_TRANSIT))
+                adstrdDatasets[DS_TRANSIT]       = seoulParser.GetTransitBoardingByAdstrd(_cacheDir);
 
             // ── 3. 행정동↔법정동 매핑 로드 ───────────────────────────────
             var adstrdToLegald = MappingLoader.Load(_mappingJsonPath);
