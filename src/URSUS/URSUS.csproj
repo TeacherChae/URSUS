@@ -10,6 +10,7 @@
     <!-- 빌드 출력을 단일 경로로 집중 -->
     <OutputPath>../../bin/</OutputPath>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
   </PropertyGroup>
 
   <ItemGroup>
