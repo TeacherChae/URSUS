@@ -21,8 +21,8 @@
 │  GH Definition                                           │
 │                                                          │
 │  [URSUSSolver_GH]          [Visualizer_GH]              │
-│   address1/2 입력           boundary 입력                │
-│   API 키 입력               centroids/values 입력        │
+│   API 키 입력               boundary 입력                │
+│   dataSet 입력              centroids/values 입력        │
 │   → API 호출 + 캐시          colorStyle 등 파라미터       │
 │   → SolverResult 출력        → Mesh + 범례 출력           │
 └──────────┬───────────────────────┬───────────────────────┘
@@ -46,7 +46,7 @@ Solver와 Visualizer를 분리하면:
 
 | 바뀐 것 | 재실행되는 컴포넌트 | API 호출 여부 |
 |---------|-------------------|--------------|
-| `address1`, `address2` | URSUSSolver_GH + Visualizer_GH | 있음 |
+| `dataSet` (선택 데이터셋 변경) | URSUSSolver_GH + Visualizer_GH | 있음 |
 | `colorStyle`, `resolution` | Visualizer_GH만 | 없음 |
 | `power`, `heightScale` | Visualizer_GH만 | 없음 |
 
@@ -61,11 +61,11 @@ Solver와 Visualizer를 분리하면:
 WSL 터미널에서:
 
 ```bash
-cd /home/keonchae/URSUS/src/URSUS
+cd /home/keonheechae/URSUS/src/URSUS
 dotnet build -c Release
 ```
 
-빌드 성공 시 `/home/keonchae/URSUS/bin/URSUS.dll` 생성됨.
+빌드 성공 시 `/home/keonheechae/URSUS/bin/URSUS.dll` 생성됨.
 
 ### 2-2. KIKmix.xlsx → adstrd_legald_mapping.json 변환
 
@@ -78,7 +78,7 @@ GH에 C# Script 컴포넌트를 추가한다. 기존 틀을 그대로 두고 **3
 **수정 1 — `#r` 지시자를 파일 맨 위에 추가**
 
 ```csharp
-#r "\\wsl.localhost\Ubuntu\home\keonchae\URSUS\bin\URSUS.dll"
+#r "\\wsl.localhost\Ubuntu\home\keonheechae\URSUS\bin\URSUS.dll"
 
 // Grasshopper Script Instance
 #region Usings
@@ -141,7 +141,7 @@ Libraries 폴더 복사 없이 빌드 결과를 즉시 참조한다.
 재빌드 후 GH에서 Recompile (F5) 만 하면 반영된다.
 
 ```csharp
-#r "\\wsl.localhost\Ubuntu\home\keonchae\URSUS\bin\URSUS.dll"
+#r "\\wsl.localhost\Ubuntu\home\keonheechae\URSUS\bin\URSUS.dll"
 ```
 
 > **주의:** DLL을 새로 로드하려면 Recompile이 아닌 **Rhino 완전 재시작**이 필요하다.
@@ -152,7 +152,7 @@ Libraries 폴더 복사 없이 빌드 결과를 즉시 참조한다.
 ```bash
 DEST="/mnt/c/Users/brian/AppData/Roaming/Grasshopper/Libraries"
 
-cp /home/keonchae/URSUS/bin/URSUS.dll "$DEST/"
+cp /home/keonheechae/URSUS/bin/URSUS.dll "$DEST/"
 
 # Clipper2 의존 DLL
 cp ~/.nuget/packages/clipper2/2.0.0/lib/netstandard2.0/Clipper2Lib.dll "$DEST/"
@@ -185,26 +185,24 @@ Grasshopper/Libraries/
 ### 전체 와이어링 다이어그램
 
 ```
-[Panel] vworldKey      ──────────┐
-[Panel] seoulKey       ──────────┤
-[Panel] address1       ──────────┤
-[Panel] address2       ──────────┼──► [URSUSSolver_GH] ──┬──► legalCodes  →  [Panel]
-[Panel] mappingJsonPath──────────┘                       ├──► names        →  [Panel]
-                                                         ├──► geometries   →  [Preview]
-                                                         ├──► centroids    ──┐
-                                                         ├──► areas         →  [Panel]
-                                                         ├──► avgIncomes   ──┼─┐
-                                                         └──► unionBoundary ─┼─┼─┐
-                                                                             │ │ │
-[Slider] resolution    ──────────┐                                          │ │ │
-[Slider] power         ──────────┤                                          │ │ │
-[Slider] heightScale   ──────────┤                                          │ │ │
-[Slider] edgeFalloff   ──────────┤                                          │ │ │
-[Slider] heightRatio   ──────────┤                                          │ │ │
-[Slider] legendSteps   ──────────┤                                          │ │ │
-[Slider] colorStyle    ──────────┼──► [Visualizer_GH] ◄────────────────────┘ │ │
-[Swatch] colorLow      ──────────┤         ◄── values (avgIncomes) ──────────┘ │
-[Swatch] colorHigh     ──────────┘         ◄── boundary (unionBoundary) ───────┘
+[Panel] vworldKey        ──────────┐
+[Panel] dataseoulKey     ──────────┤
+[ValueList] dataSet      ──────────┼──► [URSUSSolver_GH] ──┬──► legalCodes    →  [Panel]
+                                                            ├──► names         →  [Panel]
+                                                            ├──► geometries    →  [Preview]
+                                                            ├──► centroids    ──┐
+                                                            ├──► areas         →  [Panel]
+                                                            ├──► values       ──┼─┐
+                                                            └──► unionBoundary ─┼─┼─┐
+                                                                                │ │ │
+[Slider] resolution    ──────────┐                                             │ │ │
+[Slider] power         ──────────┤                                             │ │ │
+[Slider] heightScale   ──────────┤                                             │ │ │
+[Slider] heightRatio   ──────────┤                                             │ │ │
+[Slider] legendSteps   ──────────┤                                             │ │ │
+[Slider] colorStyle    ──────────┼──► [Visualizer_GH] ◄─────────────────────── ┘ │ │
+[Swatch] colorLow      ──────────┤         ◄── values ─────────────────────────── ┘ │
+[Swatch] colorHigh     ──────────┘         ◄── boundary (unionBoundary) ────────────┘
                                            │
                                            ├──► mesh        →  [Custom Preview]
                                            ├──► flatMesh    →  [Custom Preview]
@@ -232,7 +230,7 @@ Grasshopper/Libraries/
 **수정 1 — 파일 맨 위에 `#r` 추가**
 
 ```csharp
-#r "\\wsl.localhost\Ubuntu\home\keonchae\URSUS\bin\URSUS.dll"
+#r "\\wsl.localhost\Ubuntu\home\keonheechae\URSUS\bin\URSUS.dll"
 
 // Grasshopper Script Instance
 #region Usings
@@ -251,41 +249,36 @@ using URSUS;
 
 ```csharp
 private void RunScript(
-    string  vworldKey,
-    string  seoulKey,
-    string  address1,
-    string  address2,
-    string  mappingJsonPath,
-    ref object legalCodes,
-    ref object names,
-    ref object geometries,
-    ref object centroids,
-    ref object areas,
-    ref object avgIncomes,
-    ref object unionBoundary)
+    string       vworldKey,
+    string       dataseoulKey,
+    List<string> dataSet,
+    ref object   legalCodes,
+    ref object   names,
+    ref object   geometries,
+    ref object   centroids,
+    ref object   areas,
+    ref object   values,
+    ref object   unionBoundary)
 {
     try
     {
-        if (string.IsNullOrEmpty(vworldKey) || string.IsNullOrEmpty(seoulKey))
+        if (string.IsNullOrEmpty(vworldKey) || string.IsNullOrEmpty(dataseoulKey))
         { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "API 키가 비어 있습니다."); return; }
-        if (string.IsNullOrEmpty(address1) || string.IsNullOrEmpty(address2))
-        { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "주소가 비어 있습니다."); return; }
-        if (string.IsNullOrEmpty(mappingJsonPath))
-        { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "mappingJsonPath가 비어 있습니다."); return; }
+        if (dataSet == null || dataSet.Count == 0)
+        { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "데이터셋을 하나 이상 선택하세요."); return; }
 
-        // cacheDir은 mappingJsonPath와 같은 폴더를 자동 사용
-        var solver = new URSUSSolver(vworldKey, seoulKey, mappingJsonPath);
-        SolverResult result = solver.Run(address1, address2);
+        var solver = new URSUSSolver(vworldKey, dataseoulKey);
+        SolverResult result = solver.Run(dataSet);
 
         legalCodes    = result.LegalCodes;
         names         = result.Names;
         geometries    = result.Geometries;
         centroids     = result.Centroids;
         areas         = result.Areas;
-        avgIncomes    = result.AvgIncomes;
+        values        = result.Values;
         unionBoundary = result.UnionBoundary;
 
-        Print($"[Solver] 완료: {result.LegalCodes.Count}개 법정동");
+        Print($"[Solver] 완료: {result.LegalCodes.Count}개 법정동, 데이터셋: {string.Join(", ", dataSet)}");
     }
     catch (Exception ex)
     {
@@ -300,10 +293,18 @@ private void RunScript(
 | 파라미터 이름 | 타입 | 설명 |
 |-------------|------|------|
 | `vworldKey` | string | VWorld API 키 |
-| `seoulKey` | string | 서울 열린데이터 API 키 |
-| `address1` | string | BBOX 시작 주소 |
-| `address2` | string | BBOX 끝 주소 |
-| `mappingJsonPath` | string | adstrd_legald_mapping.json 경로 — 캐시도 같은 폴더에 자동 저장 |
+| `dataseoulKey` | string | 서울 열린데이터 API 키 |
+| `dataSet` | List\<string\> | 사용할 데이터셋 이름 목록. Value List로 연결 권장. |
+
+**dataSet 항목 (Value List에 입력하는 값):**
+
+| 값 | 설명 |
+|----|------|
+| `월평균 소득` | 행정동 기준 월 평균 소득 |
+| `상주인구` | 행정동 기준 상주인구 |
+| `대중교통 총 승차 승객 수(일일 평균)` | 행정동 기준 대중교통 일평균 승차 |
+
+> **참고:** 주소(BBOX)와 mapping.json 경로는 `URSUSSolver` 내부에 상수로 고정되어 있으므로 GH 입력이 필요 없다.
 
 ### 5-4. 출력 파라미터
 
@@ -314,7 +315,7 @@ private void RunScript(
 | `geometries` | List\<Curve\> | 법정동 경계 PolylineCurve |
 | `centroids` | List\<Point3d\> | 법정동 중심점 (UTM 미터 좌표) |
 | `areas` | List\<double\> | 법정동 면적 (m²) |
-| `avgIncomes` | List\<double\> | 법정동 기준 월 평균 소득 (원) |
+| `values` | List\<double\> | 선택 데이터셋의 weighted overlay 값 (0~1 정규화) |
 | `unionBoundary` | Curve | 전체 외곽선 (Clipper2 Boolean Union 결과) |
 
 ---
@@ -332,7 +333,7 @@ private void RunScript(
 **수정 1 — 파일 맨 위에 `#r` 추가**
 
 ```csharp
-#r "\\wsl.localhost\Ubuntu\home\keonchae\URSUS\bin\URSUS.dll"
+#r "\\wsl.localhost\Ubuntu\home\keonheechae\URSUS\bin\URSUS.dll"
 ```
 
 **수정 2 — `#region Usings` 안에 추가**
@@ -352,7 +353,6 @@ private void RunScript(
     double        resolution,
     double        power,
     double        heightScale,
-    double        edgeFalloff,
     double        heightRatio,
     int           legendSteps,
     int           colorStyle,
@@ -374,11 +374,11 @@ private void RunScript(
         if (values == null || values.Count == 0)
         { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "values가 비어 있습니다."); return; }
 
+        // 기본값 처리
         if (resolution   <= 0) resolution   = 100.0;
-        if (power        <= 0) power        = 3.0;
+        if (power        <= 0) power        = 2.5;
         if (heightScale  <= 0) heightScale  = 0.5;
-        if (edgeFalloff  <= 0) edgeFalloff  = 2.0;
-        if (heightRatio  <= 0) heightRatio  = 0.25;
+        if (heightRatio  <= 0) heightRatio  = 0.5;
         if (legendSteps  <= 1) legendSteps  = 8;
         if (colorLow.A   == 0) colorLow     = Color.FromArgb(44,  123, 182);
         if (colorHigh.A  == 0) colorHigh    = Color.FromArgb(215,  25,  28);
@@ -386,8 +386,7 @@ private void RunScript(
         var visualizer = new IDWVisualizer(
             centroids, values,
             resolution, power, heightScale,
-            edgeFalloff, heightRatio,
-            legendSteps, colorStyle,
+            heightRatio, legendSteps, colorStyle,
             colorLow, colorHigh);
 
         VisualizerResult result = visualizer.Build(boundary);
@@ -415,14 +414,13 @@ private void RunScript(
 |-------------|------|------------|-------|------|
 | `boundary` | Curve | Solver의 `unionBoundary` 연결 | — | 전체 외곽선 |
 | `centroids` | List\<Point3d\> | Solver의 `centroids` 연결 | — | 법정동 중심점 |
-| `values` | List\<double\> | Solver의 `avgIncomes` 연결 | — | 스칼라 값 |
+| `values` | List\<double\> | Solver의 `values` 연결 | — | 보간할 스칼라 값 (0~1 정규화) |
 | `resolution` | double | Number Slider | `100.0` | Mesh 최대 엣지 길이 (m). 낮을수록 세밀하고 느림 |
-| `power` | double | Number Slider | `3.0` | IDW 지수 p. 높을수록 가까운 점에 집중 |
+| `power` | double | Number Slider | `2.5` | IDW 지수 p. 높을수록 가까운 점에 집중 |
 | `heightScale` | double | Number Slider | `0.5` | Z 높이 전체 배율 |
-| `edgeFalloff` | double | Number Slider | `2.0` | 경계 근처 Z 감쇠 속도. 높을수록 경계에서 급격히 0 |
-| `heightRatio` | double | Number Slider | `0.25` | Z 최대 높이 = bbox 너비 × heightRatio |
+| `heightRatio` | double | Number Slider | `0.5` | Z 최대 높이 = bbox 너비 × heightRatio |
 | `legendSteps` | int | Number Slider (Integer) | `8` | 범례 구간 수 |
-| `colorStyle` | int | Number Slider (Integer) | `1` | 아래 색상 스타일 표 참고 |
+| `colorStyle` | int | Number Slider (Integer) | `4` | 아래 색상 스타일 표 참고 |
 | `colorLow` | Color | Colour Swatch | — | colorStyle=0 일 때만 사용 |
 | `colorHigh` | Color | Colour Swatch | — | colorStyle=0 일 때만 사용 |
 
@@ -461,21 +459,21 @@ VWORLD_API_KEY=...
 DATA_SEOUL_API_KEY=...
 ```
 
-### 주소 입력 예시
+### BBOX 주소 (코드 내부 상수)
 
-```
-address1 = 인천 남동구 도림동             ← BBOX 좌하단 기준
-address2 = 경기 남양주시 해밀예당1로 272   ← BBOX 우상단 기준
+BBOX를 결정하는 두 주소는 `URSUSSolver.cs` 안에 상수로 고정되어 있다.
+
+```csharp
+private const string ADDRESS1 = "인천 남동구 도림동";
+private const string ADDRESS2 = "경기 남양주시 해밀예당1로 272";
 ```
 
-VWorld Geocoding API가 두 주소를 좌표로 변환한 뒤 그 BBOX 안의 법정동을 수집한다.
-더 넓은 범위를 원하면 더 멀리 떨어진 주소를 입력하면 된다.
+범위를 바꾸려면 해당 상수를 수정한 뒤 DLL을 재빌드해야 한다.
 
-### mappingJsonPath 경로 예시
+### adstrd_legald_mapping.json 경로
 
-```
-C:\Users\brian\Desktop\adstrd_legald_mapping.json
-```
+`URSUSSolver` 생성자가 **DLL이 위치한 폴더**를 기준으로 자동 경로를 설정한다.
+별도 입력 없이 `bin/` 폴더에 `adstrd_legald_mapping.json`을 두면 된다.
 
 캐시 파일(`legald_boundaries.json`, `avg_income.json`)도 이 파일과 **같은 폴더**에 자동 저장된다.
 
@@ -489,20 +487,24 @@ C:\Users\brian\Desktop\adstrd_legald_mapping.json
 |----------|----------|------|
 | `legald_boundaries.json` | VworldApiParser | 법정동 경계 좌표 + 이름 + 면적 |
 | `avg_income.json` | DataSeoulApiParser | 행정동 코드(8자리) → 월 평균 소득 |
+| `resident_pop.json` | DataSeoulApiParser | 행정동 코드(8자리) → 상주인구 |
+| `transit_boarding.json` | DataSeoulApiParser | 행정동 코드(8자리) → 일평균 승차 승객 수 |
 
 캐시가 존재하면 API를 호출하지 않는다.
 캐시를 강제로 초기화하려면 해당 파일을 삭제하면 된다.
 
 ```
-mappingJsonPath와 같은 폴더/
+bin/ (DLL과 같은 폴더)
 ├── adstrd_legald_mapping.json   ← 수동 생성 (2-2 참고)
 ├── legald_boundaries.json       ← 삭제 시 VWorld API 재호출
-└── avg_income.json              ← 삭제 시 서울 열린데이터 API 재호출
+├── avg_income.json              ← 삭제 시 서울 열린데이터 API 재호출
+├── resident_pop.json            ← 삭제 시 서울 열린데이터 API 재호출
+└── transit_boarding.json        ← 삭제 시 서울 열린데이터 API 재호출
 ```
 
-> **avg_income.json을 재생성해야 하는 경우:**
-> DLL 업데이트 이후 소득 데이터가 전부 동일한 값(globalMean)으로 나오면
-> 이전 버전의 잘못된 캐시가 남아 있는 것이다. 파일을 삭제하고 다시 실행한다.
+> **캐시를 재생성해야 하는 경우:**
+> DLL 업데이트 이후 데이터가 전부 동일한 값(globalMean)으로 나오면
+> 이전 버전의 잘못된 캐시가 남아 있는 것이다. 해당 파일을 삭제하고 다시 실행한다.
 
 ---
 
@@ -523,18 +525,17 @@ GH Script는 Recompile만으로 메모리에 로드된 어셈블리를 교체하
 GH 컴포넌트의 파라미터 이름과 `RunScript` 매개변수 이름이 다른 경우 발생한다.
 컴포넌트 `+/-` 버튼으로 추가한 파라미터 이름이 코드와 정확히 일치해야 한다.
 
-### avgIncomes가 전부 같은 값
+### values가 전부 같은 값
 
-**원인 1 — 이전 버전 캐시:** `avg_income.json`을 삭제하고 재실행한다.
+**원인 1 — 이전 버전 캐시:** 해당 데이터셋 캐시 파일(`avg_income.json` 등)을 삭제하고 재실행한다.
 
 **원인 2 — 여전히 같은 값:** Rhino를 재시작하지 않아 구 버전 DLL이 메모리에 남아 있는 것이다. Rhino 완전 종료 후 재시작한다.
 
 **확인 방법:** GH Output 패널에서 아래 로그가 보여야 정상이다.
 ```
-[DEBUG] income keys: 11545600, 11110515, ...   ← 8자리
-[DEBUG] mapping keys: 11110515, 11000000, ...  ← 8자리 (일치)
+[Solver] 법정동 N개 수집
+[Solver] overlay 값 계산 완료 (N개 데이터셋)
 ```
-6자리 income keys가 보이면 구 버전 DLL이 로드된 상태다.
 
 ### Assembly uses higher version than referenced (RhinoCommon 버전 불일치)
 
@@ -569,11 +570,11 @@ find ~/.nuget/packages/exceldatareader -name "*.dll" 2>/dev/null
 
 ```bash
 # 1. WSL에서 재빌드
-cd /home/keonchae/URSUS/src/URSUS
+cd /home/keonheechae/URSUS/src/URSUS
 dotnet build -c Release
 
 # 2. Libraries 방식 사용 중이라면 복사 (WSL 경로 방식은 불필요)
-cp /home/keonchae/URSUS/bin/URSUS.dll \
+cp /home/keonheechae/URSUS/bin/URSUS.dll \
    "/mnt/c/Users/brian/AppData/Roaming/Grasshopper/Libraries/URSUS.dll"
 
 # 3. Rhino 완전 종료 후 재실행 → GH 열기
