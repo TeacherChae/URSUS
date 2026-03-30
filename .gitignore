@@ -4,7 +4,7 @@
 # Build output
 bin/
 src/URSUS/obj/
-
+src/URSUS.GH/obj/
 # Runtime cache
 cache/
 src/URSUS/cache/
@@ -15,3 +15,4 @@ src/URSUS/cache/
 
 # Source data (too large / not redistributable)
 *.xlsx
+.omc/
