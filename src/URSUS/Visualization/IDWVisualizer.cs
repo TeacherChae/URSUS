@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using Rhino.Geometry;
+using URSUS.Resources;
 
 namespace URSUS.Visualization
 {
@@ -43,11 +44,20 @@ namespace URSUS.Visualization
             Color?        colorHigh   = null)
         {
             if (centroids == null || centroids.Count == 0)
-                throw new ArgumentException("centroids가 비어 있습니다.");
+                throw new ArgumentException(
+                    ErrorGuideMap.FormatMessageWithGuide(
+                        ErrorCodes.CentroidsEmpty,
+                        ErrorMessages.Data.CentroidsEmpty));
             if (values == null || values.Count == 0)
-                throw new ArgumentException("values가 비어 있습니다.");
+                throw new ArgumentException(
+                    ErrorGuideMap.FormatMessageWithGuide(
+                        ErrorCodes.ValuesEmpty,
+                        ErrorMessages.Data.ValuesEmpty));
             if (centroids.Count != values.Count)
-                throw new ArgumentException("centroids와 values의 개수가 다릅니다.");
+                throw new ArgumentException(
+                    ErrorGuideMap.FormatMessageWithGuide(
+                        ErrorCodes.CentroidsValuesMismatch,
+                        ErrorMessages.Data.CentroidsValuesMismatch));
 
             _field       = new SpatialField(centroids, values);
             _mapper      = ColorMapper.FromStyle(
