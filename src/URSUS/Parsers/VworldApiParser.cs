@@ -40,11 +40,13 @@ namespace URSUS.Parsers
 
         /// <summary>
         /// 두 주소의 BBOX로 법정동 경계를 수집한다 (캐시 적용).
+        /// 주소 쌍에 따라 별도의 캐시 파일이 생성된다.
         /// </summary>
         public List<LegalDistrictRecord> GetLegalDistricts(string address1, string address2)
         {
+            string cacheKey = BuildCacheKey(address1, address2);
             string? cachePath = _cacheDir != null
-                ? Path.Combine(_cacheDir, "legald_boundaries.json")
+                ? Path.Combine(_cacheDir, $"legald_boundaries_{cacheKey}.json")
                 : null;
 
             if (cachePath != null && IsCacheValid(cachePath))
@@ -80,7 +82,6 @@ namespace URSUS.Parsers
                 string? fullNm  = feature["properties"]?["full_nm"]?.GetValue<string>();
                 string? emdCd   = feature["properties"]?["emd_cd"]?.GetValue<string>();
                 if (fullNm == null || emdCd == null) continue;
-                if (!fullNm.Contains("서울")) continue;
 
                 var coordsNode = feature["geometry"]?["coordinates"]?[0]?[0];
                 if (coordsNode == null) continue;
@@ -183,6 +184,22 @@ namespace URSUS.Parsers
             double x = double.Parse(point["x"]!.ToString(), System.Globalization.CultureInfo.InvariantCulture);
             double y = double.Parse(point["y"]!.ToString(), System.Globalization.CultureInfo.InvariantCulture);
             return (x, y);
+        }
+
+        // ─────────────────────────────────────────────────────────────────
+        //  Cache Key
+        // ─────────────────────────────────────────────────────────────────
+
+        /// <summary>
+        /// 주소 쌍으로부터 캐시 파일명에 사용할 안전한 키를 생성한다.
+        /// 동일 주소 쌍이면 같은 캐시를 재사용한다.
+        /// </summary>
+        private static string BuildCacheKey(string address1, string address2)
+        {
+            string combined = $"{address1}|{address2}";
+            using var sha = System.Security.Cryptography.SHA256.Create();
+            byte[] hash = sha.ComputeHash(System.Text.Encoding.UTF8.GetBytes(combined));
+            return BitConverter.ToString(hash, 0, 8).Replace("-", "").ToLowerInvariant();
         }
 
         // ─────────────────────────────────────────────────────────────────
