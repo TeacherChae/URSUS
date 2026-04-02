@@ -100,19 +100,21 @@ namespace URSUS.GH
                 GH_ParamAccess.item, "");
             pManager[IN_CSV_PATH].Optional = true;
 
-            // [8] Address 1 (분석 영역 좌하단)
+            // [8] Address 1 (분석 중심 주소 또는 BBOX 좌하단)
             pManager.AddTextParameter("Address 1", "A1",
-                "분석 영역 BBOX 좌하단 기준 주소.\n" +
-                "미입력 시 서울 기본값 사용.\n" +
-                "(예: 부산 해운대구 우동)",
+                "분석 영역 중심 주소 (전국 어디든 가능).\n" +
+                "Address 2가 비어 있으면 이 주소를 중심으로 반경 검색.\n" +
+                "Address 2를 함께 입력하면 BBOX 모드로 동작.\n" +
+                "(예: 부산 해운대구 우동, 대전 유성구 궁동)",
                 GH_ParamAccess.item, "");
             pManager[IN_ADDRESS1].Optional = true;
 
-            // [9] Address 2 (분석 영역 우상단)
+            // [9] Address 2 (BBOX 우상단 — 선택)
             pManager.AddTextParameter("Address 2", "A2",
-                "분석 영역 BBOX 우상단 기준 주소.\n" +
-                "미입력 시 서울 기본값 사용.\n" +
-                "(예: 부산 기장군 장안읍)",
+                "BBOX 모드의 우상단 주소 (선택).\n" +
+                "비워 두면 Address 1 중심 반경 검색 모드.\n" +
+                "입력 시 Address 1~2를 꼭짓점으로 하는 사각형 검색.\n" +
+                "(예: 부산 기장군 장안읍, 대전 동구 용전동)",
                 GH_ParamAccess.item, "");
             pManager[IN_ADDRESS2].Optional = true;
         }
@@ -145,6 +147,12 @@ namespace URSUS.GH
                 GH_ParamAccess.item);
             pManager.AddIntegerParameter("Row Count", "RC",
                 "CSV 데이터 행 수 (헤더 제외)",
+                GH_ParamAccess.item);
+
+            // [10] Weight Summary
+            pManager.AddTextParameter("Weight Summary", "WS",
+                "실제 적용된 가중치 요약 문자열.\n" +
+                "예: \"WeightConfig { 소득=0.50, 인구=0.33, 교통=0.17 }\"",
                 GH_ParamAccess.item);
         }
 
@@ -184,9 +192,10 @@ namespace URSUS.GH
                     ErrorMessages.Data.DefaultDataSetUsed);
             }
 
-            // ── 슬라이더 → weights 리스트 조립 ──────────────────────────
+            // ── 슬라이더 → WeightConfig 조립 ─────────────────────────────
             //    DataSet 목록의 각 항목에 대응하는 가중치를 매핑한다.
             //    알려진 데이터셋은 개별 슬라이더 값을, 미지의 데이터셋은 1.0(균등)을 사용.
+            //    WeightConfig를 통해 검증/정규화를 일원화한다.
             var sliderWeightMap = new Dictionary<string, double>
             {
                 { URSUSSolver.DS_AVG_INCOME,   wIncome  },
@@ -194,44 +203,41 @@ namespace URSUS.GH
                 { URSUSSolver.DS_TRANSIT,      wTransit },
             };
 
-            var weights = new List<double>();
+            var rawWeightDict = new Dictionary<string, double>();
             foreach (string ds in dataSet)
             {
-                weights.Add(sliderWeightMap.TryGetValue(ds, out double w) ? w : 1.0);
+                double w = sliderWeightMap.TryGetValue(ds, out double val) ? val : 1.0;
+                rawWeightDict[ds] = w;
             }
 
-            // ── 가중치 유효성 검증 ─────────────────────────────────────
-            //  (1) 음수 방지: 개별 가중치가 0 미만이면 에러
-            for (int i = 0; i < weights.Count; i++)
+            // ── WeightConfig를 통한 검증/정규화 ─────────────────────────
+            WeightConfig weightConfig;
+            try
             {
-                if (weights[i] < 0)
-                {
-                    AddRuntimeMessage(GH_RuntimeMessageLevel.Error,
-                        $"가중치[{i}] = {weights[i]:F4} — 음수 가중치는 허용되지 않습니다. " +
-                        "슬라이더를 0 이상으로 설정하세요.");
-                    return;
-                }
+                weightConfig = WeightConfig.Create(rawWeightDict);
             }
-
-            //  (2) 전체 제로 방지: 모든 가중치의 합이 0이면 에러
-            double weightSum = weights.Sum();
-            if (weightSum < 1e-9)
+            catch (ArgumentException ex)
             {
-                AddRuntimeMessage(GH_RuntimeMessageLevel.Error,
-                    "모든 가중치의 합이 0입니다. " +
-                    "최소 하나의 데이터셋에 0보다 큰 가중치를 설정하세요.");
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Error, ex.Message);
                 return;
             }
 
-            //  (3) 정규화 피드백: 합 ≠ 1이면 자동 정규화 안내
-            if (Math.Abs(weightSum - 1.0) > 1e-6)
+            // 정규화 피드백: 원시 합 ≠ 1이면 안내
+            double rawSum = rawWeightDict.Values.Sum();
+            if (Math.Abs(rawSum - 1.0) > 1e-6)
             {
-                var normalized = weights.Select(w => w / weightSum).ToList();
-                var pairs = dataSet.Zip(normalized, (ds, nw) => $"{ds}: {nw:F3}");
+                var pairs = dataSet.Select(ds =>
+                {
+                    double nw = weightConfig.Weights.TryGetValue(ds, out double v) ? v : 0.0;
+                    return $"{ds}: {nw:F3}";
+                });
                 AddRuntimeMessage(GH_RuntimeMessageLevel.Remark,
-                    $"가중치 합({weightSum:F3})이 1이 아니므로 자동 정규화됩니다 → " +
+                    $"가중치 합({rawSum:F3})이 1이 아니므로 자동 정규화됩니다 → " +
                     string.Join(", ", pairs));
             }
+
+            // WeightConfig → dataSet 순서의 List<double> 변환
+            var weights = weightConfig.ToOrderedList(dataSet);
 
             // ApiKeyProvider: 환경변수 → DLL 인접 파일 → 사용자 프로필 순으로 자동 탐색
             var overrides = new Dictionary<string, string>();
@@ -262,7 +268,7 @@ namespace URSUS.GH
 
             try
             {
-                var solver = new URSUSSolver(keyProvider.VWorldKey!, keyProvider.SeoulKey!);
+                var solver = new URSUSSolver(keyProvider);
 
                 // 가중치 슬라이더 값을 Solver에 전달 (항상 non-null)
                 // 주소가 비어 있으면 null로 전달 → Solver 내부에서 기본값 적용
@@ -287,6 +293,11 @@ namespace URSUS.GH
 
                 DA.SetData(7, csv);       // CSV 문자열
                 DA.SetData(9, rowCount);  // Row Count
+
+                // Weight Summary 출력
+                string weightSummary = result.EffectiveWeights?.ToString()
+                    ?? "데이터 레이어 없음 (가중치 미적용)";
+                DA.SetData(10, weightSummary);
 
                 // ── CSV 파일 저장 (Export CSV=True일 때만) ──────────
                 if (exportCsv)
