@@ -8,13 +8,15 @@ using System.Text.Json.Serialization;
 namespace URSUS.Config
 {
     /// <summary>
-    /// API 키 자동 로드 — 환경변수 → DLL 인접 설정 파일 → 사용자 프로필 설정 파일 순으로 탐색.
+    /// API 키 자동 로드 — 환경변수 → .env 파일 → appsettings.json 순으로 탐색.
     ///
     /// 우선순위 (높은 것이 이김):
     ///   1. 명시적 입력 (GH 와이어 직접 연결)
     ///   2. 환경변수 (URSUS_VWORLD_KEY, URSUS_SEOUL_KEY 등)
-    ///   3. DLL 인접 appsettings.json
-    ///   4. 사용자 프로필 %APPDATA%/URSUS/appsettings.json
+    ///   3. DLL 인접 .env 파일
+    ///   4. 사용자 프로필 %APPDATA%/URSUS/.env 파일
+    ///   5. DLL 인접 appsettings.json
+    ///   6. 사용자 프로필 %APPDATA%/URSUS/appsettings.json
     ///
     /// 새 API 키를 추가하려면:
     ///   1. ApiKeyName 상수 추가
@@ -37,6 +39,7 @@ namespace URSUS.Config
         };
 
         private const string SETTINGS_FILENAME = "appsettings.json";
+        private const string DOTENV_FILENAME   = ".env";
 
         private readonly Dictionary<string, string> _resolvedKeys = new();
         private readonly Dictionary<string, string> _keySources   = new();
@@ -51,11 +54,17 @@ namespace URSUS.Config
         /// <param name="explicitOverrides">GH 와이어에서 직접 입력된 키 (null/빈문자열이면 무시)</param>
         public ApiKeyProvider(Dictionary<string, string>? explicitOverrides = null)
         {
-            // 4단계: 사용자 프로필 설정 파일 (최저 우선순위부터 적재)
+            // 6단계: 사용자 프로필 appsettings.json (최저 우선순위부터 적재)
             LoadFromSettingsFile(GetUserProfileSettingsPath());
 
-            // 3단계: DLL 인접 설정 파일
+            // 5단계: DLL 인접 appsettings.json
             LoadFromSettingsFile(GetDllAdjacentSettingsPath());
+
+            // 4단계: 사용자 프로필 .env 파일
+            LoadFromDotEnvFile(GetUserProfileDotEnvPath());
+
+            // 3단계: DLL 인접 .env 파일
+            LoadFromDotEnvFile(GetDllAdjacentDotEnvPath());
 
             // 2단계: 환경변수
             LoadFromEnvironment();
@@ -134,7 +143,11 @@ namespace URSUS.Config
                 if (ENV_MAP.TryGetValue(key, out string? envName))
                     msg.Add($"      set {envName}=<your_key>");
             }
-            msg.Add($"  (3) 설정 파일에 작성:");
+            msg.Add($"  (3) .env 파일에 작성 (가장 간단):");
+            msg.Add($"      {GetUserProfileDotEnvPath()}");
+            msg.Add($"      또는 DLL 옆: {GetDllAdjacentDotEnvPath()}");
+            msg.Add($"      형식: URSUS_VWORLD_KEY=your_key_here");
+            msg.Add($"  (4) appsettings.json에 작성:");
             msg.Add($"      {GetUserProfileSettingsPath()}");
             msg.Add($"      또는 DLL 옆: {GetDllAdjacentSettingsPath()}");
             msg.Add("");
@@ -189,6 +202,66 @@ namespace URSUS.Config
             }
         }
 
+        /// <summary>
+        /// .env 파일에서 API 키를 로드한다.
+        /// 형식: KEY=VALUE (한 줄에 하나, # 주석 지원, 빈 줄 무시).
+        /// 환경변수 이름(URSUS_VWORLD_KEY 등)을 키로 사용한다.
+        /// </summary>
+        private void LoadFromDotEnvFile(string? path)
+        {
+            if (string.IsNullOrEmpty(path) || !File.Exists(path))
+                return;
+
+            try
+            {
+                // 역방향 매핑: 환경변수 이름 → API 키 이름
+                var reverseEnvMap = new Dictionary<string, string>();
+                foreach (var (keyName, envName) in ENV_MAP)
+                    reverseEnvMap[envName] = keyName;
+
+                string source = $"dotenv:{path}";
+
+                foreach (string rawLine in File.ReadLines(path, System.Text.Encoding.UTF8))
+                {
+                    string line = rawLine.Trim();
+
+                    // 빈 줄, 주석 스킵
+                    if (line.Length == 0 || line[0] == '#')
+                        continue;
+
+                    // KEY=VALUE 파싱 (첫 번째 '=' 기준 분리)
+                    int eqIdx = line.IndexOf('=');
+                    if (eqIdx <= 0)
+                        continue;
+
+                    string envKey = line[..eqIdx].Trim();
+                    string envVal = line[(eqIdx + 1)..].Trim();
+
+                    // 따옴표 제거 ("value" 또는 'value')
+                    if (envVal.Length >= 2 &&
+                        ((envVal[0] == '"'  && envVal[^1] == '"') ||
+                         (envVal[0] == '\'' && envVal[^1] == '\'')))
+                    {
+                        envVal = envVal[1..^1];
+                    }
+
+                    if (string.IsNullOrWhiteSpace(envVal))
+                        continue;
+
+                    // 환경변수 이름 매핑으로 API 키 이름 확인
+                    if (reverseEnvMap.TryGetValue(envKey, out string? apiKeyName))
+                    {
+                        _resolvedKeys[apiKeyName] = envVal;
+                        _keySources[apiKeyName]   = source;
+                    }
+                }
+            }
+            catch
+            {
+                // .env 파일 파싱 실패 — 다음 소스로 진행
+            }
+        }
+
         private void LoadFromSettingsFile(string? path)
         {
             if (string.IsNullOrEmpty(path) || !File.Exists(path))
@@ -228,8 +301,7 @@ namespace URSUS.Config
 
         private static string GetDllAdjacentSettingsPath()
         {
-            string? dllDir = Path.GetDirectoryName(
-                typeof(ApiKeyProvider).Assembly.Location);
+            string? dllDir = GetDllDirectory();
             return dllDir != null
                 ? Path.Combine(dllDir, SETTINGS_FILENAME)
                 : SETTINGS_FILENAME;
@@ -237,9 +309,33 @@ namespace URSUS.Config
 
         private static string GetUserProfileSettingsPath()
         {
+            return Path.Combine(GetUserProfileDirectory(), SETTINGS_FILENAME);
+        }
+
+        private static string GetDllAdjacentDotEnvPath()
+        {
+            string? dllDir = GetDllDirectory();
+            return dllDir != null
+                ? Path.Combine(dllDir, DOTENV_FILENAME)
+                : DOTENV_FILENAME;
+        }
+
+        private static string GetUserProfileDotEnvPath()
+        {
+            return Path.Combine(GetUserProfileDirectory(), DOTENV_FILENAME);
+        }
+
+        private static string? GetDllDirectory()
+        {
+            return Path.GetDirectoryName(
+                typeof(ApiKeyProvider).Assembly.Location);
+        }
+
+        private static string GetUserProfileDirectory()
+        {
             string appData = Environment.GetFolderPath(
                 Environment.SpecialFolder.ApplicationData);
-            return Path.Combine(appData, "URSUS", SETTINGS_FILENAME);
+            return Path.Combine(appData, "URSUS");
         }
 
         // ── Private: 설정 저장 ──────────────────────────────────────────

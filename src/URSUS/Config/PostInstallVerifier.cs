@@ -29,7 +29,6 @@ namespace URSUS.Config
         {
             "Clipper2Lib.dll",
             "appsettings.json",
-            "adstrd_legald_mapping.json",
             "URSUS.GH.deps.json",
             "URSUS.GH.runtimeconfig.json",
         };

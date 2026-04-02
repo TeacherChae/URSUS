@@ -4,8 +4,9 @@
 
 .DESCRIPTION
     1. dotnet restore + build (Release)
-    2. Inno Setup 컴파일 → dist/URSUS_<version>_Setup.exe
-    3. (선택) Food4Rhino .yak 패키지 생성
+    2. dotnet publish URSUS.Setup → dist/URSUS_Setup.exe (self-contained single-file)
+    3. 빌드 아티팩트 검증
+    4. Inno Setup 컴파일 → dist/URSUS_<version>_Setup.exe (또는 ZIP 폴백)
 
 .PARAMETER Configuration
     빌드 구성. 기본값: Release
@@ -51,7 +52,7 @@ Write-Host ""
 
 # ── Step 1: Build ────────────────────────────────────────────────────────
 if (-not $SkipBuild) {
-    Write-Host "[1/3] Building solution..." -ForegroundColor Yellow
+    Write-Host "[1/4] Building solution..." -ForegroundColor Yellow
     dotnet restore $SolutionFile
     if ($LASTEXITCODE -ne 0) { throw "dotnet restore failed" }
 
@@ -60,11 +61,38 @@ if (-not $SkipBuild) {
 
     Write-Host "  Build succeeded." -ForegroundColor Green
 } else {
-    Write-Host "[1/3] Skipping build (using existing binaries)." -ForegroundColor DarkYellow
+    Write-Host "[1/4] Skipping build (using existing binaries)." -ForegroundColor DarkYellow
 }
 
-# ── Step 2: Verify build output ─────────────────────────────────────────
-Write-Host "[2/3] Verifying build artifacts..." -ForegroundColor Yellow
+# ── Step 2: Publish Setup.exe (self-contained single file) ─────────────
+$SetupProject = Join-Path $RepoRoot "src" "URSUS.Setup" "URSUS.Setup.csproj"
+$SetupPublishDir = Join-Path $DistDir "setup-publish"
+
+if (-not $SkipBuild) {
+    Write-Host "[2/4] Publishing Setup.exe (self-contained)..." -ForegroundColor Yellow
+
+    dotnet publish $SetupProject -c $Configuration -r win-x64 `
+        --self-contained true `
+        -p:PublishSingleFile=true `
+        -p:IncludeNativeLibrariesForSelfExtract=true `
+        -o $SetupPublishDir
+
+    if ($LASTEXITCODE -ne 0) { throw "Setup.exe publish failed" }
+
+    # Copy Setup.exe to dist root for easy access
+    $SetupExe = Join-Path $SetupPublishDir "URSUS.Setup.exe"
+    if (Test-Path $SetupExe) {
+        Copy-Item $SetupExe (Join-Path $DistDir "URSUS_Setup.exe") -Force
+        Write-Host "  Setup.exe published → dist/URSUS_Setup.exe" -ForegroundColor Green
+    } else {
+        Write-Host "  Warning: Setup.exe not found after publish." -ForegroundColor DarkYellow
+    }
+} else {
+    Write-Host "[2/4] Skipping Setup.exe publish (using existing binaries)." -ForegroundColor DarkYellow
+}
+
+# ── Step 3: Verify build output ─────────────────────────────────────────
+Write-Host "[3/4] Verifying build artifacts..." -ForegroundColor Yellow
 
 $RequiredFiles = @(
     "URSUS.GH.gha",
@@ -90,8 +118,8 @@ if ($Missing.Count -gt 0) {
 
 Write-Host "  All required artifacts present." -ForegroundColor Green
 
-# ── Step 3: Inno Setup ──────────────────────────────────────────────────
-Write-Host "[3/3] Creating installer..." -ForegroundColor Yellow
+# ── Step 4: Inno Setup ──────────────────────────────────────────────────
+Write-Host "[4/4] Creating installer..." -ForegroundColor Yellow
 
 # Auto-detect Inno Setup compiler
 if ([string]::IsNullOrEmpty($InnoSetupPath)) {
