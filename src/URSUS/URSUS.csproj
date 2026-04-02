@@ -14,6 +14,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- 테스트 프로젝트에서 internal 멤버 접근 허용 -->
+    <InternalsVisibleTo Include="URSUS.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <!-- 행정동↔법정동 매핑 JSON — DLL에 내장하여 사용자가 파일 존재를 몰라도 동작 -->
     <EmbeddedResource Include="Resources/adstrd_legald_mapping.json" LogicalName="URSUS.adstrd_legald_mapping.json" />
   </ItemGroup>

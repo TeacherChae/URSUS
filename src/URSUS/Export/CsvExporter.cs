@@ -4,6 +4,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
+using URSUS.Resources;
 
 namespace URSUS.Export
 {
@@ -75,9 +76,9 @@ namespace URSUS.Export
         public static int WriteToFile(string csv, string filePath)
         {
             if (string.IsNullOrEmpty(csv))
-                throw new ArgumentException("CSV 내용이 비어 있습니다.", nameof(csv));
+                throw new ArgumentException(ErrorMessages.CsvExport.ContentEmpty, nameof(csv));
             if (string.IsNullOrWhiteSpace(filePath))
-                throw new ArgumentException("파일 경로가 지정되지 않았습니다.", nameof(filePath));
+                throw new ArgumentException(ErrorMessages.CsvExport.FilePathEmpty, nameof(filePath));
 
             string? dir = Path.GetDirectoryName(filePath);
             if (!string.IsNullOrEmpty(dir))
@@ -143,9 +144,8 @@ namespace URSUS.Export
             int count = legalCodes.Count;
             if (names.Count != count || areas.Count != count || values.Count != count)
                 throw new ArgumentException(
-                    $"입력 리스트의 길이가 일치하지 않습니다: " +
-                    $"codes={legalCodes.Count}, names={names.Count}, " +
-                    $"areas={areas.Count}, values={values.Count}");
+                    ErrorMessages.Data.InputListLengthMismatch(
+                        legalCodes.Count, names.Count, areas.Count, values.Count));
         }
 
         // ─────────────────────────────────────────────────────────────────

@@ -70,6 +70,35 @@ namespace URSUS.Resources
         }
 
         // ═════════════════════════════════════════════════════════════════
+        //  API 키 설정 (GH 컴포넌트)
+        // ═════════════════════════════════════════════════════════════════
+
+        public static class ApiKeySettings
+        {
+            public static string MissingRequired(string keyNames) =>
+                $"필수 API 키 미설정: {keyNames}\n" +
+                "Open 입력을 True로 설정하여 키를 입력하세요.";
+
+            public const string LoadComplete =
+                "API 키 로드 완료";
+
+            public const string NoKeysToSave =
+                "저장할 키가 없습니다. 최소 하나의 키를 입력해주세요.";
+
+            public static string SaveComplete(int count) =>
+                $"API 키 {count}개가 저장되었습니다.\n" +
+                "Solver 컴포넌트에서 자동으로 로드됩니다.";
+
+            public static string SaveFailed(string detail) =>
+                $"저장 중 오류:\n{detail}\n\n" +
+                "appsettings.json을 직접 편집하거나,\n" +
+                "Solver 컴포넌트의 VK/SK 입력에 직접 연결하세요.";
+
+            public const string LoadedFromExisting =
+                "기존 설정에서 로드됨";
+        }
+
+        // ═════════════════════════════════════════════════════════════════
         //  API 키 검증 (Setup)
         // ═════════════════════════════════════════════════════════════════
 
@@ -165,6 +194,12 @@ namespace URSUS.Resources
         //  데이터 / 파싱
         // ═════════════════════════════════════════════════════════════════
 
+        public static class DataSource
+        {
+            public const string IdEmpty =
+                "데이터 소스의 Id가 비어있습니다.";
+        }
+
         public static class Data
         {
             // ── 매핑 파일 ───────────────────────────────────────────────
@@ -205,6 +240,24 @@ namespace URSUS.Resources
                 int lc, int n, int a, int v) =>
                 $"입력 리스트 길이가 일치하지 않습니다: " +
                 $"LC={lc}, N={n}, A={a}, V={v}";
+        }
+
+        // ═════════════════════════════════════════════════════════════════
+        //  가중치 검증
+        // ═════════════════════════════════════════════════════════════════
+
+        public static class Weight
+        {
+            public static string NegativeWeight(int index, double value) =>
+                $"가중치[{index}] = {value:F4} — 음수 가중치는 허용되지 않습니다. " +
+                "슬라이더를 0 이상으로 설정하세요.";
+
+            public const string AllZeroWeights =
+                "모든 가중치의 합이 0입니다. " +
+                "최소 하나의 데이터셋에 0보다 큰 가중치를 설정하세요.";
+
+            public static string AutoNormalized(double weightSum, string pairs) =>
+                $"가중치 합({weightSum:F3})이 1이 아니므로 자동 정규화됩니다 → {pairs}";
         }
 
         // ═════════════════════════════════════════════════════════════════
@@ -260,6 +313,29 @@ namespace URSUS.Resources
 
             public static string CannotOpenFile(string detail) =>
                 $"파일을 열 수 없습니다: {detail}";
+        }
+
+        // ═════════════════════════════════════════════════════════════════
+        //  CSV 엔드포인트 / 서버
+        // ═════════════════════════════════════════════════════════════════
+
+        public static class CsvEndpoint
+        {
+            public const string WaitingForEnable =
+                "대기 중 — Enable을 True로 설정하세요.";
+
+            public const string ServerStopped =
+                "서버 중지됨 — Enable을 True로 설정하세요.";
+
+            public static string ServerStartFailed(string detail) =>
+                $"서버 시작 실패: {detail}";
+
+            public static string ServerRunning(int rowCount, string baseUrl) =>
+                $"서버 실행 중 — {rowCount}행 제공 중\n" +
+                $"URL: {baseUrl}/api/csv/download";
+
+            public static string DataUpdateFailed(string detail) =>
+                $"데이터 업데이트 실패: {detail}";
         }
 
         // ═════════════════════════════════════════════════════════════════

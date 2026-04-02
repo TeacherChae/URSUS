@@ -4,6 +4,7 @@ using System.IO;
 using System.Windows.Forms;
 using Grasshopper.Kernel;
 using URSUS.Export;
+using URSUS.Resources;
 
 namespace URSUS.GH
 {
@@ -131,7 +132,9 @@ namespace URSUS.GH
             if (legalCodes.Count == 0)
             {
                 AddRuntimeMessage(GH_RuntimeMessageLevel.Warning,
-                    "Legal Codes가 비어 있습니다. Solver 출력을 연결해 주세요.");
+                    ErrorGuideMap.FormatMessageWithGuide(
+                        ErrorCodes.LegalCodesEmpty,
+                        ErrorMessages.Data.LegalCodesEmpty));
                 OutputLastState(DA);
                 return;
             }
@@ -141,9 +144,10 @@ namespace URSUS.GH
                 legalCodes.Count != values.Count)
             {
                 AddRuntimeMessage(GH_RuntimeMessageLevel.Error,
-                    $"입력 리스트 길이가 일치하지 않습니다: " +
-                    $"LC={legalCodes.Count}, N={names.Count}, " +
-                    $"A={areas.Count}, V={values.Count}");
+                    ErrorGuideMap.FormatMessageWithGuide(
+                        ErrorCodes.InputListLengthMismatch,
+                        ErrorMessages.Data.InputListLengthMismatchShort(
+                            legalCodes.Count, names.Count, areas.Count, values.Count)));
                 OutputLastState(DA);
                 return;
             }
@@ -152,8 +156,10 @@ namespace URSUS.GH
             string resolvedPath = ResolveFilePath(filePath, showDialog);
             if (string.IsNullOrWhiteSpace(resolvedPath))
             {
-                _lastStatus = "내보내기가 취소되었습니다.";
-                AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, _lastStatus);
+                _lastStatus = ErrorMessages.CsvExport.ExportCancelled;
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Warning,
+                    ErrorGuideMap.FormatMessageWithGuide(
+                        ErrorCodes.ExportCancelled, _lastStatus));
                 OutputLastState(DA);
                 return;
             }
@@ -172,18 +178,24 @@ namespace URSUS.GH
             }
             catch (UnauthorizedAccessException)
             {
-                _lastStatus = $"파일 접근 권한이 없습니다: {resolvedPath}";
-                AddRuntimeMessage(GH_RuntimeMessageLevel.Error, _lastStatus);
+                _lastStatus = ErrorMessages.CsvExport.FileAccessDenied(resolvedPath);
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Error,
+                    ErrorGuideMap.FormatMessageWithGuide(
+                        ErrorCodes.FileAccessDenied, _lastStatus));
             }
             catch (IOException ioEx)
             {
-                _lastStatus = $"파일 저장 실패: {ioEx.Message}";
-                AddRuntimeMessage(GH_RuntimeMessageLevel.Error, _lastStatus);
+                _lastStatus = ErrorMessages.CsvExport.FileSaveFailed(ioEx.Message);
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Error,
+                    ErrorGuideMap.FormatMessageWithGuide(
+                        ErrorCodes.FileSaveFailed, _lastStatus));
             }
             catch (Exception ex)
             {
-                _lastStatus = $"내보내기 오류: {ex.Message}";
-                AddRuntimeMessage(GH_RuntimeMessageLevel.Error, _lastStatus);
+                _lastStatus = ErrorMessages.CsvExport.ExportFailed(ex.Message);
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Error,
+                    ErrorGuideMap.FormatMessageWithGuide(
+                        ErrorCodes.Unknown, _lastStatus));
             }
 
             OutputLastState(DA);
@@ -250,7 +262,7 @@ namespace URSUS.GH
             {
                 // Dialog 표시 실패 시 (헤드리스 환경 등) 기본 경로로 폴백
                 AddRuntimeMessage(GH_RuntimeMessageLevel.Warning,
-                    $"SaveFileDialog를 표시할 수 없어 기본 경로를 사용합니다: {ex.Message}");
+                    ErrorMessages.CsvExport.DialogFallback(ex.Message));
                 result = CsvExporter.GetDefaultFilePath();
             }
 
@@ -328,7 +340,7 @@ namespace URSUS.GH
             catch (Exception ex)
             {
                 AddRuntimeMessage(GH_RuntimeMessageLevel.Warning,
-                    $"파일을 열 수 없습니다: {ex.Message}");
+                    ErrorMessages.CsvExport.CannotOpenFile(ex.Message));
             }
         }
 
@@ -349,7 +361,7 @@ namespace URSUS.GH
                 if (legalCodes.Count == 0)
                 {
                     MessageBox.Show(
-                        "내보낼 데이터가 없습니다.\nSolver 출력을 연결해 주세요.",
+                        ErrorMessages.CsvExport.NoDataToExport,
                         "URSUS CSV Export",
                         MessageBoxButtons.OK,
                         MessageBoxIcon.Warning);
@@ -361,12 +373,10 @@ namespace URSUS.GH
 
                 _lastSavedPath = filePath;
                 _lastRowCount = rowCount;
-                _lastStatus = $"저장 완료: {rowCount}행 → {Path.GetFileName(filePath)}";
+                _lastStatus = ErrorMessages.CsvExport.SaveCompleteShort(rowCount, Path.GetFileName(filePath));
 
                 MessageBox.Show(
-                    $"CSV 내보내기 완료!\n\n" +
-                    $"파일: {filePath}\n" +
-                    $"행 수: {rowCount}행",
+                    ErrorMessages.CsvExport.ExportComplete(filePath, rowCount),
                     "URSUS CSV Export",
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Information);
@@ -376,7 +386,9 @@ namespace URSUS.GH
             catch (Exception ex)
             {
                 MessageBox.Show(
-                    $"내보내기 실패: {ex.Message}",
+                    ErrorGuideMap.FormatMessageWithGuide(
+                        ErrorCodes.Unknown,
+                        ErrorMessages.CsvExport.ExportFailed(ex.Message)),
                     "URSUS CSV Export",
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Error);

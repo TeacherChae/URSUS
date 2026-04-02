@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using Grasshopper.Kernel;
 using Rhino.Geometry;
+using URSUS.Resources;
 using URSUS.Visualization;
 
 namespace URSUS.GH
@@ -106,7 +107,9 @@ namespace URSUS.GH
             catch (Exception ex)
             {
                 AddRuntimeMessage(GH_RuntimeMessageLevel.Error,
-                    $"시각화 중 오류: {ex.Message}");
+                    ErrorGuideMap.FormatMessageWithGuide(
+                        ErrorCodes.VisualizationFailed,
+                        ErrorMessages.Visualization.VisualizationFailed(ex.Message)));
             }
         }
     }

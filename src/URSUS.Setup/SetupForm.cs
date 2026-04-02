@@ -45,13 +45,19 @@ namespace URSUS.Setup
         // Step 2: API 키 입력
         private readonly TextBox    _txtVWorldKey    = new();
         private readonly TextBox    _txtSeoulKey     = new();
+        private readonly TextBox    _txtDataGoKrKey  = new();
         private readonly Button     _btnValidateVW   = new();
         private readonly Button     _btnValidateSK   = new();
+        private readonly Button     _btnValidateDG   = new();
+        private readonly Button     _btnValidateAll  = new();
         private readonly Label      _lblVWStatus     = new();
         private readonly Label      _lblSKStatus     = new();
+        private readonly Label      _lblDGStatus     = new();
         private readonly CheckBox   _chkSkipKeys     = new();
+        private readonly CheckBox   _chkShowKeys     = new();
         private readonly LinkLabel  _lnkVWorld       = new();
         private readonly LinkLabel  _lnkSeoul        = new();
+        private readonly LinkLabel  _lnkDataGoKr     = new();
 
         // Step 3: 설치 경로
         private readonly TextBox    _txtInstallPath  = new();
@@ -67,12 +73,19 @@ namespace URSUS.Setup
         private int _currentStep = 1;
         private bool _vwKeyValid;
         private bool _skKeyValid;
+        private bool _dgKeyValid;
         private readonly ApiKeyValidator _validator = new();
         private CancellationTokenSource? _cts;
 
         // ── 기존 키 로드 ────────────────────────────────────────────────
         private string? _existingVWKey;
         private string? _existingSKKey;
+        private string? _existingDGKey;
+
+        // ── 설치 결과 (Step 3 → Step 4 전달) ────────────────────────────
+        private PostInstallVerifier.VerificationReport? _lastVerificationReport;
+        private DependencyInstaller.InstallResult? _lastInstallResult;
+        private SetupConfigGenerator.ConfigGenerationResult? _lastConfigResult;
 
         public SetupForm()
         {
@@ -176,6 +189,7 @@ namespace URSUS.Setup
                 var provider = new ApiKeyProvider();
                 _existingVWKey = provider.VWorldKey;
                 _existingSKKey = provider.SeoulKey;
+                _existingDGKey = provider.DataGoKrKey;
             }
             catch
             {
@@ -288,200 +302,292 @@ namespace URSUS.Setup
             _btnNext.Text    = "다음 >";
             _btnNext.Enabled = true;
 
-            int y = 5;
+            int y = 0;
             AddLabel("API 키 설정", new Font("Segoe UI", 13f, FontStyle.Bold), ACCENT_COLOR, ref y);
-            y += 5;
             AddLabel("데이터 수집에 사용할 API 키를 입력하세요. (선택사항)", SUBTITLE_FONT, MUTED_COLOR, ref y);
-            y += 15;
+            y += 8;
 
             // ── VWorld ──
-            AddLabel("VWorld API 키", LABEL_FONT, Color.Black, ref y);
-            y += 2;
-
-            // 발급 링크
-            _lnkVWorld.Text      = "키가 없다면? → vworld.kr 에서 무료 발급";
-            _lnkVWorld.Font      = STATUS_FONT;
-            _lnkVWorld.AutoSize  = true;
-            _lnkVWorld.Location  = new Point(30, y);
-            _lnkVWorld.LinkColor = ACCENT_COLOR;
-            _lnkVWorld.LinkClicked += (_, _) =>
-                OpenUrl("https://www.vworld.kr/dev/v4dv_2ddataguide2_s001.do");
-            _contentPanel.Controls.Add(_lnkVWorld);
-            y += 22;
-
-            _txtVWorldKey.Font        = INPUT_FONT;
-            _txtVWorldKey.Size        = new Size(380, 28);
-            _txtVWorldKey.Location    = new Point(30, y);
-            _txtVWorldKey.PlaceholderText = "VWorld API 키를 붙여넣으세요";
-            _txtVWorldKey.Text        = _existingVWKey ?? "";
-            _txtVWorldKey.TextChanged += (_, _) => { _vwKeyValid = false; UpdateVWStatus("", Color.Black); };
-            _contentPanel.Controls.Add(_txtVWorldKey);
-
-            _btnValidateVW.Text      = "검증";
-            _btnValidateVW.Font      = BUTTON_FONT;
-            _btnValidateVW.Size      = new Size(70, 28);
-            _btnValidateVW.Location  = new Point(418, y);
-            _btnValidateVW.FlatStyle = FlatStyle.Flat;
-            _btnValidateVW.BackColor = ACCENT_COLOR;
-            _btnValidateVW.ForeColor = Color.White;
-            _btnValidateVW.FlatAppearance.BorderSize = 0;
-            _btnValidateVW.Click    += async (_, _) => await ValidateVWorldAsync();
-            _contentPanel.Controls.Add(_btnValidateVW);
-            y += 34;
-
-            _lblVWStatus.Font     = STATUS_FONT;
-            _lblVWStatus.AutoSize = true;
-            _lblVWStatus.Location = new Point(30, y);
-            _contentPanel.Controls.Add(_lblVWStatus);
-            y += 25;
+            BuildKeyRow(
+                "VWorld API 키 (필수)", "키가 없다면? → vworld.kr 에서 무료 발급",
+                "https://www.vworld.kr/dev/v4dv_2ddataguide2_s001.do",
+                _lnkVWorld, _txtVWorldKey, _btnValidateVW, _lblVWStatus,
+                _existingVWKey, "VWorld API 키를 붙여넣으세요",
+                () => { _vwKeyValid = false; UpdateKeyStatus(_lblVWStatus, "", Color.Black); },
+                async () => await ValidateVWorldAsync(),
+                ref y);
 
             // ── Seoul ──
-            y += 8;
-            AddLabel("서울 열린데이터 API 키", LABEL_FONT, Color.Black, ref y);
-            y += 2;
+            BuildKeyRow(
+                "서울 열린데이터 API 키 (필수)", "키가 없다면? → data.seoul.go.kr 에서 무료 발급",
+                "https://data.seoul.go.kr/",
+                _lnkSeoul, _txtSeoulKey, _btnValidateSK, _lblSKStatus,
+                _existingSKKey, "서울 열린데이터 API 키를 붙여넣으세요",
+                () => { _skKeyValid = false; UpdateKeyStatus(_lblSKStatus, "", Color.Black); },
+                async () => await ValidateSeoulAsync(),
+                ref y);
 
-            _lnkSeoul.Text      = "키가 없다면? → data.seoul.go.kr 에서 무료 발급";
-            _lnkSeoul.Font      = STATUS_FONT;
-            _lnkSeoul.AutoSize  = true;
-            _lnkSeoul.Location  = new Point(30, y);
-            _lnkSeoul.LinkColor = ACCENT_COLOR;
-            _lnkSeoul.LinkClicked += (_, _) =>
-                OpenUrl("https://data.seoul.go.kr/");
-            _contentPanel.Controls.Add(_lnkSeoul);
-            y += 22;
+            // ── DataGoKr ──
+            BuildKeyRow(
+                "공공데이터포털 API 키 (선택)", "키가 없다면? → data.go.kr 에서 무료 발급",
+                "https://www.data.go.kr/data/15058747/openapi.do",
+                _lnkDataGoKr, _txtDataGoKrKey, _btnValidateDG, _lblDGStatus,
+                _existingDGKey, "공공데이터포털 API 키를 붙여넣으세요",
+                () => { _dgKeyValid = false; UpdateKeyStatus(_lblDGStatus, "", Color.Black); },
+                async () => await ValidateDataGoKrAsync(),
+                ref y);
 
-            _txtSeoulKey.Font        = INPUT_FONT;
-            _txtSeoulKey.Size        = new Size(380, 28);
-            _txtSeoulKey.Location    = new Point(30, y);
-            _txtSeoulKey.PlaceholderText = "서울 열린데이터 API 키를 붙여넣으세요";
-            _txtSeoulKey.Text        = _existingSKKey ?? "";
-            _txtSeoulKey.TextChanged += (_, _) => { _skKeyValid = false; UpdateSKStatus("", Color.Black); };
-            _contentPanel.Controls.Add(_txtSeoulKey);
+            // ── 키 표시/숨김 토글 ──
+            y += 4;
+            _chkShowKeys.Text     = "API 키 표시";
+            _chkShowKeys.Font     = STATUS_FONT;
+            _chkShowKeys.AutoSize = true;
+            _chkShowKeys.Location = new Point(28, y);
+            _chkShowKeys.Checked  = false;
+            _chkShowKeys.CheckedChanged += (_, _) =>
+            {
+                char passChar = _chkShowKeys.Checked ? '\0' : '●';
+                _txtVWorldKey.PasswordChar   = passChar;
+                _txtSeoulKey.PasswordChar    = passChar;
+                _txtDataGoKrKey.PasswordChar = passChar;
+            };
+            _contentPanel.Controls.Add(_chkShowKeys);
 
-            _btnValidateSK.Text      = "검증";
-            _btnValidateSK.Font      = BUTTON_FONT;
-            _btnValidateSK.Size      = new Size(70, 28);
-            _btnValidateSK.Location  = new Point(418, y);
-            _btnValidateSK.FlatStyle = FlatStyle.Flat;
-            _btnValidateSK.BackColor = ACCENT_COLOR;
-            _btnValidateSK.ForeColor = Color.White;
-            _btnValidateSK.FlatAppearance.BorderSize = 0;
-            _btnValidateSK.Click    += async (_, _) => await ValidateSeoulAsync();
-            _contentPanel.Controls.Add(_btnValidateSK);
-            y += 34;
-
-            _lblSKStatus.Font     = STATUS_FONT;
-            _lblSKStatus.AutoSize = true;
-            _lblSKStatus.Location = new Point(30, y);
-            _contentPanel.Controls.Add(_lblSKStatus);
-            y += 25;
+            // ── 모두 검증 버튼 ──
+            _btnValidateAll.Text      = "모두 검증";
+            _btnValidateAll.Font      = BUTTON_FONT;
+            _btnValidateAll.Size      = new Size(100, 26);
+            _btnValidateAll.Location  = new Point(180, y - 2);
+            _btnValidateAll.FlatStyle = FlatStyle.Flat;
+            _btnValidateAll.BackColor = Color.FromArgb(60, 130, 80);
+            _btnValidateAll.ForeColor = Color.White;
+            _btnValidateAll.FlatAppearance.BorderSize = 0;
+            _btnValidateAll.Click    += async (_, _) => await ValidateAllKeysAsync();
+            _contentPanel.Controls.Add(_btnValidateAll);
+            y += 26;
 
             // ── 건너뛰기 옵션 ──
-            y += 15;
+            y += 4;
             _chkSkipKeys.Text     = "API 키 없이 설치만 진행 (나중에 설정)";
             _chkSkipKeys.Font     = SUBTITLE_FONT;
             _chkSkipKeys.AutoSize = true;
             _chkSkipKeys.Location = new Point(28, y);
             _contentPanel.Controls.Add(_chkSkipKeys);
 
+            // 키 기본 마스킹 적용
+            _txtVWorldKey.PasswordChar   = '●';
+            _txtSeoulKey.PasswordChar    = '●';
+            _txtDataGoKrKey.PasswordChar = '●';
+
             // 기존 키가 있으면 상태 표시
             if (!string.IsNullOrWhiteSpace(_existingVWKey))
-                UpdateVWStatus("기존 설정에서 키를 불러왔습니다.", MUTED_COLOR);
+                UpdateKeyStatus(_lblVWStatus, "기존 설정에서 키를 불러왔습니다.", MUTED_COLOR);
             if (!string.IsNullOrWhiteSpace(_existingSKKey))
-                UpdateSKStatus("기존 설정에서 키를 불러왔습니다.", MUTED_COLOR);
+                UpdateKeyStatus(_lblSKStatus, "기존 설정에서 키를 불러왔습니다.", MUTED_COLOR);
+            if (!string.IsNullOrWhiteSpace(_existingDGKey))
+                UpdateKeyStatus(_lblDGStatus, "기존 설정에서 키를 불러왔습니다.", MUTED_COLOR);
+        }
+
+        /// <summary>
+        /// API 키 입력 행을 공통 생성하는 헬퍼.
+        /// 라벨, 링크, 텍스트박스, 검증 버튼, 상태 라벨을 일괄 배치한다.
+        /// </summary>
+        private void BuildKeyRow(
+            string label, string linkText, string linkUrl,
+            LinkLabel lnk, TextBox txt, Button btnValidate, Label lblStatus,
+            string? existingKey, string placeholder,
+            Action onTextChanged, Func<Task> onValidateClick,
+            ref int y)
+        {
+            AddLabel(label, LABEL_FONT, Color.Black, ref y);
+
+            lnk.Text      = linkText;
+            lnk.Font      = STATUS_FONT;
+            lnk.AutoSize  = true;
+            lnk.Location  = new Point(30, y);
+            lnk.LinkColor = ACCENT_COLOR;
+            lnk.LinkClicked += (_, _) => OpenUrl(linkUrl);
+            _contentPanel.Controls.Add(lnk);
+            y += 20;
+
+            txt.Font            = INPUT_FONT;
+            txt.Size            = new Size(380, 28);
+            txt.Location        = new Point(30, y);
+            txt.PlaceholderText = placeholder;
+            txt.Text            = existingKey ?? "";
+            txt.TextChanged    += (_, _) => onTextChanged();
+            _contentPanel.Controls.Add(txt);
+
+            btnValidate.Text      = "검증";
+            btnValidate.Font      = BUTTON_FONT;
+            btnValidate.Size      = new Size(70, 28);
+            btnValidate.Location  = new Point(418, y);
+            btnValidate.FlatStyle = FlatStyle.Flat;
+            btnValidate.BackColor = ACCENT_COLOR;
+            btnValidate.ForeColor = Color.White;
+            btnValidate.FlatAppearance.BorderSize = 0;
+            btnValidate.Click    += async (_, _) => await onValidateClick();
+            _contentPanel.Controls.Add(btnValidate);
+            y += 32;
+
+            lblStatus.Font     = STATUS_FONT;
+            lblStatus.AutoSize = true;
+            lblStatus.Location = new Point(30, y);
+            _contentPanel.Controls.Add(lblStatus);
+            y += 18;
         }
 
         // ── 검증 실행 ───────────────────────────────────────────────────
 
         private async Task ValidateVWorldAsync()
         {
-            string key = _txtVWorldKey.Text.Trim();
-            if (string.IsNullOrEmpty(key))
-            {
-                UpdateVWStatus("키를 입력해주세요.", ERROR_COLOR);
-                return;
-            }
-
-            _btnValidateVW.Enabled = false;
-            _btnValidateVW.Text    = "...";
-            UpdateVWStatus("검증 중...", MUTED_COLOR);
-
-            _cts?.Cancel();
-            _cts = new CancellationTokenSource();
-
-            try
-            {
-                var result = await _validator.ValidateVWorldKeyAsync(key, _cts.Token);
-                _vwKeyValid = result.IsValid;
-                UpdateVWStatus(
-                    (result.IsValid ? "✓ " : "✗ ") + result.Message,
-                    result.IsValid ? SUCCESS_COLOR : ERROR_COLOR);
-            }
-            catch (OperationCanceledException) { }
-            finally
-            {
-                _btnValidateVW.Enabled = true;
-                _btnValidateVW.Text    = "검증";
-            }
+            await ValidateSingleKeyAsync(
+                _txtVWorldKey, _btnValidateVW, _lblVWStatus,
+                key => _validator.ValidateVWorldKeyAsync(key, GetOrCreateCts()),
+                valid => _vwKeyValid = valid);
         }
 
         private async Task ValidateSeoulAsync()
         {
-            string key = _txtSeoulKey.Text.Trim();
+            await ValidateSingleKeyAsync(
+                _txtSeoulKey, _btnValidateSK, _lblSKStatus,
+                key => _validator.ValidateSeoulKeyAsync(key, GetOrCreateCts()),
+                valid => _skKeyValid = valid);
+        }
+
+        private async Task ValidateDataGoKrAsync()
+        {
+            await ValidateSingleKeyAsync(
+                _txtDataGoKrKey, _btnValidateDG, _lblDGStatus,
+                key => _validator.ValidateDataGoKrKeyAsync(key, GetOrCreateCts()),
+                valid => _dgKeyValid = valid);
+        }
+
+        /// <summary>
+        /// 단일 키 검증 공통 로직: 빈 값 체크 → 버튼 비활성화 → 검증 → 결과 표시.
+        /// </summary>
+        private async Task ValidateSingleKeyAsync(
+            TextBox txt, Button btn, Label lbl,
+            Func<string, Task<ApiKeyValidator.ValidationResult>> validateFunc,
+            Action<bool> setValid)
+        {
+            string key = txt.Text.Trim();
             if (string.IsNullOrEmpty(key))
             {
-                UpdateSKStatus("키를 입력해주세요.", ERROR_COLOR);
+                UpdateKeyStatus(lbl, "키를 입력해주세요.", ERROR_COLOR);
                 return;
             }
 
-            _btnValidateSK.Enabled = false;
-            _btnValidateSK.Text    = "...";
-            UpdateSKStatus("검증 중...", MUTED_COLOR);
-
-            _cts?.Cancel();
-            _cts = new CancellationTokenSource();
+            btn.Enabled = false;
+            btn.Text    = "...";
+            UpdateKeyStatus(lbl, "검증 중...", MUTED_COLOR);
 
             try
             {
-                var result = await _validator.ValidateSeoulKeyAsync(key, _cts.Token);
-                _skKeyValid = result.IsValid;
-                UpdateSKStatus(
+                var result = await validateFunc(key);
+                setValid(result.IsValid);
+                UpdateKeyStatus(lbl,
                     (result.IsValid ? "✓ " : "✗ ") + result.Message,
                     result.IsValid ? SUCCESS_COLOR : ERROR_COLOR);
             }
             catch (OperationCanceledException) { }
             finally
             {
-                _btnValidateSK.Enabled = true;
-                _btnValidateSK.Text    = "검증";
+                btn.Enabled = true;
+                btn.Text    = "검증";
             }
         }
 
-        private void UpdateVWStatus(string text, Color color)
+        /// <summary>
+        /// 입력된 모든 키를 병렬로 일괄 검증한다.
+        /// </summary>
+        private async Task ValidateAllKeysAsync()
         {
-            _lblVWStatus.Text      = text;
-            _lblVWStatus.ForeColor = color;
+            _btnValidateAll.Enabled = false;
+            _btnValidateAll.Text    = "검증 중...";
+
+            var keys = new Dictionary<string, string>();
+            string vw = _txtVWorldKey.Text.Trim();
+            string sk = _txtSeoulKey.Text.Trim();
+            string dg = _txtDataGoKrKey.Text.Trim();
+
+            bool anyKey = false;
+
+            if (!string.IsNullOrEmpty(vw)) { keys[ApiKeyProvider.KEY_VWORLD] = vw; anyKey = true; }
+            if (!string.IsNullOrEmpty(sk)) { keys[ApiKeyProvider.KEY_SEOUL] = sk;  anyKey = true; }
+            if (!string.IsNullOrEmpty(dg)) { keys[ApiKeyProvider.KEY_DATA_GO_KR] = dg; anyKey = true; }
+
+            if (!anyKey)
+            {
+                UpdateKeyStatus(_lblVWStatus, "키를 입력해주세요.", ERROR_COLOR);
+                _btnValidateAll.Enabled = true;
+                _btnValidateAll.Text    = "모두 검증";
+                return;
+            }
+
+            // 각 키의 상태를 "검증 중"으로 갱신
+            if (keys.ContainsKey(ApiKeyProvider.KEY_VWORLD))
+                UpdateKeyStatus(_lblVWStatus, "검증 중...", MUTED_COLOR);
+            if (keys.ContainsKey(ApiKeyProvider.KEY_SEOUL))
+                UpdateKeyStatus(_lblSKStatus, "검증 중...", MUTED_COLOR);
+            if (keys.ContainsKey(ApiKeyProvider.KEY_DATA_GO_KR))
+                UpdateKeyStatus(_lblDGStatus, "검증 중...", MUTED_COLOR);
+
+            _cts?.Cancel();
+            _cts = new CancellationTokenSource();
+
+            try
+            {
+                var results = await _validator.ValidateAllAsync(keys, _cts.Token);
+
+                foreach (var entry in results)
+                {
+                    string prefix = entry.Result.IsValid ? "✓ " : "✗ ";
+                    Color  color  = entry.Result.IsValid ? SUCCESS_COLOR : ERROR_COLOR;
+
+                    switch (entry.KeyName)
+                    {
+                        case ApiKeyProvider.KEY_VWORLD:
+                            _vwKeyValid = entry.Result.IsValid;
+                            UpdateKeyStatus(_lblVWStatus, prefix + entry.Result.Message, color);
+                            break;
+                        case ApiKeyProvider.KEY_SEOUL:
+                            _skKeyValid = entry.Result.IsValid;
+                            UpdateKeyStatus(_lblSKStatus, prefix + entry.Result.Message, color);
+                            break;
+                        case ApiKeyProvider.KEY_DATA_GO_KR:
+                            _dgKeyValid = entry.Result.IsValid;
+                            UpdateKeyStatus(_lblDGStatus, prefix + entry.Result.Message, color);
+                            break;
+                    }
+                }
+            }
+            catch (OperationCanceledException) { }
+            finally
+            {
+                _btnValidateAll.Enabled = true;
+                _btnValidateAll.Text    = "모두 검증";
+            }
         }
 
-        private void UpdateSKStatus(string text, Color color)
+        private CancellationToken GetOrCreateCts()
         {
-            _lblSKStatus.Text      = text;
-            _lblSKStatus.ForeColor = color;
+            _cts?.Cancel();
+            _cts = new CancellationTokenSource();
+            return _cts.Token;
+        }
+
+        private static void UpdateKeyStatus(Label lbl, string text, Color color)
+        {
+            lbl.Text      = text;
+            lbl.ForeColor = color;
         }
 
         // ── 키 저장 ─────────────────────────────────────────────────────
 
         private void SaveApiKeys()
         {
-            var keys = new Dictionary<string, string>();
-
-            string vw = _txtVWorldKey.Text.Trim();
-            string sk = _txtSeoulKey.Text.Trim();
-
-            if (!string.IsNullOrEmpty(vw))
-                keys[ApiKeyProvider.KEY_VWORLD] = vw;
-            if (!string.IsNullOrEmpty(sk))
-                keys[ApiKeyProvider.KEY_SEOUL] = sk;
+            var keys = CollectEnteredKeys();
 
             if (keys.Count > 0)
             {
@@ -497,6 +603,20 @@ namespace URSUS.Setup
                         "경고", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 }
             }
+        }
+
+        /// <summary>UI 텍스트박스에서 비어 있지 않은 키만 수집한다.</summary>
+        private Dictionary<string, string> CollectEnteredKeys()
+        {
+            var keys = new Dictionary<string, string>();
+            string vw = _txtVWorldKey.Text.Trim();
+            string sk = _txtSeoulKey.Text.Trim();
+            string dg = _txtDataGoKrKey.Text.Trim();
+
+            if (!string.IsNullOrEmpty(vw)) keys[ApiKeyProvider.KEY_VWORLD]     = vw;
+            if (!string.IsNullOrEmpty(sk)) keys[ApiKeyProvider.KEY_SEOUL]      = sk;
+            if (!string.IsNullOrEmpty(dg)) keys[ApiKeyProvider.KEY_DATA_GO_KR] = dg;
+            return keys;
         }
 
         // ================================================================
@@ -538,16 +658,9 @@ namespace URSUS.Setup
             // API 키 요약
             AddLabel("API 키 설정:", LABEL_FONT, Color.Black, ref y);
             y += 5;
-            string vwStatus = string.IsNullOrWhiteSpace(_txtVWorldKey.Text)
-                ? "미설정 (나중에 설정 가능)"
-                : (_vwKeyValid ? "검증 완료 ✓" : "입력됨 (미검증)");
-            string skStatus = string.IsNullOrWhiteSpace(_txtSeoulKey.Text)
-                ? "미설정 (나중에 설정 가능)"
-                : (_skKeyValid ? "검증 완료 ✓" : "입력됨 (미검증)");
-            AddLabel($"  VWorld: {vwStatus}", SUBTITLE_FONT,
-                _vwKeyValid ? SUCCESS_COLOR : MUTED_COLOR, ref y);
-            AddLabel($"  서울 열린데이터: {skStatus}", SUBTITLE_FONT,
-                _skKeyValid ? SUCCESS_COLOR : MUTED_COLOR, ref y);
+            AddKeyStatusSummary("VWorld", _txtVWorldKey.Text, _vwKeyValid, ref y);
+            AddKeyStatusSummary("서울 열린데이터", _txtSeoulKey.Text, _skKeyValid, ref y);
+            AddKeyStatusSummary("공공데이터포털", _txtDataGoKrKey.Text, _dgKeyValid, ref y);
 
             y += 25;
 
@@ -574,44 +687,72 @@ namespace URSUS.Setup
 
             try
             {
-                // 1. 디렉토리 생성
-                _lblProgress.Text = "설치 폴더 생성 중...";
-                _progressBar.Value = 10;
-                Directory.CreateDirectory(targetDir);
-                await Task.Delay(200); // UI 업데이트용
+                // ── Phase 1: 의존성 검사 ──
+                _lblProgress.Text  = "의존성 검사 중...";
+                _progressBar.Value = 5;
+                await Task.Delay(100); // UI 업데이트
 
-                // 2. 파일 복사
-                string[] filesToCopy = { "URSUS.GH.gha", "URSUS.dll", "Clipper2Lib.dll" };
-                int step = 60 / Math.Max(filesToCopy.Length, 1);
+                var check = DependencyInstaller.CheckDependencies(sourceDir, targetDir);
 
-                foreach (string fileName in filesToCopy)
+                if (check.MissingRequired.Count > 0)
                 {
-                    string src = Path.Combine(sourceDir, fileName);
-                    string dst = Path.Combine(targetDir, fileName);
+                    _lblProgress.Text      = $"필수 파일 {check.MissingRequired.Count}개 누락";
+                    _lblProgress.ForeColor = ERROR_COLOR;
 
-                    _lblProgress.Text = $"복사 중: {fileName}";
-
-                    if (File.Exists(src))
-                    {
-                        File.Copy(src, dst, overwrite: true);
-                        // Windows Zone.Identifier ADS 제거 (차단 해제)
-                        RemoveZoneIdentifier(dst);
-                    }
-
-                    _progressBar.Value += step;
-                    await Task.Delay(100);
+                    MessageBox.Show(
+                        check.ToSummary() + "\n\n설치를 계속하시겠습니까?\n(누락 파일은 건너뜁니다)",
+                        "파일 누락 경고", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 }
 
-                // 3. appsettings.json 저장 (대상 폴더에도 복사)
-                _lblProgress.Text = "설정 파일 저장 중...";
-                _progressBar.Value = 80;
-                SaveSettingsToInstallDir(targetDir);
-                await Task.Delay(200);
+                // ── Phase 2: 파일 복사 + 차단 해제 ──
+                _lblProgress.Text  = "파일 설치 중...";
+                _progressBar.Value = 10;
 
-                // 4. 완료
+                var installResult = await Task.Run(() =>
+                    DependencyInstaller.InstallDependencies(sourceDir, targetDir,
+                        (progress, message) =>
+                        {
+                            try
+                            {
+                                Invoke((Action)(() =>
+                                {
+                                    _progressBar.Value = Math.Min(progress, 90);
+                                    _lblProgress.Text  = message;
+                                }));
+                            }
+                            catch (ObjectDisposedException) { }
+                        }));
+
+                // ── Phase 3: 설정 파일 생성 ──
+                _lblProgress.Text  = "설정 파일 생성 중...";
+                _progressBar.Value = 90;
+                await Task.Delay(100);
+
+                var keys = CollectEnteredKeys();
+                var configResult = SetupConfigGenerator.GenerateConfig(keys, targetDir);
+
+                _progressBar.Value = 95;
+                await Task.Delay(100);
+
+                // ── Phase 4: 설치 후 검증 ──
+                _lblProgress.Text  = "설치 검증 중...";
+                _progressBar.Value = 97;
+                _lastVerificationReport = DependencyInstaller.VerifyInstallation(targetDir);
+                _lastInstallResult      = installResult;
+                _lastConfigResult       = configResult;
+
+                // ── 완료 ──
                 _progressBar.Value = 100;
-                _lblProgress.Text  = "설치 완료!";
-                _lblProgress.ForeColor = SUCCESS_COLOR;
+                if (installResult.AllSucceeded)
+                {
+                    _lblProgress.Text      = $"설치 완료! ({installResult.Elapsed.TotalSeconds:F1}초)";
+                    _lblProgress.ForeColor = SUCCESS_COLOR;
+                }
+                else
+                {
+                    _lblProgress.Text      = $"설치 완료 (경고 {installResult.FailureCount}건)";
+                    _lblProgress.ForeColor = Color.FromArgb(180, 120, 0);
+                }
             }
             catch (Exception ex)
             {
@@ -627,54 +768,6 @@ namespace URSUS.Setup
             }
         }
 
-        private void SaveSettingsToInstallDir(string targetDir)
-        {
-            var keys = new Dictionary<string, string>();
-            string vw = _txtVWorldKey.Text.Trim();
-            string sk = _txtSeoulKey.Text.Trim();
-            if (!string.IsNullOrEmpty(vw)) keys[ApiKeyProvider.KEY_VWORLD] = vw;
-            if (!string.IsNullOrEmpty(sk)) keys[ApiKeyProvider.KEY_SEOUL]  = sk;
-
-            if (keys.Count > 0)
-            {
-                // DLL 인접 경로에도 저장 (GH 로드 시 우선 탐색됨)
-                string settingsPath = Path.Combine(targetDir, "appsettings.json");
-                var settings = new UrsusSettings();
-                if (keys.ContainsKey(ApiKeyProvider.KEY_VWORLD))
-                    settings.VWorldKey = keys[ApiKeyProvider.KEY_VWORLD];
-                if (keys.ContainsKey(ApiKeyProvider.KEY_SEOUL))
-                    settings.SeoulKey = keys[ApiKeyProvider.KEY_SEOUL];
-
-                string json = System.Text.Json.JsonSerializer.Serialize(settings,
-                    new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
-                File.WriteAllText(settingsPath, json, System.Text.Encoding.UTF8);
-            }
-        }
-
-        /// <summary>
-        /// Windows Zone.Identifier ADS를 삭제하여 "이 파일은 다른 컴퓨터에서…" 차단을 해제한다.
-        /// </summary>
-        private static void RemoveZoneIdentifier(string filePath)
-        {
-            try
-            {
-                string adsPath = filePath + ":Zone.Identifier";
-                // .NET에서 ADS 직접 삭제가 안 되므로 cmd 활용
-                var psi = new System.Diagnostics.ProcessStartInfo
-                {
-                    FileName  = "cmd.exe",
-                    Arguments = $"/c echo. > \"{adsPath}\" 2>nul & del /f \"{adsPath}\" 2>nul",
-                    CreateNoWindow  = true,
-                    UseShellExecute = false,
-                };
-                System.Diagnostics.Process.Start(psi)?.WaitForExit(3000);
-            }
-            catch
-            {
-                // ADS 삭제 실패는 치명적이지 않음 — 사용자가 수동으로 해제 가능
-            }
-        }
-
         // ================================================================
         //  Step 4: 완료
         // ================================================================
@@ -685,12 +778,14 @@ namespace URSUS.Setup
             _btnNext.Enabled = true;
             _btnBack.Visible = false;
 
-            // ── Post-install 3-Step 검증 실행 ──
+            // ── 검증 보고서: 캐시된 결과 사용 또는 새로 실행 ──
             string installDir = _txtInstallPath.Text;
-            var report = PostInstallVerifier.Verify(installDir);
+            var report = _lastVerificationReport
+                         ?? PostInstallVerifier.Verify(installDir);
 
             int y = 10;
 
+            // ── 타이틀 ──
             if (report.AllPassed && !report.HasWarnings)
             {
                 AddLabel("설치 완료!", TITLE_FONT, SUCCESS_COLOR, ref y);
@@ -704,9 +799,20 @@ namespace URSUS.Setup
                 AddLabel("설치 완료!", TITLE_FONT, SUCCESS_COLOR, ref y);
             }
 
-            y += 10;
+            // ── 설치 소요 시간 ──
+            if (_lastInstallResult != null)
+            {
+                AddLabel(
+                    $"설치 시간: {_lastInstallResult.Elapsed.TotalSeconds:F1}초 | " +
+                    $"파일: {_lastInstallResult.SuccessCount}개 성공" +
+                    (_lastInstallResult.FailureCount > 0
+                        ? $", {_lastInstallResult.FailureCount}개 실패" : ""),
+                    STATUS_FONT, MUTED_COLOR, ref y);
+            }
 
-            // ── 검증 결과 표시 ──
+            y += 8;
+
+            // ── 3단계 검증 결과 ──
             AddLabel("설치 검증 결과:", LABEL_FONT, ACCENT_COLOR, ref y);
             y += 3;
 
@@ -716,11 +822,26 @@ namespace URSUS.Setup
                 step1Ok ? "  ✓ Step 1: 핵심 파일 확인 완료" : "  ✗ Step 1: 파일 누락 발견",
                 STATUS_FONT, step1Ok ? SUCCESS_COLOR : ERROR_COLOR, ref y);
 
+            if (!step1Ok)
+            {
+                foreach (var item in report.Step1_Files.Where(c => !c.Passed))
+                    AddLabel($"      {item.Message}", STATUS_FONT, MUTED_COLOR, ref y);
+            }
+
             // Step 2: 설정 파일 검사
             bool step2Ok = report.Step2Passed;
             AddLabel(
                 step2Ok ? "  ✓ Step 2: 설정 파일(appsettings.json) 유효" : "  ⚠ Step 2: 설정 파일 확인 필요",
                 STATUS_FONT, step2Ok ? SUCCESS_COLOR : Color.FromArgb(180, 120, 0), ref y);
+
+            // 설정 파일 경로 표시
+            if (_lastConfigResult is { AnyFileCreated: true })
+            {
+                if (_lastConfigResult.InstallDirPath != null)
+                    AddLabel($"      저장: {_lastConfigResult.InstallDirPath}", STATUS_FONT, MUTED_COLOR, ref y);
+                if (_lastConfigResult.UserProfilePath != null)
+                    AddLabel($"      백업: {_lastConfigResult.UserProfilePath}", STATUS_FONT, MUTED_COLOR, ref y);
+            }
 
             // Step 3: API 키 검사
             bool step3Ok = report.Step3Passed && !report.Step3_ApiKeys.Any(c => !c.Passed);
@@ -730,7 +851,7 @@ namespace URSUS.Setup
                     : "  ⚠ Step 3: 일부 API 키 미설정 (나중에 설정 가능)",
                 STATUS_FONT, step3Ok ? SUCCESS_COLOR : Color.FromArgb(180, 120, 0), ref y);
 
-            y += 15;
+            y += 12;
 
             // ── 다음 단계 안내 ──
             AddLabel("사용 방법 (3단계):", LABEL_FONT, Color.Black, ref y);
@@ -749,15 +870,16 @@ namespace URSUS.Setup
                 AddLabel(line, SUBTITLE_FONT, Color.Black, ref y);
             }
 
-            y += 15;
+            y += 12;
 
-            // ── 오류 시 복구 안내 ──
+            // ── 오류/경고/성공별 안내 ──
             if (report.ErrorCount > 0)
             {
                 AddLabel(
                     "⚠ 설치에 문제가 있습니다.\n" +
                     "  설치 프로그램을 다시 실행하거나,\n" +
-                    "  파일을 수동으로 복사해주세요.",
+                    "  파일을 수동으로 복사해주세요.\n" +
+                    $"  대상 폴더: {installDir}",
                     STATUS_FONT, ERROR_COLOR, ref y);
             }
             else if (report.HasWarnings)
@@ -779,6 +901,15 @@ namespace URSUS.Setup
         // ================================================================
         //  헬퍼
         // ================================================================
+
+        private void AddKeyStatusSummary(string label, string keyText, bool isValid, ref int y)
+        {
+            string status = string.IsNullOrWhiteSpace(keyText)
+                ? "미설정 (나중에 설정 가능)"
+                : (isValid ? "검증 완료 ✓" : "입력됨 (미검증)");
+            AddLabel($"  {label}: {status}", SUBTITLE_FONT,
+                isValid ? SUCCESS_COLOR : MUTED_COLOR, ref y);
+        }
 
         private Label AddLabel(string text, Font font, Color color, ref int y)
         {

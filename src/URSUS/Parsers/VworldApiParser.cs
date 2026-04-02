@@ -13,6 +13,8 @@ namespace URSUS.Parsers
     /// VWorld WFS API → 법정동 경계 레코드 목록.
     /// vworld_api_parser.py (VworldOpenAPIParser) 포팅.
     ///
+    /// - 전국 어디든 주소 기반 법정동 경계 조회 (서울 한정 아님)
+    /// - 단일 주소 + 반경(km) 또는 두 주소 BBOX 모드 지원
     /// - GeoJSON 캐시 (TTL 30일)
     /// - GPS → UTM 변환 (GpsToUtm)
     /// - Rhino Geometry (PolylineCurve, Point3d, AreaMassProperties) 내부 생성
@@ -34,17 +36,76 @@ namespace URSUS.Parsers
             _http     = new HttpClient { Timeout = TimeSpan.FromSeconds(30) };
         }
 
+        /// <summary>기본 반경 (km) — 단일 주소 모드에서 BBOX 자동 생성 시 사용</summary>
+        private const double DEFAULT_RADIUS_KM = 5.0;
+
         // ─────────────────────────────────────────────────────────────────
         //  Public API
         // ─────────────────────────────────────────────────────────────────
 
         /// <summary>
-        /// 두 주소의 BBOX로 법정동 경계를 수집한다 (캐시 적용).
-        /// 주소 쌍에 따라 별도의 캐시 파일이 생성된다.
+        /// 단일 주소 + 반경으로 법정동 경계를 수집한다 (캐시 적용).
+        /// 전국 어디든 주소를 입력하면 해당 위치를 중심으로
+        /// 반경 내 법정동 경계를 자동으로 조회한다.
         /// </summary>
+        /// <param name="centerAddress">중심 주소 (전국 가능, 예: "부산 해운대구 우동")</param>
+        /// <param name="radiusKm">검색 반경 (km). 기본값 5km.</param>
+        public List<LegalDistrictRecord> GetLegalDistricts(
+            string centerAddress, double radiusKm = DEFAULT_RADIUS_KM)
+        {
+            if (string.IsNullOrWhiteSpace(centerAddress))
+                throw new ArgumentException(
+                    "주소를 입력해주세요. 전국 어디든 주소 기반으로 검색할 수 있습니다.",
+                    nameof(centerAddress));
+
+            var (cx, cy) = AddressToCoord(centerAddress);
+
+            // 위도 1도 ≈ 111km, 경도 1도 ≈ 111km × cos(lat)
+            double latDelta = radiusKm / 111.0;
+            double lonDelta = radiusKm / (111.0 * Math.Cos(cy * Math.PI / 180.0));
+
+            double xmin = cx - lonDelta;
+            double ymin = cy - latDelta;
+            double xmax = cx + lonDelta;
+            double ymax = cy + latDelta;
+
+            string cacheKey = BuildCacheKey(centerAddress, $"r{radiusKm:F1}km");
+            return GetLegalDistrictsFromBBox(cacheKey, ymin, xmin, ymax, xmax);
+        }
+
+        /// <summary>
+        /// 두 주소의 BBOX로 법정동 경계를 수집한다 (캐시 적용).
+        /// 전국 어디든 두 주소를 지정하면 해당 영역 내
+        /// 법정동 경계를 조회한다.
+        /// </summary>
+        /// <param name="address1">BBOX 좌하단 기준 주소 (전국 가능)</param>
+        /// <param name="address2">BBOX 우상단 기준 주소 (전국 가능)</param>
+        public List<LegalDistrictRecord> GetLegalDistrictsByBBox(string address1, string address2)
+        {
+            var (xmin, ymin) = AddressToCoord(address1);
+            var (xmax, ymax) = AddressToCoord(address2);
+
+            string cacheKey = BuildCacheKey(address1, address2);
+            return GetLegalDistrictsFromBBox(cacheKey, ymin, xmin, ymax, xmax);
+        }
+
+        /// <summary>
+        /// [하위 호환] 두 주소의 BBOX로 법정동 경계를 수집한다.
+        /// GetLegalDistrictsByBBox와 동일.
+        /// </summary>
+        [Obsolete("GetLegalDistrictsByBBox 또는 단일 주소 오버로드를 사용하세요.")]
         public List<LegalDistrictRecord> GetLegalDistricts(string address1, string address2)
         {
-            string cacheKey = BuildCacheKey(address1, address2);
+            return GetLegalDistrictsByBBox(address1, address2);
+        }
+
+        // ─────────────────────────────────────────────────────────────────
+        //  BBOX 기반 공통 로직
+        // ─────────────────────────────────────────────────────────────────
+
+        private List<LegalDistrictRecord> GetLegalDistrictsFromBBox(
+            string cacheKey, double ymin, double xmin, double ymax, double xmax)
+        {
             string? cachePath = _cacheDir != null
                 ? Path.Combine(_cacheDir, $"legald_boundaries_{cacheKey}.json")
                 : null;
@@ -60,7 +121,7 @@ namespace URSUS.Parsers
             }
 
             Console.WriteLine("[CACHE] legald_boundaries API 호출 중...");
-            var records = FetchLegalDistricts(address1, address2);
+            var records = FetchLegalDistrictsFromBBox(ymin, xmin, ymax, xmax);
 
             if (cachePath != null)
                 SaveCache(records, cachePath);
@@ -72,9 +133,10 @@ namespace URSUS.Parsers
         //  Fetch
         // ─────────────────────────────────────────────────────────────────
 
-        private List<LegalDistrictRecord> FetchLegalDistricts(string address1, string address2)
+        private List<LegalDistrictRecord> FetchLegalDistrictsFromBBox(
+            double ymin, double xmin, double ymax, double xmax)
         {
-            var allFeatures = FetchAllFeatures(address1, address2);
+            var allFeatures = FetchAllFeatures(ymin, xmin, ymax, xmax);
             var result = new List<LegalDistrictRecord>();
 
             foreach (var feature in allFeatures)
@@ -127,11 +189,9 @@ namespace URSUS.Parsers
         //  Pagination
         // ─────────────────────────────────────────────────────────────────
 
-        private List<JsonObject> FetchAllFeatures(string address1, string address2)
+        private List<JsonObject> FetchAllFeatures(
+            double ymin, double xmin, double ymax, double xmax)
         {
-            var (xmin, ymin) = AddressToCoord(address1);
-            var (xmax, ymax) = AddressToCoord(address2);
-
             var all = new List<JsonObject>();
             int start = 0;
             const int batchSize = 1000;
@@ -210,7 +270,7 @@ namespace URSUS.Parsers
         {
             string body = _http.GetStringAsync(url).GetAwaiter().GetResult();
             var node = JsonNode.Parse(body)
-                ?? throw new InvalidOperationException("Invalid JSON response");
+                ?? throw new InvalidOperationException("API 응답이 올바른 JSON 형식이 아닙니다.");
             return node.AsObject();
         }
 
