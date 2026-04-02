@@ -39,7 +39,7 @@ namespace URSUS.DataSources
 
             int count = 0;
             count += RegisterStatisticSources(registry, keyProvider);
-            // 향후: RegisterBoundarySources(registry, keyProvider);
+            RegisterBoundarySources(registry, keyProvider);
             return count;
         }
 
@@ -56,6 +56,16 @@ namespace URSUS.DataSources
                 registry.Register(source);
             }
             return sources.Count;
+        }
+
+        /// <summary>
+        /// 경계 데이터 소스를 등록한다.
+        /// </summary>
+        public static void RegisterBoundarySources(
+            IDataSourceRegistry registry, ApiKeyProvider keyProvider)
+        {
+            var boundarySource = new VWorldBoundaryDataSource(keyProvider);
+            registry.RegisterBoundary(boundarySource);
         }
 
         /// <summary>
@@ -77,6 +87,7 @@ namespace URSUS.DataSources
 
                 // ── 토지이용 (LandUse) ───────────────────────────────
                 new LandPriceDataSource(keyProvider),
+                new ZoningDataSource(keyProvider),
 
                 // ── 새 데이터 소스 추가 시 여기에 한 줄 추가 ─────────
                 // new NoiseDataSource(keyProvider),
