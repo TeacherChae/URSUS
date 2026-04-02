@@ -14,6 +14,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- 행정동↔법정동 매핑 JSON — DLL에 내장하여 사용자가 파일 존재를 몰라도 동작 -->
+    <EmbeddedResource Include="Resources/adstrd_legald_mapping.json" LogicalName="URSUS.adstrd_legald_mapping.json" />
+  </ItemGroup>
+
+  <ItemGroup>
     <!-- Rhino 8 / .NET 7 기반 — runtime DLL은 Rhino가 제공하므로 ExcludeAssets="runtime" -->
     <PackageReference Include="RhinoCommon" Version="8.17.*" ExcludeAssets="runtime" />
 
