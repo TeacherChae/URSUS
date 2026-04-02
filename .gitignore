@@ -13,6 +13,9 @@ src/URSUS/cache/
 *.pdb
 *.deps.json
 
+# Installer output
+dist/
+
 # Source data (too large / not redistributable)
 *.xlsx
 .omc/

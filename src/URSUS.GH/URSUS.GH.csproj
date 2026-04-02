@@ -13,6 +13,9 @@
                       ExcludeAssets="runtime" />
     <PackageReference Include="System.Drawing.Common"
                       Version="7.*" />
+    <PackageReference Include="System.Windows.Forms"
+                      Version="4.*"
+                      ExcludeAssets="runtime" />
     <ProjectReference Include="..\URSUS\URSUS.csproj" />
   </ItemGroup>
 </Project>

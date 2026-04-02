@@ -1,0 +1,150 @@
+name: Build & Package URSUS
+
+on:
+  push:
+    tags:
+      - 'v*'
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      create_release:
+        description: 'Create GitHub Release'
+        required: false
+        default: 'false'
+        type: boolean
+
+env:
+  DOTNET_VERSION: '7.0.x'
+  CONFIGURATION: 'Release'
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore dependencies
+        run: dotnet restore URSUS.sln
+
+      - name: Build
+        run: dotnet build URSUS.sln -c ${{ env.CONFIGURATION }} --no-restore
+
+      - name: Verify build output
+        shell: pwsh
+        run: |
+          $required = @(
+            "bin/Release/URSUS.GH.gha",
+            "bin/Release/URSUS.dll",
+            "bin/Release/Clipper2Lib.dll"
+          )
+          $missing = $required | Where-Object { -not (Test-Path $_) }
+          if ($missing) {
+            Write-Error "Missing build artifacts: $($missing -join ', ')"
+            exit 1
+          }
+          Write-Host "All build artifacts verified."
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: URSUS-Release
+          path: |
+            bin/Release/URSUS.GH.gha
+            bin/Release/URSUS.dll
+            bin/Release/Clipper2Lib.dll
+            bin/Release/System.Drawing.Common.dll
+            bin/Release/Microsoft.Win32.SystemEvents.dll
+            bin/Release/URSUS.GH.deps.json
+            bin/Release/URSUS.GH.runtimeconfig.json
+            bin/adstrd_legald_mapping.json
+          retention-days: 30
+
+  installer:
+    needs: build
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: URSUS-Release
+          path: bin/Release
+
+      - name: Install Inno Setup
+        shell: pwsh
+        run: |
+          choco install innosetup -y --no-progress
+          Write-Host "Inno Setup installed."
+
+      - name: Create installer
+        shell: pwsh
+        run: |
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) {
+            $iscc = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
+          }
+          & $iscc installer/URSUS.iss
+          if ($LASTEXITCODE -ne 0) { throw "Inno Setup compilation failed" }
+
+      - name: Create portable ZIP
+        shell: pwsh
+        run: |
+          $staging = "dist/_staging"
+          New-Item -ItemType Directory -Path $staging -Force | Out-Null
+          $files = @(
+            "bin/Release/URSUS.GH.gha",
+            "bin/Release/URSUS.dll",
+            "bin/Release/Clipper2Lib.dll",
+            "bin/Release/System.Drawing.Common.dll",
+            "bin/Release/Microsoft.Win32.SystemEvents.dll",
+            "bin/Release/URSUS.GH.deps.json",
+            "bin/Release/URSUS.GH.runtimeconfig.json"
+          )
+          foreach ($f in $files) {
+            if (Test-Path $f) { Copy-Item $f $staging }
+          }
+          if (Test-Path "bin/adstrd_legald_mapping.json") {
+            Copy-Item "bin/adstrd_legald_mapping.json" $staging
+          }
+          Compress-Archive -Path "$staging/*" -DestinationPath "dist/URSUS_portable.zip" -Force
+          Remove-Item -Recurse -Force $staging
+
+      - name: Upload installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: URSUS-Installer
+          path: |
+            dist/URSUS_*_Setup.exe
+            dist/URSUS_portable.zip
+          retention-days: 30
+
+  release:
+    needs: installer
+    if: startsWith(github.ref, 'refs/tags/v') || github.event.inputs.create_release == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download installer artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: URSUS-Installer
+          path: dist
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/URSUS_*_Setup.exe
+            dist/URSUS_portable.zip
+          draft: true
+          generate_release_notes: true
