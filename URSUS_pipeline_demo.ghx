@@ -28,9 +28,23 @@
         <chunk name="DefinitionProperties">
           <items count="3">
             <item name="Date" type_name="gh_date" type_code="8">638791776000000000</item>
-            <item name="Description" type_name="gh_string" type_code="10">URSUS Pipeline Demo: Solver -&gt; Visualizer -&gt; CSV Export
-법정동 경계 데이터를 수집하고 IDW 보간 시각화 후 CSV로 내보내는 예제입니다.
-API 키 없이도 캐시 데이터로 동작을 확인할 수 있습니다.</item>
+            <item name="Description" type_name="gh_string" type_code="10">URSUS v0.3.0 Pipeline Demo: Solver -> Visualizer -> CSV Export
+
+[한국어 설명]
+법정동 경계 데이터를 수집하고, IDW 보간으로 시각화한 후,
+결과를 CSV로 내보내는 전체 파이프라인 예제입니다.
+
+[사용 방법]
+1. VWorld / Seoul 열린데이터 API 키를 입력하거나 환경변수로 설정
+2. 분석 영역 주소를 입력 (기본: 서울 강남구)
+3. 가중치 슬라이더로 데이터셋 비중 조절
+4. Visualizer에서 IDW 보간 메시 확인
+5. Export CSV 버튼으로 결과 저장
+
+[Pipeline]
+  Sliders + Address -> URSUS Solver -> Visualizer (IDW Mesh)
+                                    -> CSV Export  (파일 저장)
+                                    -> Panels      (데이터 미리보기)</item>
             <item name="Name" type_name="gh_string" type_code="10">URSUS_pipeline_demo</item>
           </items>
         </chunk>
@@ -42,10 +56,163 @@ API 키 없이도 캐시 데이터로 동작을 확인할 수 있습니다.</ite
         </chunk>
         <chunk name="DefinitionObjects">
           <items count="1">
-            <item name="ObjectCount" type_name="gh_int32" type_code="3">20</item>
+            <item name="ObjectCount" type_name="gh_int32" type_code="3">33</item>
           </items>
-          <chunks count="21">
+          <chunks count="34">
+            <!-- ============================================================ -->
+            <!--  TITLE SCRIBBLE                                              -->
+            <!-- ============================================================ -->
             <chunk name="Object" index="0">
+              <items count="2">
+                <item name="GUID" type_name="gh_guid" type_code="9">7f5c6c55-f846-4a08-9c9a-cfdc285cc6fe</item>
+                <item name="Name" type_name="gh_string" type_code="10">Scribble</item>
+              </items>
+              <chunks count="1">
+                <chunk name="Container">
+                  <items count="4">
+                    <item name="InstanceGuid" type_name="gh_guid" type_code="9">a1b2c3d4-dd01-4000-8000-000000000040</item>
+                    <item name="NickName" type_name="gh_string" type_code="10">Scribble</item>
+                    <item name="Description" type_name="gh_string" type_code="10">Title</item>
+                    <item name="Pivot" type_name="gh_drawing_pointF" type_code="31">
+                      <X>50</X>
+                      <Y>10</Y>
+                    </item>
+                  </items>
+                  <chunks count="1">
+                    <chunk name="ScribbleProperties">
+                      <items count="3">
+                        <item name="Text" type_name="gh_string" type_code="10">URSUS v0.3.0 Pipeline Demo: Solver -> Visualizer -> CSV Export</item>
+                        <item name="FontSize" type_name="gh_single" type_code="5">24</item>
+                        <item name="Bounds" type_name="gh_drawing_rectangleF" type_code="35">
+                          <X>50</X>
+                          <Y>10</Y>
+                          <W>800</W>
+                          <H>40</H>
+                        </item>
+                      </items>
+                    </chunk>
+                  </chunks>
+                </chunk>
+              </chunks>
+            </chunk>
+
+            <!-- ============================================================ -->
+            <!--  STEP 1 ANNOTATION                                           -->
+            <!-- ============================================================ -->
+            <chunk name="Object" index="1">
+              <items count="2">
+                <item name="GUID" type_name="gh_guid" type_code="9">7f5c6c55-f846-4a08-9c9a-cfdc285cc6fe</item>
+                <item name="Name" type_name="gh_string" type_code="10">Scribble</item>
+              </items>
+              <chunks count="1">
+                <chunk name="Container">
+                  <items count="4">
+                    <item name="InstanceGuid" type_name="gh_guid" type_code="9">a1b2c3d4-dd02-4000-8000-000000000041</item>
+                    <item name="NickName" type_name="gh_string" type_code="10">Step1</item>
+                    <item name="Description" type_name="gh_string" type_code="10">Step 1</item>
+                    <item name="Pivot" type_name="gh_drawing_pointF" type_code="31">
+                      <X>70</X>
+                      <Y>65</Y>
+                    </item>
+                  </items>
+                  <chunks count="1">
+                    <chunk name="ScribbleProperties">
+                      <items count="3">
+                        <item name="Text" type_name="gh_string" type_code="10">STEP 1: 입력값 설정 (가중치 슬라이더 + 분석 영역 주소)</item>
+                        <item name="FontSize" type_name="gh_single" type_code="5">14</item>
+                        <item name="Bounds" type_name="gh_drawing_rectangleF" type_code="35">
+                          <X>70</X>
+                          <Y>65</Y>
+                          <W>500</W>
+                          <H>25</H>
+                        </item>
+                      </items>
+                    </chunk>
+                  </chunks>
+                </chunk>
+              </chunks>
+            </chunk>
+
+            <!-- ============================================================ -->
+            <!--  STEP 2 ANNOTATION                                           -->
+            <!-- ============================================================ -->
+            <chunk name="Object" index="2">
+              <items count="2">
+                <item name="GUID" type_name="gh_guid" type_code="9">7f5c6c55-f846-4a08-9c9a-cfdc285cc6fe</item>
+                <item name="Name" type_name="gh_string" type_code="10">Scribble</item>
+              </items>
+              <chunks count="1">
+                <chunk name="Container">
+                  <items count="4">
+                    <item name="InstanceGuid" type_name="gh_guid" type_code="9">a1b2c3d4-dd03-4000-8000-000000000042</item>
+                    <item name="NickName" type_name="gh_string" type_code="10">Step2</item>
+                    <item name="Description" type_name="gh_string" type_code="10">Step 2</item>
+                    <item name="Pivot" type_name="gh_drawing_pointF" type_code="31">
+                      <X>530</X>
+                      <Y>65</Y>
+                    </item>
+                  </items>
+                  <chunks count="1">
+                    <chunk name="ScribbleProperties">
+                      <items count="3">
+                        <item name="Text" type_name="gh_string" type_code="10">STEP 2: Solver (API 데이터 수집 + 오버레이 분석)</item>
+                        <item name="FontSize" type_name="gh_single" type_code="5">14</item>
+                        <item name="Bounds" type_name="gh_drawing_rectangleF" type_code="35">
+                          <X>530</X>
+                          <Y>65</Y>
+                          <W>430</W>
+                          <H>25</H>
+                        </item>
+                      </items>
+                    </chunk>
+                  </chunks>
+                </chunk>
+              </chunks>
+            </chunk>
+
+            <!-- ============================================================ -->
+            <!--  STEP 3 ANNOTATION                                           -->
+            <!-- ============================================================ -->
+            <chunk name="Object" index="3">
+              <items count="2">
+                <item name="GUID" type_name="gh_guid" type_code="9">7f5c6c55-f846-4a08-9c9a-cfdc285cc6fe</item>
+                <item name="Name" type_name="gh_string" type_code="10">Scribble</item>
+              </items>
+              <chunks count="1">
+                <chunk name="Container">
+                  <items count="4">
+                    <item name="InstanceGuid" type_name="gh_guid" type_code="9">a1b2c3d4-dd04-4000-8000-000000000043</item>
+                    <item name="NickName" type_name="gh_string" type_code="10">Step3</item>
+                    <item name="Description" type_name="gh_string" type_code="10">Step 3</item>
+                    <item name="Pivot" type_name="gh_drawing_pointF" type_code="31">
+                      <X>1020</X>
+                      <Y>65</Y>
+                    </item>
+                  </items>
+                  <chunks count="1">
+                    <chunk name="ScribbleProperties">
+                      <items count="3">
+                        <item name="Text" type_name="gh_string" type_code="10">STEP 3: Visualizer (IDW 보간 메시) + CSV Export (결과 저장)</item>
+                        <item name="FontSize" type_name="gh_single" type_code="5">14</item>
+                        <item name="Bounds" type_name="gh_drawing_rectangleF" type_code="35">
+                          <X>1020</X>
+                          <Y>65</Y>
+                          <W>520</W>
+                          <H>25</H>
+                        </item>
+                      </items>
+                    </chunk>
+                  </chunks>
+                </chunk>
+              </chunks>
+            </chunk>
+
+            <!-- ============================================================ -->
+            <!--  WEIGHT SLIDERS (W Income, W Population, W Transit)           -->
+            <!-- ============================================================ -->
+
+            <!-- Object 4: W Income Slider -->
+            <chunk name="Object" index="4">
               <items count="2">
                 <item name="GUID" type_name="gh_guid" type_code="9">57da07bd-ecab-415d-9d86-af36d7073abc</item>
                 <item name="Name" type_name="gh_string" type_code="10">Number Slider</item>
@@ -54,16 +221,16 @@ API 키 없이도 캐시 데이터로 동작을 확인할 수 있습니다.</ite
                 <chunk name="Container">
                   <items count="5">
                     <item name="InstanceGuid" type_name="gh_guid" type_code="9">a1b2c3d4-aa01-4000-8000-000000000010</item>
-                    <item name="NickName" type_name="gh_string" type_code="10">W Income</item>
+                    <item name="NickName" type_name="gh_string" type_code="10">W Income (소득 가중치)</item>
                     <item name="Optional" type_name="gh_bool" type_code="1">true</item>
                     <item name="Pivot" type_name="gh_drawing_pointF" type_code="31">
                       <X>80</X>
-                      <Y>200</Y>
+                      <Y>110</Y>
                     </item>
                     <item name="Bounds" type_name="gh_drawing_rectangleF" type_code="35">
                       <X>80</X>
-                      <Y>200</Y>
-                      <W>250</W>
+                      <Y>110</Y>
+                      <W>280</W>
                       <H>20</H>
                     </item>
                   </items>
@@ -72,7 +239,7 @@ API 키 없이도 캐시 데이터로 동작을 확인할 수 있습니다.</ite
                       <items count="7">
                         <item name="Min" type_name="gh_double" type_code="6">0.0</item>
                         <item name="Max" type_name="gh_double" type_code="6">1.0</item>
-                        <item name="Value" type_name="gh_double" type_code="6">1.0</item>
+                        <item name="Value" type_name="gh_double" type_code="6">0.5</item>
                         <item name="DecimalPlaces" type_name="gh_int32" type_code="3">2</item>
                         <item name="SnapCount" type_name="gh_int32" type_code="3">0</item>
                         <item name="GripDisplay" type_name="gh_int32" type_code="3">1</item>
@@ -83,7 +250,9 @@ API 키 없이도 캐시 데이터로 동작을 확인할 수 있습니다.</ite
                 </chunk>
               </chunks>
             </chunk>
-            <chunk name="Object" index="1">
+
+            <!-- Object 5: W Population Slider -->
+            <chunk name="Object" index="5">
               <items count="2">
                 <item name="GUID" type_name="gh_guid" type_code="9">57da07bd-ecab-415d-9d86-af36d7073abc</item>
                 <item name="Name" type_name="gh_string" type_code="10">Number Slider</item>
@@ -92,16 +261,16 @@ API 키 없이도 캐시 데이터로 동작을 확인할 수 있습니다.</ite
                 <chunk name="Container">
                   <items count="5">
                     <item name="InstanceGuid" type_name="gh_guid" type_code="9">a1b2c3d4-aa02-4000-8000-000000000011</item>
-                    <item name="NickName" type_name="gh_string" type_code="10">W Population</item>
+                    <item name="NickName" type_name="gh_string" type_code="10">W Population (인구 가중치)</item>
                     <item name="Optional" type_name="gh_bool" type_code="1">true</item>
                     <item name="Pivot" type_name="gh_drawing_pointF" type_code="31">
                       <X>80</X>
-                      <Y>235</Y>
+                      <Y>145</Y>
                     </item>
                     <item name="Bounds" type_name="gh_drawing_rectangleF" type_code="35">
                       <X>80</X>
-                      <Y>235</Y>
-                      <W>250</W>
+                      <Y>145</Y>
+                      <W>280</W>
                       <H>20</H>
                     </item>
                   </items>
@@ -110,7 +279,7 @@ API 키 없이도 캐시 데이터로 동작을 확인할 수 있습니다.</ite
                       <items count="7">
                         <item name="Min" type_name="gh_double" type_code="6">0.0</item>
                         <item name="Max" type_name="gh_double" type_code="6">1.0</item>
-                        <item name="Value" type_name="gh_double" type_code="6">1.0</item>
+                        <item name="Value" type_name="gh_double" type_code="6">0.3</item>
                         <item name="DecimalPlaces" type_name="gh_int32" type_code="3">2</item>
                         <item name="SnapCount" type_name="gh_int32" type_code="3">0</item>
                         <item name="GripDisplay" type_name="gh_int32" type_code="3">1</item>
@@ -121,7 +290,9 @@ API 키 없이도 캐시 데이터로 동작을 확인할 수 있습니다.</ite
                 </chunk>
               </chunks>
             </chunk>
-            <chunk name="Object" index="2">
+
+            <!-- Object 6: W Transit Slider -->
+            <chunk name="Object" index="6">
               <items count="2">
                 <item name="GUID" type_name="gh_guid" type_code="9">57da07bd-ecab-415d-9d86-af36d7073abc</item>
                 <item name="Name" type_name="gh_string" type_code="10">Number Slider</item>
@@ -130,16 +301,16 @@ API 키 없이도 캐시 데이터로 동작을 확인할 수 있습니다.</ite
                 <chunk name="Container">
                   <items count="5">
                     <item name="InstanceGuid" type_name="gh_guid" type_code="9">a1b2c3d4-aa03-4000-8000-000000000012</item>
-                    <item name="NickName" type_name="gh_string" type_code="10">W Transit</item>
+                    <item name="NickName" type_name="gh_string" type_code="10">W Transit (교통 가중치)</item>
                     <item name="Optional" type_name="gh_bool" type_code="1">true</item>
                     <item name="Pivot" type_name="gh_drawing_pointF" type_code="31">
                       <X>80</X>
-                      <Y>270</Y>
+                      <Y>180</Y>
                     </item>
                     <item name="Bounds" type_name="gh_drawing_rectangleF" type_code="35">
                       <X>80</X>
-                      <Y>270</Y>
-                      <W>250</W>
+                      <Y>180</Y>
+                      <W>280</W>
                       <H>20</H>
                     </item>
                   </items>
@@ -148,7 +319,7 @@ API 키 없이도 캐시 데이터로 동작을 확인할 수 있습니다.</ite
                       <items count="7">
                         <item name="Min" type_name="gh_double" type_code="6">0.0</item>
                         <item name="Max" type_name="gh_double" type_code="6">1.0</item>
-                        <item name="Value" type_name="gh_double" type_code="6">1.0</item>
+                        <item name="Value" type_name="gh_double" type_code="6">0.2</item>
                         <item name="DecimalPlaces" type_name="gh_int32" type_code="3">2</item>
                         <item name="SnapCount" type_name="gh_int32" type_code="3">0</item>
                         <item name="GripDisplay" type_name="gh_int32" type_code="3">1</item>
@@ -159,7 +330,13 @@ API 키 없이도 캐시 데이터로 동작을 확인할 수 있습니다.</ite
                 </chunk>
               </chunks>
             </chunk>
-            <chunk name="Object" index="3">
+
+            <!-- ============================================================ -->
+            <!--  ADDRESS PANELS                                              -->
+            <!-- ============================================================ -->
+
+            <!-- Object 7: Address 1 Panel -->
+            <chunk name="Object" index="7">
               <items count="2">
                 <item name="GUID" type_name="gh_guid" type_code="9">59e0b89a-e487-49f8-bab8-b5bab16be14c</item>
                 <item name="Name" type_name="gh_string" type_code="10">Panel</item>
@@ -168,17 +345,17 @@ API 키 없이도 캐시 데이터로 동작을 확인할 수 있습니다.</ite
                 <chunk name="Container">
                   <items count="5">
                     <item name="InstanceGuid" type_name="gh_guid" type_code="9">a1b2c3d4-bb02-4000-8000-000000000021</item>
-                    <item name="NickName" type_name="gh_string" type_code="10">Address 1</item>
+                    <item name="NickName" type_name="gh_string" type_code="10">Address 1 (분석 중심 주소)</item>
                     <item name="Optional" type_name="gh_bool" type_code="1">true</item>
                     <item name="Pivot" type_name="gh_drawing_pointF" type_code="31">
                       <X>80</X>
-                      <Y>320</Y>
+                      <Y>230</Y>
                     </item>
                     <item name="Bounds" type_name="gh_drawing_rectangleF" type_code="35">
                       <X>80</X>
-                      <Y>320</Y>
-                      <W>200</W>
-                      <H>50</H>
+                      <Y>230</Y>
+                      <W>280</W>
+                      <H>40</H>
                     </item>
                   </items>
                   <chunks count="1">
@@ -194,7 +371,9 @@ API 키 없이도 캐시 데이터로 동작을 확인할 수 있습니다.</ite
                 </chunk>
               </chunks>
             </chunk>
-            <chunk name="Object" index="4">
+
+            <!-- Object 8: Address 2 Panel -->
+            <chunk name="Object" index="8">
               <items count="2">
                 <item name="GUID" type_name="gh_guid" type_code="9">59e0b89a-e487-49f8-bab8-b5bab16be14c</item>
                 <item name="Name" type_name="gh_string" type_code="10">Panel</item>
@@ -203,17 +382,17 @@ API 키 없이도 캐시 데이터로 동작을 확인할 수 있습니다.</ite
                 <chunk name="Container">
                   <items count="5">
                     <item name="InstanceGuid" type_name="gh_guid" type_code="9">a1b2c3d4-bb03-4000-8000-000000000022</item>
-                    <item name="NickName" type_name="gh_string" type_code="10">Address 2</item>
+                    <item name="NickName" type_name="gh_string" type_code="10">Address 2 (BBOX 우상단, 선택)</item>
                     <item name="Optional" type_name="gh_bool" type_code="1">true</item>
                     <item name="Pivot" type_name="gh_drawing_pointF" type_code="31">
                       <X>80</X>
-                      <Y>380</Y>
+                      <Y>285</Y>
                     </item>
                     <item name="Bounds" type_name="gh_drawing_rectangleF" type_code="35">
                       <X>80</X>
-                      <Y>380</Y>
-                      <W>200</W>
-                      <H>50</H>
+                      <Y>285</Y>
+                      <W>280</W>
+                      <H>40</H>
                     </item>
                   </items>
                   <chunks count="1">
@@ -229,7 +408,13 @@ API 키 없이도 캐시 데이터로 동작을 확인할 수 있습니다.</ite
                 </chunk>
               </chunks>
             </chunk>
-            <chunk name="Object" index="5">
+
+            <!-- ============================================================ -->
+            <!--  VISUALIZER PARAMETER SLIDERS                                -->
+            <!-- ============================================================ -->
+
+            <!-- Object 9: Resolution Slider -->
+            <chunk name="Object" index="9">
               <items count="2">
                 <item name="GUID" type_name="gh_guid" type_code="9">57da07bd-ecab-415d-9d86-af36d7073abc</item>
                 <item name="Name" type_name="gh_string" type_code="10">Number Slider</item>
@@ -238,16 +423,16 @@ API 키 없이도 캐시 데이터로 동작을 확인할 수 있습니다.</ite
                 <chunk name="Container">
                   <items count="5">
                     <item name="InstanceGuid" type_name="gh_guid" type_code="9">a1b2c3d4-aa04-4000-8000-000000000013</item>
-                    <item name="NickName" type_name="gh_string" type_code="10">Resolution</item>
+                    <item name="NickName" type_name="gh_string" type_code="10">Resolution (메시 해상도)</item>
                     <item name="Optional" type_name="gh_bool" type_code="1">true</item>
                     <item name="Pivot" type_name="gh_drawing_pointF" type_code="31">
                       <X>80</X>
-                      <Y>80</Y>
+                      <Y>360</Y>
                     </item>
                     <item name="Bounds" type_name="gh_drawing_rectangleF" type_code="35">
                       <X>80</X>
-                      <Y>80</Y>
-                      <W>250</W>
+                      <Y>360</Y>
+                      <W>280</W>
                       <H>20</H>
                     </item>
                   </items>
@@ -267,7 +452,9 @@ API 키 없이도 캐시 데이터로 동작을 확인할 수 있습니다.</ite
                 </chunk>
               </chunks>
             </chunk>
-            <chunk name="Object" index="6">
+
+            <!-- Object 10: IDW Power Slider -->
+            <chunk name="Object" index="10">
               <items count="2">
                 <item name="GUID" type_name="gh_guid" type_code="9">57da07bd-ecab-415d-9d86-af36d7073abc</item>
                 <item name="Name" type_name="gh_string" type_code="10">Number Slider</item>
@@ -276,16 +463,16 @@ API 키 없이도 캐시 데이터로 동작을 확인할 수 있습니다.</ite
                 <chunk name="Container">
                   <items count="5">
                     <item name="InstanceGuid" type_name="gh_guid" type_code="9">a1b2c3d4-aa05-4000-8000-000000000014</item>
-                    <item name="NickName" type_name="gh_string" type_code="10">IDW Power</item>
+                    <item name="NickName" type_name="gh_string" type_code="10">IDW Power (보간 지수)</item>
                     <item name="Optional" type_name="gh_bool" type_code="1">true</item>
                     <item name="Pivot" type_name="gh_drawing_pointF" type_code="31">
                       <X>80</X>
-                      <Y>115</Y>
+                      <Y>395</Y>
                     </item>
                     <item name="Bounds" type_name="gh_drawing_rectangleF" type_code="35">
                       <X>80</X>
-                      <Y>115</Y>
-                      <W>250</W>
+                      <Y>395</Y>
+                      <W>280</W>
                       <H>20</H>
                     </item>
                   </items>
@@ -305,7 +492,9 @@ API 키 없이도 캐시 데이터로 동작을 확인할 수 있습니다.</ite
                 </chunk>
               </chunks>
             </chunk>
-            <chunk name="Object" index="7">
+
+            <!-- Object 11: Height Scale Slider -->
+            <chunk name="Object" index="11">
               <items count="2">
                 <item name="GUID" type_name="gh_guid" type_code="9">57da07bd-ecab-415d-9d86-af36d7073abc</item>
                 <item name="Name" type_name="gh_string" type_code="10">Number Slider</item>
@@ -314,16 +503,16 @@ API 키 없이도 캐시 데이터로 동작을 확인할 수 있습니다.</ite
                 <chunk name="Container">
                   <items count="5">
                     <item name="InstanceGuid" type_name="gh_guid" type_code="9">a1b2c3d4-aa06-4000-8000-000000000015</item>
-                    <item name="NickName" type_name="gh_string" type_code="10">Height Scale</item>
+                    <item name="NickName" type_name="gh_string" type_code="10">Height Scale (Z 높이 배율)</item>
                     <item name="Optional" type_name="gh_bool" type_code="1">true</item>
                     <item name="Pivot" type_name="gh_drawing_pointF" type_code="31">
                       <X>80</X>
-                      <Y>150</Y>
+                      <Y>430</Y>
                     </item>
                     <item name="Bounds" type_name="gh_drawing_rectangleF" type_code="35">
                       <X>80</X>
-                      <Y>150</Y>
-                      <W>250</W>
+                      <Y>430</Y>
+                      <W>280</W>
                       <H>20</H>
                     </item>
                   </items>
@@ -343,7 +532,9 @@ API 키 없이도 캐시 데이터로 동작을 확인할 수 있습니다.</ite
                 </chunk>
               </chunks>
             </chunk>
-            <chunk name="Object" index="8">
+
+            <!-- Object 12: Height Ratio Slider -->
+            <chunk name="Object" index="12">
               <items count="2">
                 <item name="GUID" type_name="gh_guid" type_code="9">57da07bd-ecab-415d-9d86-af36d7073abc</item>
                 <item name="Name" type_name="gh_string" type_code="10">Number Slider</item>
@@ -352,16 +543,16 @@ API 키 없이도 캐시 데이터로 동작을 확인할 수 있습니다.</ite
                 <chunk name="Container">
                   <items count="5">
                     <item name="InstanceGuid" type_name="gh_guid" type_code="9">a1b2c3d4-aa07-4000-8000-000000000016</item>
-                    <item name="NickName" type_name="gh_string" type_code="10">Height Ratio</item>
+                    <item name="NickName" type_name="gh_string" type_code="10">Height Ratio (Z 최대 비율)</item>
                     <item name="Optional" type_name="gh_bool" type_code="1">true</item>
                     <item name="Pivot" type_name="gh_drawing_pointF" type_code="31">
                       <X>80</X>
-                      <Y>185</Y>
+                      <Y>465</Y>
                     </item>
                     <item name="Bounds" type_name="gh_drawing_rectangleF" type_code="35">
                       <X>80</X>
-                      <Y>185</Y>
-                      <W>250</W>
+                      <Y>465</Y>
+                      <W>280</W>
                       <H>20</H>
                     </item>
                   </items>
@@ -381,7 +572,9 @@ API 키 없이도 캐시 데이터로 동작을 확인할 수 있습니다.</ite
                 </chunk>
               </chunks>
             </chunk>
-            <chunk name="Object" index="9">
+
+            <!-- Object 13: Legend Steps Slider -->
+            <chunk name="Object" index="13">
               <items count="2">
                 <item name="GUID" type_name="gh_guid" type_code="9">57da07bd-ecab-415d-9d86-af36d7073abc</item>
                 <item name="Name" type_name="gh_string" type_code="10">Number Slider</item>
@@ -390,16 +583,16 @@ API 키 없이도 캐시 데이터로 동작을 확인할 수 있습니다.</ite
                 <chunk name="Container">
                   <items count="5">
                     <item name="InstanceGuid" type_name="gh_guid" type_code="9">a1b2c3d4-aa08-4000-8000-000000000017</item>
-                    <item name="NickName" type_name="gh_string" type_code="10">Legend Steps</item>
+                    <item name="NickName" type_name="gh_string" type_code="10">Legend Steps (범례 단계 수)</item>
                     <item name="Optional" type_name="gh_bool" type_code="1">true</item>
                     <item name="Pivot" type_name="gh_drawing_pointF" type_code="31">
-                      <X>380</X>
-                      <Y>185</Y>
+                      <X>80</X>
+                      <Y>500</Y>
                     </item>
                     <item name="Bounds" type_name="gh_drawing_rectangleF" type_code="35">
-                      <X>380</X>
-                      <Y>185</Y>
-                      <W>250</W>
+                      <X>80</X>
+                      <Y>500</Y>
+                      <W>280</W>
                       <H>20</H>
                     </item>
                   </items>
@@ -419,7 +612,9 @@ API 키 없이도 캐시 데이터로 동작을 확인할 수 있습니다.</ite
                 </chunk>
               </chunks>
             </chunk>
-            <chunk name="Object" index="10">
+
+            <!-- Object 14: Color Style Slider (0~6) -->
+            <chunk name="Object" index="14">
               <items count="2">
                 <item name="GUID" type_name="gh_guid" type_code="9">57da07bd-ecab-415d-9d86-af36d7073abc</item>
                 <item name="Name" type_name="gh_string" type_code="10">Number Slider</item>
@@ -428,16 +623,16 @@ API 키 없이도 캐시 데이터로 동작을 확인할 수 있습니다.</ite
                 <chunk name="Container">
                   <items count="5">
                     <item name="InstanceGuid" type_name="gh_guid" type_code="9">a1b2c3d4-aa09-4000-8000-000000000018</item>
-                    <item name="NickName" type_name="gh_string" type_code="10">Color Style</item>
+                    <item name="NickName" type_name="gh_string" type_code="10">Color Style (0~6: Viridis=4)</item>
                     <item name="Optional" type_name="gh_bool" type_code="1">true</item>
                     <item name="Pivot" type_name="gh_drawing_pointF" type_code="31">
-                      <X>380</X>
-                      <Y>150</Y>
+                      <X>80</X>
+                      <Y>535</Y>
                     </item>
                     <item name="Bounds" type_name="gh_drawing_rectangleF" type_code="35">
-                      <X>380</X>
-                      <Y>150</Y>
-                      <W>250</W>
+                      <X>80</X>
+                      <Y>535</Y>
+                      <W>280</W>
                       <H>20</H>
                     </item>
                   </items>
@@ -457,7 +652,13 @@ API 키 없이도 캐시 데이터로 동작을 확인할 수 있습니다.</ite
                 </chunk>
               </chunks>
             </chunk>
-            <chunk name="Object" index="11">
+
+            <!-- ============================================================ -->
+            <!--  EXPORT CONTROLS                                             -->
+            <!-- ============================================================ -->
+
+            <!-- Object 15: Export CSV Toggle -->
+            <chunk name="Object" index="15">
               <items count="2">
                 <item name="GUID" type_name="gh_guid" type_code="9">2e78987b-9dfb-42a2-8b76-3923ac8bd91a</item>
                 <item name="Name" type_name="gh_string" type_code="10">Boolean Toggle</item>
@@ -466,11 +667,11 @@ API 키 없이도 캐시 데이터로 동작을 확인할 수 있습니다.</ite
                 <chunk name="Container">
                   <items count="4">
                     <item name="InstanceGuid" type_name="gh_guid" type_code="9">a1b2c3d4-bb01-4000-8000-000000000020</item>
-                    <item name="NickName" type_name="gh_string" type_code="10">Export CSV</item>
-                    <item name="Description" type_name="gh_string" type_code="10">Export CSV</item>
+                    <item name="NickName" type_name="gh_string" type_code="10">Export CSV (True=저장)</item>
+                    <item name="Description" type_name="gh_string" type_code="10">True로 더블클릭하면 CSV 파일이 저장됩니다</item>
                     <item name="Pivot" type_name="gh_drawing_pointF" type_code="31">
                       <X>80</X>
-                      <Y>640</Y>
+                      <Y>590</Y>
                     </item>
                   </items>
                   <chunks count="1">
@@ -483,7 +684,13 @@ API 키 없이도 캐시 데이터로 동작을 확인할 수 있습니다.</ite
                 </chunk>
               </chunks>
             </chunk>
-            <chunk name="Object" index="12">
+
+            <!-- ============================================================ -->
+            <!--  CORE COMPONENTS: Solver, Visualizer, CSV Export             -->
+            <!-- ============================================================ -->
+
+            <!-- Object 16: URSUS Solver -->
+            <chunk name="Object" index="16">
               <items count="2">
                 <item name="GUID" type_name="gh_guid" type_code="9">794d034a-069d-4790-a220-1293dd3328cf</item>
                 <item name="Name" type_name="gh_string" type_code="10">URSUS Solver</item>
@@ -493,16 +700,19 @@ API 키 없이도 캐시 데이터로 동작을 확인할 수 있습니다.</ite
                   <items count="4">
                     <item name="InstanceGuid" type_name="gh_guid" type_code="9">a1b2c3d4-1111-4000-8000-000000000001</item>
                     <item name="NickName" type_name="gh_string" type_code="10">Solver</item>
-                    <item name="Description" type_name="gh_string" type_code="10">법정동 경계 + 소득 데이터 수집 파이프라인</item>
+                    <item name="Description" type_name="gh_string" type_code="10">법정동 경계 + 소득/인구/교통 데이터 수집 파이프라인.
+API 키는 환경변수 또는 appsettings.json에서 자동 로드됩니다.</item>
                     <item name="Pivot" type_name="gh_drawing_pointF" type_code="31">
-                      <X>480</X>
+                      <X>560</X>
                       <Y>200</Y>
                     </item>
                   </items>
                 </chunk>
               </chunks>
             </chunk>
-            <chunk name="Object" index="13">
+
+            <!-- Object 17: URSUS Visualizer -->
+            <chunk name="Object" index="17">
               <items count="2">
                 <item name="GUID" type_name="gh_guid" type_code="9">392dfc85-c773-4489-938a-188fb90acb50</item>
                 <item name="Name" type_name="gh_string" type_code="10">URSUS Visualizer</item>
@@ -511,17 +721,20 @@ API 키 없이도 캐시 데이터로 동작을 확인할 수 있습니다.</ite
                 <chunk name="Container">
                   <items count="4">
                     <item name="InstanceGuid" type_name="gh_guid" type_code="9">a1b2c3d4-2222-4000-8000-000000000002</item>
-                    <item name="NickName" type_name="gh_string" type_code="10">Viz</item>
-                    <item name="Description" type_name="gh_string" type_code="10">IDW 공간 보간 시각화</item>
+                    <item name="NickName" type_name="gh_string" type_code="10">Visualizer</item>
+                    <item name="Description" type_name="gh_string" type_code="10">IDW 공간 보간으로 오버레이 값을 메시 시각화.
+Solver의 U(Union), C(Centroids), V(Values) 출력을 연결하세요.</item>
                     <item name="Pivot" type_name="gh_drawing_pointF" type_code="31">
-                      <X>900</X>
-                      <Y>80</Y>
+                      <X>1050</X>
+                      <Y>100</Y>
                     </item>
                   </items>
                 </chunk>
               </chunks>
             </chunk>
-            <chunk name="Object" index="14">
+
+            <!-- Object 18: URSUS CSV Export -->
+            <chunk name="Object" index="18">
               <items count="2">
                 <item name="GUID" type_name="gh_guid" type_code="9">e7f3a2c1-5d84-4b9e-a6f0-2c8d1e9b7a34</item>
                 <item name="Name" type_name="gh_string" type_code="10">URSUS CSV Export</item>
@@ -530,50 +743,272 @@ API 키 없이도 캐시 데이터로 동작을 확인할 수 있습니다.</ite
                 <chunk name="Container">
                   <items count="4">
                     <item name="InstanceGuid" type_name="gh_guid" type_code="9">a1b2c3d4-3333-4000-8000-000000000003</item>
-                    <item name="NickName" type_name="gh_string" type_code="10">Export</item>
-                    <item name="Description" type_name="gh_string" type_code="10">분석 결과를 CSV 파일로 내보냅니다.</item>
+                    <item name="NickName" type_name="gh_string" type_code="10">CSV Export</item>
+                    <item name="Description" type_name="gh_string" type_code="10">분석 결과를 CSV 파일로 내보냅니다.
+Export Toggle을 True로 설정하면 바탕화면에 자동 저장됩니다.</item>
                     <item name="Pivot" type_name="gh_drawing_pointF" type_code="31">
-                      <X>900</X>
-                      <Y>520</Y>
+                      <X>1050</X>
+                      <Y>500</Y>
                     </item>
                   </items>
                 </chunk>
               </chunks>
             </chunk>
-            <chunk name="Object" index="15">
+
+            <!-- Object 19: Weight Slider Component -->
+            <chunk name="Object" index="19">
               <items count="2">
-                <item name="GUID" type_name="gh_guid" type_code="9">7f5c6c55-f846-4a08-9c9a-cfdc285cc6fe</item>
-                <item name="Name" type_name="gh_string" type_code="10">Scribble</item>
+                <item name="GUID" type_name="gh_guid" type_code="9">e7b3c1d4-5f6a-4e8b-9c2d-1a3b5e7f9d01</item>
+                <item name="Name" type_name="gh_string" type_code="10">Weight Slider</item>
               </items>
               <chunks count="1">
                 <chunk name="Container">
                   <items count="4">
-                    <item name="InstanceGuid" type_name="gh_guid" type_code="9">a1b2c3d4-dd01-4000-8000-000000000040</item>
-                    <item name="NickName" type_name="gh_string" type_code="10">Scribble</item>
-                    <item name="Description" type_name="gh_string" type_code="10">URSUS Pipeline Demo: Solver -&gt; Visualizer -&gt; CSV Export</item>
+                    <item name="InstanceGuid" type_name="gh_guid" type_code="9">a1b2c3d4-4444-4000-8000-000000000004</item>
+                    <item name="NickName" type_name="gh_string" type_code="10">Weight Normalizer</item>
+                    <item name="Description" type_name="gh_string" type_code="10">가중치 정규화 컴포넌트 (합계 100% 자동 정규화).
+슬라이더 값을 입력하면 정규화된 가중치와 퍼센트를 출력합니다.</item>
                     <item name="Pivot" type_name="gh_drawing_pointF" type_code="31">
-                      <X>50</X>
-                      <Y>10</Y>
+                      <X>560</X>
+                      <Y>500</Y>
+                    </item>
+                  </items>
+                </chunk>
+              </chunks>
+            </chunk>
+
+            <!-- ============================================================ -->
+            <!--  OUTPUT PANELS (데이터 미리보기)                              -->
+            <!-- ============================================================ -->
+
+            <!-- Object 20: Panel - Solver Names Output -->
+            <chunk name="Object" index="20">
+              <items count="2">
+                <item name="GUID" type_name="gh_guid" type_code="9">59e0b89a-e487-49f8-bab8-b5bab16be14c</item>
+                <item name="Name" type_name="gh_string" type_code="10">Panel</item>
+              </items>
+              <chunks count="1">
+                <chunk name="Container">
+                  <items count="5">
+                    <item name="InstanceGuid" type_name="gh_guid" type_code="9">a1b2c3d4-ee01-4000-8000-000000000050</item>
+                    <item name="NickName" type_name="gh_string" type_code="10">Names (법정동 이름)</item>
+                    <item name="Optional" type_name="gh_bool" type_code="1">false</item>
+                    <item name="Pivot" type_name="gh_drawing_pointF" type_code="31">
+                      <X>850</X>
+                      <Y>180</Y>
+                    </item>
+                    <item name="Bounds" type_name="gh_drawing_rectangleF" type_code="35">
+                      <X>850</X>
+                      <Y>180</Y>
+                      <W>150</W>
+                      <H>100</H>
                     </item>
                   </items>
                   <chunks count="1">
-                    <chunk name="ScribbleProperties">
-                      <items count="3">
-                        <item name="Text" type_name="gh_string" type_code="10">URSUS Pipeline Demo: Solver -&gt; Visualizer -&gt; CSV Export</item>
-                        <item name="FontSize" type_name="gh_single" type_code="5">24</item>
-                        <item name="Bounds" type_name="gh_drawing_rectangleF" type_code="35">
-                          <X>50</X>
-                          <Y>10</Y>
-                          <W>600</W>
-                          <H>50</H>
-                        </item>
+                    <chunk name="PanelProperties">
+                      <items count="4">
+                        <item name="Multiline" type_name="gh_bool" type_code="1">true</item>
+                        <item name="DrawIndices" type_name="gh_bool" type_code="1">true</item>
+                        <item name="DrawPaths" type_name="gh_bool" type_code="1">false</item>
+                        <item name="UserText" type_name="gh_string" type_code="10"></item>
                       </items>
                     </chunk>
                   </chunks>
                 </chunk>
               </chunks>
             </chunk>
-            <chunk name="Object" index="16">
+
+            <!-- Object 21: Panel - Solver Values Output -->
+            <chunk name="Object" index="21">
+              <items count="2">
+                <item name="GUID" type_name="gh_guid" type_code="9">59e0b89a-e487-49f8-bab8-b5bab16be14c</item>
+                <item name="Name" type_name="gh_string" type_code="10">Panel</item>
+              </items>
+              <chunks count="1">
+                <chunk name="Container">
+                  <items count="5">
+                    <item name="InstanceGuid" type_name="gh_guid" type_code="9">a1b2c3d4-ee02-4000-8000-000000000051</item>
+                    <item name="NickName" type_name="gh_string" type_code="10">Values (오버레이 값)</item>
+                    <item name="Optional" type_name="gh_bool" type_code="1">false</item>
+                    <item name="Pivot" type_name="gh_drawing_pointF" type_code="31">
+                      <X>850</X>
+                      <Y>300</Y>
+                    </item>
+                    <item name="Bounds" type_name="gh_drawing_rectangleF" type_code="35">
+                      <X>850</X>
+                      <Y>300</Y>
+                      <W>150</W>
+                      <H>100</H>
+                    </item>
+                  </items>
+                  <chunks count="1">
+                    <chunk name="PanelProperties">
+                      <items count="4">
+                        <item name="Multiline" type_name="gh_bool" type_code="1">true</item>
+                        <item name="DrawIndices" type_name="gh_bool" type_code="1">true</item>
+                        <item name="DrawPaths" type_name="gh_bool" type_code="1">false</item>
+                        <item name="UserText" type_name="gh_string" type_code="10"></item>
+                      </items>
+                    </chunk>
+                  </chunks>
+                </chunk>
+              </chunks>
+            </chunk>
+
+            <!-- Object 22: Panel - CSV Preview Output -->
+            <chunk name="Object" index="22">
+              <items count="2">
+                <item name="GUID" type_name="gh_guid" type_code="9">59e0b89a-e487-49f8-bab8-b5bab16be14c</item>
+                <item name="Name" type_name="gh_string" type_code="10">Panel</item>
+              </items>
+              <chunks count="1">
+                <chunk name="Container">
+                  <items count="5">
+                    <item name="InstanceGuid" type_name="gh_guid" type_code="9">a1b2c3d4-ee03-4000-8000-000000000052</item>
+                    <item name="NickName" type_name="gh_string" type_code="10">CSV Preview (미리보기)</item>
+                    <item name="Optional" type_name="gh_bool" type_code="1">false</item>
+                    <item name="Pivot" type_name="gh_drawing_pointF" type_code="31">
+                      <X>850</X>
+                      <Y>420</Y>
+                    </item>
+                    <item name="Bounds" type_name="gh_drawing_rectangleF" type_code="35">
+                      <X>850</X>
+                      <Y>420</Y>
+                      <W>160</W>
+                      <H>60</H>
+                    </item>
+                  </items>
+                  <chunks count="1">
+                    <chunk name="PanelProperties">
+                      <items count="4">
+                        <item name="Multiline" type_name="gh_bool" type_code="1">true</item>
+                        <item name="DrawIndices" type_name="gh_bool" type_code="1">false</item>
+                        <item name="DrawPaths" type_name="gh_bool" type_code="1">false</item>
+                        <item name="UserText" type_name="gh_string" type_code="10"></item>
+                      </items>
+                    </chunk>
+                  </chunks>
+                </chunk>
+              </chunks>
+            </chunk>
+
+            <!-- Object 23: Panel - Export Status Output -->
+            <chunk name="Object" index="23">
+              <items count="2">
+                <item name="GUID" type_name="gh_guid" type_code="9">59e0b89a-e487-49f8-bab8-b5bab16be14c</item>
+                <item name="Name" type_name="gh_string" type_code="10">Panel</item>
+              </items>
+              <chunks count="1">
+                <chunk name="Container">
+                  <items count="5">
+                    <item name="InstanceGuid" type_name="gh_guid" type_code="9">a1b2c3d4-ee04-4000-8000-000000000053</item>
+                    <item name="NickName" type_name="gh_string" type_code="10">Export Status (저장 상태)</item>
+                    <item name="Optional" type_name="gh_bool" type_code="1">false</item>
+                    <item name="Pivot" type_name="gh_drawing_pointF" type_code="31">
+                      <X>1350</X>
+                      <Y>500</Y>
+                    </item>
+                    <item name="Bounds" type_name="gh_drawing_rectangleF" type_code="35">
+                      <X>1350</X>
+                      <Y>500</Y>
+                      <W>200</W>
+                      <H>40</H>
+                    </item>
+                  </items>
+                  <chunks count="1">
+                    <chunk name="PanelProperties">
+                      <items count="4">
+                        <item name="Multiline" type_name="gh_bool" type_code="1">true</item>
+                        <item name="DrawIndices" type_name="gh_bool" type_code="1">false</item>
+                        <item name="DrawPaths" type_name="gh_bool" type_code="1">false</item>
+                        <item name="UserText" type_name="gh_string" type_code="10"></item>
+                      </items>
+                    </chunk>
+                  </chunks>
+                </chunk>
+              </chunks>
+            </chunk>
+
+            <!-- Object 24: Panel - Saved Path Output -->
+            <chunk name="Object" index="24">
+              <items count="2">
+                <item name="GUID" type_name="gh_guid" type_code="9">59e0b89a-e487-49f8-bab8-b5bab16be14c</item>
+                <item name="Name" type_name="gh_string" type_code="10">Panel</item>
+              </items>
+              <chunks count="1">
+                <chunk name="Container">
+                  <items count="5">
+                    <item name="InstanceGuid" type_name="gh_guid" type_code="9">a1b2c3d4-ee05-4000-8000-000000000054</item>
+                    <item name="NickName" type_name="gh_string" type_code="10">Saved Path (저장 경로)</item>
+                    <item name="Optional" type_name="gh_bool" type_code="1">false</item>
+                    <item name="Pivot" type_name="gh_drawing_pointF" type_code="31">
+                      <X>1350</X>
+                      <Y>560</Y>
+                    </item>
+                    <item name="Bounds" type_name="gh_drawing_rectangleF" type_code="35">
+                      <X>1350</X>
+                      <Y>560</Y>
+                      <W>200</W>
+                      <H>40</H>
+                    </item>
+                  </items>
+                  <chunks count="1">
+                    <chunk name="PanelProperties">
+                      <items count="4">
+                        <item name="Multiline" type_name="gh_bool" type_code="1">false</item>
+                        <item name="DrawIndices" type_name="gh_bool" type_code="1">false</item>
+                        <item name="DrawPaths" type_name="gh_bool" type_code="1">false</item>
+                        <item name="UserText" type_name="gh_string" type_code="10"></item>
+                      </items>
+                    </chunk>
+                  </chunks>
+                </chunk>
+              </chunks>
+            </chunk>
+
+            <!-- Object 25: Panel - Weight Summary Output -->
+            <chunk name="Object" index="25">
+              <items count="2">
+                <item name="GUID" type_name="gh_guid" type_code="9">59e0b89a-e487-49f8-bab8-b5bab16be14c</item>
+                <item name="Name" type_name="gh_string" type_code="10">Panel</item>
+              </items>
+              <chunks count="1">
+                <chunk name="Container">
+                  <items count="5">
+                    <item name="InstanceGuid" type_name="gh_guid" type_code="9">a1b2c3d4-ee06-4000-8000-000000000055</item>
+                    <item name="NickName" type_name="gh_string" type_code="10">Weight Summary (가중치 요약)</item>
+                    <item name="Optional" type_name="gh_bool" type_code="1">false</item>
+                    <item name="Pivot" type_name="gh_drawing_pointF" type_code="31">
+                      <X>850</X>
+                      <Y>510</Y>
+                    </item>
+                    <item name="Bounds" type_name="gh_drawing_rectangleF" type_code="35">
+                      <X>850</X>
+                      <Y>510</Y>
+                      <W>160</W>
+                      <H>40</H>
+                    </item>
+                  </items>
+                  <chunks count="1">
+                    <chunk name="PanelProperties">
+                      <items count="4">
+                        <item name="Multiline" type_name="gh_bool" type_code="1">true</item>
+                        <item name="DrawIndices" type_name="gh_bool" type_code="1">false</item>
+                        <item name="DrawPaths" type_name="gh_bool" type_code="1">false</item>
+                        <item name="UserText" type_name="gh_string" type_code="10"></item>
+                      </items>
+                    </chunk>
+                  </chunks>
+                </chunk>
+              </chunks>
+            </chunk>
+
+            <!-- ============================================================ -->
+            <!--  GROUPS (조직화)                                              -->
+            <!-- ============================================================ -->
+
+            <!-- Object 26: Group 1 - Weight & Address Inputs -->
+            <chunk name="Object" index="26">
               <items count="2">
                 <item name="GUID" type_name="gh_guid" type_code="9">c552a431-af5b-46a9-a8a4-0fcbc27ef596</item>
                 <item name="Name" type_name="gh_string" type_code="10">Group</item>
@@ -582,24 +1017,24 @@ API 키 없이도 캐시 데이터로 동작을 확인할 수 있습니다.</ite
                 <chunk name="Container">
                   <items count="5">
                     <item name="InstanceGuid" type_name="gh_guid" type_code="9">a1b2c3d4-cc01-4000-8000-000000000030</item>
-                    <item name="NickName" type_name="gh_string" type_code="10">1. Inputs (입력값)</item>
-                    <item name="Description" type_name="gh_string" type_code="10">1. Inputs (입력값)</item>
+                    <item name="NickName" type_name="gh_string" type_code="10">1. INPUTS - 가중치 슬라이더 + 분석 영역 주소</item>
+                    <item name="Description" type_name="gh_string" type_code="10">가중치 슬라이더로 데이터셋 비중을 조절하고, 분석 영역 주소를 입력하세요.</item>
                     <item name="Pivot" type_name="gh_drawing_pointF" type_code="31">
                       <X>60</X>
-                      <Y>50</Y>
+                      <Y>85</Y>
                     </item>
                     <item name="Bounds" type_name="gh_drawing_rectangleF" type_code="35">
                       <X>60</X>
-                      <Y>50</Y>
-                      <W>620</W>
-                      <H>650</H>
+                      <Y>85</Y>
+                      <W>320</W>
+                      <H>540</H>
                     </item>
                   </items>
                   <chunks count="1">
                     <chunk name="GroupProperties">
                       <items count="3">
                         <item name="Colour" type_name="gh_drawing_color" type_code="36">-1711276033</item>
-                        <item name="NickName" type_name="gh_string" type_code="10">1. Inputs (입력값)</item>
+                        <item name="NickName" type_name="gh_string" type_code="10">1. INPUTS - 가중치 + 주소 + 시각화 설정</item>
                         <item name="ID" type_name="gh_guid" type_code="9" list_count="12">
                           <item index="0">a1b2c3d4-aa01-4000-8000-000000000010</item>
                           <item index="1">a1b2c3d4-aa02-4000-8000-000000000011</item>
@@ -620,7 +1055,9 @@ API 키 없이도 캐시 데이터로 동작을 확인할 수 있습니다.</ite
                 </chunk>
               </chunks>
             </chunk>
-            <chunk name="Object" index="17">
+
+            <!-- Object 27: Group 2 - Solver -->
+            <chunk name="Object" index="27">
               <items count="2">
                 <item name="GUID" type_name="gh_guid" type_code="9">c552a431-af5b-46a9-a8a4-0fcbc27ef596</item>
                 <item name="Name" type_name="gh_string" type_code="10">Group</item>
@@ -629,26 +1066,27 @@ API 키 없이도 캐시 데이터로 동작을 확인할 수 있습니다.</ite
                 <chunk name="Container">
                   <items count="5">
                     <item name="InstanceGuid" type_name="gh_guid" type_code="9">a1b2c3d4-cc02-4000-8000-000000000031</item>
-                    <item name="NickName" type_name="gh_string" type_code="10">2. Solver (데이터 수집)</item>
-                    <item name="Description" type_name="gh_string" type_code="10">2. Solver (데이터 수집)</item>
+                    <item name="NickName" type_name="gh_string" type_code="10">2. SOLVER - 데이터 수집 + 오버레이 분석</item>
+                    <item name="Description" type_name="gh_string" type_code="10">VWorld/서울 API로 데이터를 수집하고 weighted overlay를 수행합니다.</item>
                     <item name="Pivot" type_name="gh_drawing_pointF" type_code="31">
-                      <X>460</X>
-                      <Y>170</Y>
+                      <X>510</X>
+                      <Y>85</Y>
                     </item>
                     <item name="Bounds" type_name="gh_drawing_rectangleF" type_code="35">
-                      <X>460</X>
-                      <Y>170</Y>
-                      <W>340</W>
-                      <H>350</H>
+                      <X>510</X>
+                      <Y>85</Y>
+                      <W>310</W>
+                      <H>490</H>
                     </item>
                   </items>
                   <chunks count="1">
                     <chunk name="GroupProperties">
                       <items count="3">
                         <item name="Colour" type_name="gh_drawing_color" type_code="36">-1711341313</item>
-                        <item name="NickName" type_name="gh_string" type_code="10">2. Solver (데이터 수집)</item>
-                        <item name="ID" type_name="gh_guid" type_code="9" list_count="1">
+                        <item name="NickName" type_name="gh_string" type_code="10">2. SOLVER + WEIGHT NORMALIZER</item>
+                        <item name="ID" type_name="gh_guid" type_code="9" list_count="2">
                           <item index="0">a1b2c3d4-1111-4000-8000-000000000001</item>
+                          <item index="1">a1b2c3d4-4444-4000-8000-000000000004</item>
                         </item>
                       </items>
                     </chunk>
@@ -656,7 +1094,9 @@ API 키 없이도 캐시 데이터로 동작을 확인할 수 있습니다.</ite
                 </chunk>
               </chunks>
             </chunk>
-            <chunk name="Object" index="18">
+
+            <!-- Object 28: Group 3 - Visualizer -->
+            <chunk name="Object" index="28">
               <items count="2">
                 <item name="GUID" type_name="gh_guid" type_code="9">c552a431-af5b-46a9-a8a4-0fcbc27ef596</item>
                 <item name="Name" type_name="gh_string" type_code="10">Group</item>
@@ -665,16 +1105,16 @@ API 키 없이도 캐시 데이터로 동작을 확인할 수 있습니다.</ite
                 <chunk name="Container">
                   <items count="5">
                     <item name="InstanceGuid" type_name="gh_guid" type_code="9">a1b2c3d4-cc03-4000-8000-000000000032</item>
-                    <item name="NickName" type_name="gh_string" type_code="10">3. Visualizer (시각화)</item>
-                    <item name="Description" type_name="gh_string" type_code="10">3. Visualizer (시각화)</item>
+                    <item name="NickName" type_name="gh_string" type_code="10">3. VISUALIZER - IDW 보간 메시 시각화</item>
+                    <item name="Description" type_name="gh_string" type_code="10">Solver 결과를 IDW 보간 메시로 시각화합니다.</item>
                     <item name="Pivot" type_name="gh_drawing_pointF" type_code="31">
-                      <X>880</X>
-                      <Y>50</Y>
+                      <X>1020</X>
+                      <Y>85</Y>
                     </item>
                     <item name="Bounds" type_name="gh_drawing_rectangleF" type_code="35">
-                      <X>880</X>
-                      <Y>50</Y>
-                      <W>340</W>
+                      <X>1020</X>
+                      <Y>85</Y>
+                      <W>350</W>
                       <H>380</H>
                     </item>
                   </items>
@@ -682,7 +1122,7 @@ API 키 없이도 캐시 데이터로 동작을 확인할 수 있습니다.</ite
                     <chunk name="GroupProperties">
                       <items count="3">
                         <item name="Colour" type_name="gh_drawing_color" type_code="36">-1710030849</item>
-                        <item name="NickName" type_name="gh_string" type_code="10">3. Visualizer (시각화)</item>
+                        <item name="NickName" type_name="gh_string" type_code="10">3. VISUALIZER (IDW Mesh)</item>
                         <item name="ID" type_name="gh_guid" type_code="9" list_count="1">
                           <item index="0">a1b2c3d4-2222-4000-8000-000000000002</item>
                         </item>
@@ -692,7 +1132,9 @@ API 키 없이도 캐시 데이터로 동작을 확인할 수 있습니다.</ite
                 </chunk>
               </chunks>
             </chunk>
-            <chunk name="Object" index="19">
+
+            <!-- Object 29: Group 4 - CSV Export -->
+            <chunk name="Object" index="29">
               <items count="2">
                 <item name="GUID" type_name="gh_guid" type_code="9">c552a431-af5b-46a9-a8a4-0fcbc27ef596</item>
                 <item name="Name" type_name="gh_string" type_code="10">Group</item>
@@ -701,26 +1143,28 @@ API 키 없이도 캐시 데이터로 동작을 확인할 수 있습니다.</ite
                 <chunk name="Container">
                   <items count="5">
                     <item name="InstanceGuid" type_name="gh_guid" type_code="9">a1b2c3d4-cc04-4000-8000-000000000033</item>
-                    <item name="NickName" type_name="gh_string" type_code="10">4. CSV Export (내보내기)</item>
-                    <item name="Description" type_name="gh_string" type_code="10">4. CSV Export (내보내기)</item>
+                    <item name="NickName" type_name="gh_string" type_code="10">4. CSV EXPORT - 분석 결과 내보내기</item>
+                    <item name="Description" type_name="gh_string" type_code="10">분석 결과를 CSV 파일로 내보냅니다. Export Toggle을 True로 설정하면 저장됩니다.</item>
                     <item name="Pivot" type_name="gh_drawing_pointF" type_code="31">
-                      <X>880</X>
-                      <Y>490</Y>
+                      <X>1020</X>
+                      <Y>480</Y>
                     </item>
                     <item name="Bounds" type_name="gh_drawing_rectangleF" type_code="35">
-                      <X>880</X>
-                      <Y>490</Y>
-                      <W>340</W>
-                      <H>250</H>
+                      <X>1020</X>
+                      <Y>480</Y>
+                      <W>560</W>
+                      <H>140</H>
                     </item>
                   </items>
                   <chunks count="1">
                     <chunk name="GroupProperties">
                       <items count="3">
                         <item name="Colour" type_name="gh_drawing_color" type_code="36">-1711276161</item>
-                        <item name="NickName" type_name="gh_string" type_code="10">4. CSV Export (내보내기)</item>
-                        <item name="ID" type_name="gh_guid" type_code="9" list_count="1">
+                        <item name="NickName" type_name="gh_string" type_code="10">4. CSV EXPORT (파일 저장)</item>
+                        <item name="ID" type_name="gh_guid" type_code="9" list_count="3">
                           <item index="0">a1b2c3d4-3333-4000-8000-000000000003</item>
+                          <item index="1">a1b2c3d4-ee04-4000-8000-000000000053</item>
+                          <item index="2">a1b2c3d4-ee05-4000-8000-000000000054</item>
                         </item>
                       </items>
                     </chunk>
@@ -728,11 +1172,137 @@ API 키 없이도 캐시 데이터로 동작을 확인할 수 있습니다.</ite
                 </chunk>
               </chunks>
             </chunk>
+
+            <!-- Object 30: Group 5 - Data Preview Panels -->
+            <chunk name="Object" index="30">
+              <items count="2">
+                <item name="GUID" type_name="gh_guid" type_code="9">c552a431-af5b-46a9-a8a4-0fcbc27ef596</item>
+                <item name="Name" type_name="gh_string" type_code="10">Group</item>
+              </items>
+              <chunks count="1">
+                <chunk name="Container">
+                  <items count="5">
+                    <item name="InstanceGuid" type_name="gh_guid" type_code="9">a1b2c3d4-cc05-4000-8000-000000000034</item>
+                    <item name="NickName" type_name="gh_string" type_code="10">DATA PREVIEW - 데이터 미리보기</item>
+                    <item name="Description" type_name="gh_string" type_code="10">Solver 출력을 패널로 미리보기</item>
+                    <item name="Pivot" type_name="gh_drawing_pointF" type_code="31">
+                      <X>830</X>
+                      <Y>170</Y>
+                    </item>
+                    <item name="Bounds" type_name="gh_drawing_rectangleF" type_code="35">
+                      <X>830</X>
+                      <Y>170</Y>
+                      <W>180</W>
+                      <H>400</H>
+                    </item>
+                  </items>
+                  <chunks count="1">
+                    <chunk name="GroupProperties">
+                      <items count="3">
+                        <item name="Colour" type_name="gh_drawing_color" type_code="36">-1710096129</item>
+                        <item name="NickName" type_name="gh_string" type_code="10">DATA PREVIEW</item>
+                        <item name="ID" type_name="gh_guid" type_code="9" list_count="4">
+                          <item index="0">a1b2c3d4-ee01-4000-8000-000000000050</item>
+                          <item index="1">a1b2c3d4-ee02-4000-8000-000000000051</item>
+                          <item index="2">a1b2c3d4-ee03-4000-8000-000000000052</item>
+                          <item index="3">a1b2c3d4-ee06-4000-8000-000000000055</item>
+                        </item>
+                      </items>
+                    </chunk>
+                  </chunks>
+                </chunk>
+              </chunks>
+            </chunk>
+
+            <!-- ============================================================ -->
+            <!--  USAGE GUIDE SCRIBBLE (bottom)                               -->
+            <!-- ============================================================ -->
+            <chunk name="Object" index="31">
+              <items count="2">
+                <item name="GUID" type_name="gh_guid" type_code="9">7f5c6c55-f846-4a08-9c9a-cfdc285cc6fe</item>
+                <item name="Name" type_name="gh_string" type_code="10">Scribble</item>
+              </items>
+              <chunks count="1">
+                <chunk name="Container">
+                  <items count="4">
+                    <item name="InstanceGuid" type_name="gh_guid" type_code="9">a1b2c3d4-dd05-4000-8000-000000000044</item>
+                    <item name="NickName" type_name="gh_string" type_code="10">Guide</item>
+                    <item name="Description" type_name="gh_string" type_code="10">Usage Guide</item>
+                    <item name="Pivot" type_name="gh_drawing_pointF" type_code="31">
+                      <X>60</X>
+                      <Y>650</Y>
+                    </item>
+                  </items>
+                  <chunks count="1">
+                    <chunk name="ScribbleProperties">
+                      <items count="3">
+                        <item name="Text" type_name="gh_string" type_code="10">[사용 가이드]
+1. API 키 설정: 환경변수(VWORLD_API_KEY, SEOUL_API_KEY) 또는 appsettings.json에 등록
+2. 주소 입력: Address 1 패널에 분석 중심 주소 입력 (예: 서울 강남구 역삼동, 부산 해운대구 우동)
+3. 가중치 조절: W Income/Population/Transit 슬라이더로 데이터셋 비중 조절 (자동 정규화)
+4. 시각화 확인: Rhino 뷰포트에서 IDW 보간 메시 확인 (Color Style: 0=Custom 1=BlueRed 2=Heatmap 3=Spectral 4=Viridis 5=Diverging 6=Grayscale)
+5. CSV 내보내기: Export CSV를 True로 설정하면 바탕화면에 자동 저장</item>
+                        <item name="FontSize" type_name="gh_single" type_code="5">11</item>
+                        <item name="Bounds" type_name="gh_drawing_rectangleF" type_code="35">
+                          <X>60</X>
+                          <Y>650</Y>
+                          <W>900</W>
+                          <H>110</H>
+                        </item>
+                      </items>
+                    </chunk>
+                  </chunks>
+                </chunk>
+              </chunks>
+            </chunk>
+
+            <!-- Object 32: Color Style Guide Scribble -->
+            <chunk name="Object" index="32">
+              <items count="2">
+                <item name="GUID" type_name="gh_guid" type_code="9">7f5c6c55-f846-4a08-9c9a-cfdc285cc6fe</item>
+                <item name="Name" type_name="gh_string" type_code="10">Scribble</item>
+              </items>
+              <chunks count="1">
+                <chunk name="Container">
+                  <items count="4">
+                    <item name="InstanceGuid" type_name="gh_guid" type_code="9">a1b2c3d4-dd06-4000-8000-000000000045</item>
+                    <item name="NickName" type_name="gh_string" type_code="10">Pipeline</item>
+                    <item name="Description" type_name="gh_string" type_code="10">Pipeline Flow</item>
+                    <item name="Pivot" type_name="gh_drawing_pointF" type_code="31">
+                      <X>430</X>
+                      <Y>45</Y>
+                    </item>
+                  </items>
+                  <chunks count="1">
+                    <chunk name="ScribbleProperties">
+                      <items count="3">
+                        <item name="Text" type_name="gh_string" type_code="10">Sliders + Address --> [Solver] --> [Visualizer] --> Rhino Mesh
+                                                    --> [CSV Export] --> .csv File</item>
+                        <item name="FontSize" type_name="gh_single" type_code="5">10</item>
+                        <item name="Bounds" type_name="gh_drawing_rectangleF" type_code="35">
+                          <X>430</X>
+                          <Y>45</Y>
+                          <W>550</W>
+                          <H>22</H>
+                        </item>
+                      </items>
+                    </chunk>
+                  </chunks>
+                </chunk>
+              </chunks>
+            </chunk>
+
+            <!-- ============================================================ -->
+            <!--  WIRES (연결선)                                               -->
+            <!-- ============================================================ -->
             <chunk name="ObjectWires">
               <items count="1">
-                <item name="WireCount" type_name="gh_int32" type_code="3">19</item>
+                <item name="WireCount" type_name="gh_int32" type_code="3">29</item>
               </items>
-              <chunks count="19">
+              <chunks count="29">
+                <!-- ── Solver Inputs ─────────────────────────────────── -->
+
+                <!-- Wire 0: W Income slider -> Solver.WI (input 3) -->
                 <chunk name="Wire" index="0">
                   <items count="4">
                     <item name="SourceInstance" type_name="gh_guid" type_code="9">a1b2c3d4-aa01-4000-8000-000000000010</item>
@@ -741,6 +1311,7 @@ API 키 없이도 캐시 데이터로 동작을 확인할 수 있습니다.</ite
                     <item name="TargetIndex" type_name="gh_int32" type_code="3">3</item>
                   </items>
                 </chunk>
+                <!-- Wire 1: W Population slider -> Solver.WP (input 4) -->
                 <chunk name="Wire" index="1">
                   <items count="4">
                     <item name="SourceInstance" type_name="gh_guid" type_code="9">a1b2c3d4-aa02-4000-8000-000000000011</item>
@@ -749,6 +1320,7 @@ API 키 없이도 캐시 데이터로 동작을 확인할 수 있습니다.</ite
                     <item name="TargetIndex" type_name="gh_int32" type_code="3">4</item>
                   </items>
                 </chunk>
+                <!-- Wire 2: W Transit slider -> Solver.WT (input 5) -->
                 <chunk name="Wire" index="2">
                   <items count="4">
                     <item name="SourceInstance" type_name="gh_guid" type_code="9">a1b2c3d4-aa03-4000-8000-000000000012</item>
@@ -757,6 +1329,7 @@ API 키 없이도 캐시 데이터로 동작을 확인할 수 있습니다.</ite
                     <item name="TargetIndex" type_name="gh_int32" type_code="3">5</item>
                   </items>
                 </chunk>
+                <!-- Wire 3: Address 1 panel -> Solver.A1 (input 8) -->
                 <chunk name="Wire" index="3">
                   <items count="4">
                     <item name="SourceInstance" type_name="gh_guid" type_code="9">a1b2c3d4-bb02-4000-8000-000000000021</item>
@@ -765,6 +1338,7 @@ API 키 없이도 캐시 데이터로 동작을 확인할 수 있습니다.</ite
                     <item name="TargetIndex" type_name="gh_int32" type_code="3">8</item>
                   </items>
                 </chunk>
+                <!-- Wire 4: Address 2 panel -> Solver.A2 (input 9) -->
                 <chunk name="Wire" index="4">
                   <items count="4">
                     <item name="SourceInstance" type_name="gh_guid" type_code="9">a1b2c3d4-bb03-4000-8000-000000000022</item>
@@ -773,63 +1347,20 @@ API 키 없이도 캐시 데이터로 동작을 확인할 수 있습니다.</ite
                     <item name="TargetIndex" type_name="gh_int32" type_code="3">9</item>
                   </items>
                 </chunk>
+                <!-- Wire 5: Export CSV toggle -> Solver.EX (input 6) -->
                 <chunk name="Wire" index="5">
-                  <items count="4">
-                    <item name="SourceInstance" type_name="gh_guid" type_code="9">a1b2c3d4-aa04-4000-8000-000000000013</item>
-                    <item name="SourceIndex" type_name="gh_int32" type_code="3">0</item>
-                    <item name="TargetInstance" type_name="gh_guid" type_code="9">a1b2c3d4-2222-4000-8000-000000000002</item>
-                    <item name="TargetIndex" type_name="gh_int32" type_code="3">3</item>
-                  </items>
-                </chunk>
-                <chunk name="Wire" index="6">
-                  <items count="4">
-                    <item name="SourceInstance" type_name="gh_guid" type_code="9">a1b2c3d4-aa05-4000-8000-000000000014</item>
-                    <item name="SourceIndex" type_name="gh_int32" type_code="3">0</item>
-                    <item name="TargetInstance" type_name="gh_guid" type_code="9">a1b2c3d4-2222-4000-8000-000000000002</item>
-                    <item name="TargetIndex" type_name="gh_int32" type_code="3">4</item>
-                  </items>
-                </chunk>
-                <chunk name="Wire" index="7">
-                  <items count="4">
-                    <item name="SourceInstance" type_name="gh_guid" type_code="9">a1b2c3d4-aa06-4000-8000-000000000015</item>
-                    <item name="SourceIndex" type_name="gh_int32" type_code="3">0</item>
-                    <item name="TargetInstance" type_name="gh_guid" type_code="9">a1b2c3d4-2222-4000-8000-000000000002</item>
-                    <item name="TargetIndex" type_name="gh_int32" type_code="3">5</item>
-                  </items>
-                </chunk>
-                <chunk name="Wire" index="8">
-                  <items count="4">
-                    <item name="SourceInstance" type_name="gh_guid" type_code="9">a1b2c3d4-aa07-4000-8000-000000000016</item>
-                    <item name="SourceIndex" type_name="gh_int32" type_code="3">0</item>
-                    <item name="TargetInstance" type_name="gh_guid" type_code="9">a1b2c3d4-2222-4000-8000-000000000002</item>
-                    <item name="TargetIndex" type_name="gh_int32" type_code="3">6</item>
-                  </items>
-                </chunk>
-                <chunk name="Wire" index="9">
-                  <items count="4">
-                    <item name="SourceInstance" type_name="gh_guid" type_code="9">a1b2c3d4-aa08-4000-8000-000000000017</item>
-                    <item name="SourceIndex" type_name="gh_int32" type_code="3">0</item>
-                    <item name="TargetInstance" type_name="gh_guid" type_code="9">a1b2c3d4-2222-4000-8000-000000000002</item>
-                    <item name="TargetIndex" type_name="gh_int32" type_code="3">7</item>
-                  </items>
-                </chunk>
-                <chunk name="Wire" index="10">
-                  <items count="4">
-                    <item name="SourceInstance" type_name="gh_guid" type_code="9">a1b2c3d4-aa09-4000-8000-000000000018</item>
-                    <item name="SourceIndex" type_name="gh_int32" type_code="3">0</item>
-                    <item name="TargetInstance" type_name="gh_guid" type_code="9">a1b2c3d4-2222-4000-8000-000000000002</item>
-                    <item name="TargetIndex" type_name="gh_int32" type_code="3">8</item>
-                  </items>
-                </chunk>
-                <chunk name="Wire" index="11">
                   <items count="4">
                     <item name="SourceInstance" type_name="gh_guid" type_code="9">a1b2c3d4-bb01-4000-8000-000000000020</item>
                     <item name="SourceIndex" type_name="gh_int32" type_code="3">0</item>
-                    <item name="TargetInstance" type_name="gh_guid" type_code="9">a1b2c3d4-3333-4000-8000-000000000003</item>
-                    <item name="TargetIndex" type_name="gh_int32" type_code="3">4</item>
+                    <item name="TargetInstance" type_name="gh_guid" type_code="9">a1b2c3d4-1111-4000-8000-000000000001</item>
+                    <item name="TargetIndex" type_name="gh_int32" type_code="3">6</item>
                   </items>
                 </chunk>
-                <chunk name="Wire" index="12">
+
+                <!-- ── Solver -> Visualizer ──────────────────────────── -->
+
+                <!-- Wire 6: Solver.U (output 6: Union Boundary) -> Visualizer.B (input 0) -->
+                <chunk name="Wire" index="6">
                   <items count="4">
                     <item name="SourceInstance" type_name="gh_guid" type_code="9">a1b2c3d4-1111-4000-8000-000000000001</item>
                     <item name="SourceIndex" type_name="gh_int32" type_code="3">6</item>
@@ -837,7 +1368,8 @@ API 키 없이도 캐시 데이터로 동작을 확인할 수 있습니다.</ite
                     <item name="TargetIndex" type_name="gh_int32" type_code="3">0</item>
                   </items>
                 </chunk>
-                <chunk name="Wire" index="13">
+                <!-- Wire 7: Solver.C (output 3: Centroids) -> Visualizer.C (input 1) -->
+                <chunk name="Wire" index="7">
                   <items count="4">
                     <item name="SourceInstance" type_name="gh_guid" type_code="9">a1b2c3d4-1111-4000-8000-000000000001</item>
                     <item name="SourceIndex" type_name="gh_int32" type_code="3">3</item>
@@ -845,7 +1377,8 @@ API 키 없이도 캐시 데이터로 동작을 확인할 수 있습니다.</ite
                     <item name="TargetIndex" type_name="gh_int32" type_code="3">1</item>
                   </items>
                 </chunk>
-                <chunk name="Wire" index="14">
+                <!-- Wire 8: Solver.V (output 5: Values) -> Visualizer.V (input 2) -->
+                <chunk name="Wire" index="8">
                   <items count="4">
                     <item name="SourceInstance" type_name="gh_guid" type_code="9">a1b2c3d4-1111-4000-8000-000000000001</item>
                     <item name="SourceIndex" type_name="gh_int32" type_code="3">5</item>
@@ -853,6 +1386,67 @@ API 키 없이도 캐시 데이터로 동작을 확인할 수 있습니다.</ite
                     <item name="TargetIndex" type_name="gh_int32" type_code="3">2</item>
                   </items>
                 </chunk>
+
+                <!-- ── Visualizer Parameter Sliders ──────────────────── -->
+
+                <!-- Wire 9: Resolution -> Visualizer.R (input 3) -->
+                <chunk name="Wire" index="9">
+                  <items count="4">
+                    <item name="SourceInstance" type_name="gh_guid" type_code="9">a1b2c3d4-aa04-4000-8000-000000000013</item>
+                    <item name="SourceIndex" type_name="gh_int32" type_code="3">0</item>
+                    <item name="TargetInstance" type_name="gh_guid" type_code="9">a1b2c3d4-2222-4000-8000-000000000002</item>
+                    <item name="TargetIndex" type_name="gh_int32" type_code="3">3</item>
+                  </items>
+                </chunk>
+                <!-- Wire 10: IDW Power -> Visualizer.P (input 4) -->
+                <chunk name="Wire" index="10">
+                  <items count="4">
+                    <item name="SourceInstance" type_name="gh_guid" type_code="9">a1b2c3d4-aa05-4000-8000-000000000014</item>
+                    <item name="SourceIndex" type_name="gh_int32" type_code="3">0</item>
+                    <item name="TargetInstance" type_name="gh_guid" type_code="9">a1b2c3d4-2222-4000-8000-000000000002</item>
+                    <item name="TargetIndex" type_name="gh_int32" type_code="3">4</item>
+                  </items>
+                </chunk>
+                <!-- Wire 11: Height Scale -> Visualizer.HS (input 5) -->
+                <chunk name="Wire" index="11">
+                  <items count="4">
+                    <item name="SourceInstance" type_name="gh_guid" type_code="9">a1b2c3d4-aa06-4000-8000-000000000015</item>
+                    <item name="SourceIndex" type_name="gh_int32" type_code="3">0</item>
+                    <item name="TargetInstance" type_name="gh_guid" type_code="9">a1b2c3d4-2222-4000-8000-000000000002</item>
+                    <item name="TargetIndex" type_name="gh_int32" type_code="3">5</item>
+                  </items>
+                </chunk>
+                <!-- Wire 12: Height Ratio -> Visualizer.HR (input 6) -->
+                <chunk name="Wire" index="12">
+                  <items count="4">
+                    <item name="SourceInstance" type_name="gh_guid" type_code="9">a1b2c3d4-aa07-4000-8000-000000000016</item>
+                    <item name="SourceIndex" type_name="gh_int32" type_code="3">0</item>
+                    <item name="TargetInstance" type_name="gh_guid" type_code="9">a1b2c3d4-2222-4000-8000-000000000002</item>
+                    <item name="TargetIndex" type_name="gh_int32" type_code="3">6</item>
+                  </items>
+                </chunk>
+                <!-- Wire 13: Legend Steps -> Visualizer.LS (input 7) -->
+                <chunk name="Wire" index="13">
+                  <items count="4">
+                    <item name="SourceInstance" type_name="gh_guid" type_code="9">a1b2c3d4-aa08-4000-8000-000000000017</item>
+                    <item name="SourceIndex" type_name="gh_int32" type_code="3">0</item>
+                    <item name="TargetInstance" type_name="gh_guid" type_code="9">a1b2c3d4-2222-4000-8000-000000000002</item>
+                    <item name="TargetIndex" type_name="gh_int32" type_code="3">7</item>
+                  </items>
+                </chunk>
+                <!-- Wire 14: Color Style -> Visualizer.CS (input 8) -->
+                <chunk name="Wire" index="14">
+                  <items count="4">
+                    <item name="SourceInstance" type_name="gh_guid" type_code="9">a1b2c3d4-aa09-4000-8000-000000000018</item>
+                    <item name="SourceIndex" type_name="gh_int32" type_code="3">0</item>
+                    <item name="TargetInstance" type_name="gh_guid" type_code="9">a1b2c3d4-2222-4000-8000-000000000002</item>
+                    <item name="TargetIndex" type_name="gh_int32" type_code="3">8</item>
+                  </items>
+                </chunk>
+
+                <!-- ── Solver -> CSV Export ──────────────────────────── -->
+
+                <!-- Wire 15: Solver.LC (output 0) -> Export.LC (input 0) -->
                 <chunk name="Wire" index="15">
                   <items count="4">
                     <item name="SourceInstance" type_name="gh_guid" type_code="9">a1b2c3d4-1111-4000-8000-000000000001</item>
@@ -861,6 +1455,7 @@ API 키 없이도 캐시 데이터로 동작을 확인할 수 있습니다.</ite
                     <item name="TargetIndex" type_name="gh_int32" type_code="3">0</item>
                   </items>
                 </chunk>
+                <!-- Wire 16: Solver.N (output 1) -> Export.N (input 1) -->
                 <chunk name="Wire" index="16">
                   <items count="4">
                     <item name="SourceInstance" type_name="gh_guid" type_code="9">a1b2c3d4-1111-4000-8000-000000000001</item>
@@ -869,6 +1464,7 @@ API 키 없이도 캐시 데이터로 동작을 확인할 수 있습니다.</ite
                     <item name="TargetIndex" type_name="gh_int32" type_code="3">1</item>
                   </items>
                 </chunk>
+                <!-- Wire 17: Solver.A (output 4) -> Export.A (input 2) -->
                 <chunk name="Wire" index="17">
                   <items count="4">
                     <item name="SourceInstance" type_name="gh_guid" type_code="9">a1b2c3d4-1111-4000-8000-000000000001</item>
@@ -877,12 +1473,112 @@ API 키 없이도 캐시 데이터로 동작을 확인할 수 있습니다.</ite
                     <item name="TargetIndex" type_name="gh_int32" type_code="3">2</item>
                   </items>
                 </chunk>
+                <!-- Wire 18: Solver.V (output 5) -> Export.V (input 3) -->
                 <chunk name="Wire" index="18">
                   <items count="4">
                     <item name="SourceInstance" type_name="gh_guid" type_code="9">a1b2c3d4-1111-4000-8000-000000000001</item>
                     <item name="SourceIndex" type_name="gh_int32" type_code="3">5</item>
                     <item name="TargetInstance" type_name="gh_guid" type_code="9">a1b2c3d4-3333-4000-8000-000000000003</item>
                     <item name="TargetIndex" type_name="gh_int32" type_code="3">3</item>
+                  </items>
+                </chunk>
+                <!-- Wire 19: Export Toggle -> Export.E (input 4) -->
+                <chunk name="Wire" index="19">
+                  <items count="4">
+                    <item name="SourceInstance" type_name="gh_guid" type_code="9">a1b2c3d4-bb01-4000-8000-000000000020</item>
+                    <item name="SourceIndex" type_name="gh_int32" type_code="3">0</item>
+                    <item name="TargetInstance" type_name="gh_guid" type_code="9">a1b2c3d4-3333-4000-8000-000000000003</item>
+                    <item name="TargetIndex" type_name="gh_int32" type_code="3">4</item>
+                  </items>
+                </chunk>
+
+                <!-- ── Solver -> Output Panels ──────────────────────── -->
+
+                <!-- Wire 20: Solver.N (output 1: Names) -> Names Panel -->
+                <chunk name="Wire" index="20">
+                  <items count="4">
+                    <item name="SourceInstance" type_name="gh_guid" type_code="9">a1b2c3d4-1111-4000-8000-000000000001</item>
+                    <item name="SourceIndex" type_name="gh_int32" type_code="3">1</item>
+                    <item name="TargetInstance" type_name="gh_guid" type_code="9">a1b2c3d4-ee01-4000-8000-000000000050</item>
+                    <item name="TargetIndex" type_name="gh_int32" type_code="3">0</item>
+                  </items>
+                </chunk>
+                <!-- Wire 21: Solver.V (output 5: Values) -> Values Panel -->
+                <chunk name="Wire" index="21">
+                  <items count="4">
+                    <item name="SourceInstance" type_name="gh_guid" type_code="9">a1b2c3d4-1111-4000-8000-000000000001</item>
+                    <item name="SourceIndex" type_name="gh_int32" type_code="3">5</item>
+                    <item name="TargetInstance" type_name="gh_guid" type_code="9">a1b2c3d4-ee02-4000-8000-000000000051</item>
+                    <item name="TargetIndex" type_name="gh_int32" type_code="3">0</item>
+                  </items>
+                </chunk>
+                <!-- Wire 22: Solver.CSV (output 7) -> CSV Preview Panel -->
+                <chunk name="Wire" index="22">
+                  <items count="4">
+                    <item name="SourceInstance" type_name="gh_guid" type_code="9">a1b2c3d4-1111-4000-8000-000000000001</item>
+                    <item name="SourceIndex" type_name="gh_int32" type_code="3">7</item>
+                    <item name="TargetInstance" type_name="gh_guid" type_code="9">a1b2c3d4-ee03-4000-8000-000000000052</item>
+                    <item name="TargetIndex" type_name="gh_int32" type_code="3">0</item>
+                  </items>
+                </chunk>
+
+                <!-- ── CSV Export -> Output Panels ───────────────────── -->
+
+                <!-- Wire 23: Export.S (output 2: Status) -> Export Status Panel -->
+                <chunk name="Wire" index="23">
+                  <items count="4">
+                    <item name="SourceInstance" type_name="gh_guid" type_code="9">a1b2c3d4-3333-4000-8000-000000000003</item>
+                    <item name="SourceIndex" type_name="gh_int32" type_code="3">2</item>
+                    <item name="TargetInstance" type_name="gh_guid" type_code="9">a1b2c3d4-ee04-4000-8000-000000000053</item>
+                    <item name="TargetIndex" type_name="gh_int32" type_code="3">0</item>
+                  </items>
+                </chunk>
+                <!-- Wire 24: Export.SP (output 0: Saved Path) -> Saved Path Panel -->
+                <chunk name="Wire" index="24">
+                  <items count="4">
+                    <item name="SourceInstance" type_name="gh_guid" type_code="9">a1b2c3d4-3333-4000-8000-000000000003</item>
+                    <item name="SourceIndex" type_name="gh_int32" type_code="3">0</item>
+                    <item name="TargetInstance" type_name="gh_guid" type_code="9">a1b2c3d4-ee05-4000-8000-000000000054</item>
+                    <item name="TargetIndex" type_name="gh_int32" type_code="3">0</item>
+                  </items>
+                </chunk>
+
+                <!-- ── Weight Slider Component Wires ─────────────────── -->
+
+                <!-- Wire 25: W Income slider -> WeightSlider.W (input 1) -->
+                <chunk name="Wire" index="25">
+                  <items count="4">
+                    <item name="SourceInstance" type_name="gh_guid" type_code="9">a1b2c3d4-aa01-4000-8000-000000000010</item>
+                    <item name="SourceIndex" type_name="gh_int32" type_code="3">0</item>
+                    <item name="TargetInstance" type_name="gh_guid" type_code="9">a1b2c3d4-4444-4000-8000-000000000004</item>
+                    <item name="TargetIndex" type_name="gh_int32" type_code="3">1</item>
+                  </items>
+                </chunk>
+                <!-- Wire 26: W Population slider -> WeightSlider.W (input 1) -->
+                <chunk name="Wire" index="26">
+                  <items count="4">
+                    <item name="SourceInstance" type_name="gh_guid" type_code="9">a1b2c3d4-aa02-4000-8000-000000000011</item>
+                    <item name="SourceIndex" type_name="gh_int32" type_code="3">0</item>
+                    <item name="TargetInstance" type_name="gh_guid" type_code="9">a1b2c3d4-4444-4000-8000-000000000004</item>
+                    <item name="TargetIndex" type_name="gh_int32" type_code="3">1</item>
+                  </items>
+                </chunk>
+                <!-- Wire 27: W Transit slider -> WeightSlider.W (input 1) -->
+                <chunk name="Wire" index="27">
+                  <items count="4">
+                    <item name="SourceInstance" type_name="gh_guid" type_code="9">a1b2c3d4-aa03-4000-8000-000000000012</item>
+                    <item name="SourceIndex" type_name="gh_int32" type_code="3">0</item>
+                    <item name="TargetInstance" type_name="gh_guid" type_code="9">a1b2c3d4-4444-4000-8000-000000000004</item>
+                    <item name="TargetIndex" type_name="gh_int32" type_code="3">1</item>
+                  </items>
+                </chunk>
+                <!-- Wire 28: WeightSlider.S (output 3: Summary) -> Weight Summary Panel -->
+                <chunk name="Wire" index="28">
+                  <items count="4">
+                    <item name="SourceInstance" type_name="gh_guid" type_code="9">a1b2c3d4-4444-4000-8000-000000000004</item>
+                    <item name="SourceIndex" type_name="gh_int32" type_code="3">3</item>
+                    <item name="TargetInstance" type_name="gh_guid" type_code="9">a1b2c3d4-ee06-4000-8000-000000000055</item>
+                    <item name="TargetIndex" type_name="gh_int32" type_code="3">0</item>
                   </items>
                 </chunk>
               </chunks>
