@@ -1,0 +1,16 @@
+/home/keonchae/URSUS/src/URSUS.Setup/obj/Release/win-x64/URSUS.Setup.csproj.AssemblyReference.cache
+/home/keonchae/URSUS/src/URSUS.Setup/obj/Release/win-x64/URSUS.Setup.GeneratedMSBuildEditorConfig.editorconfig
+/home/keonchae/URSUS/src/URSUS.Setup/obj/Release/win-x64/URSUS.Setup.AssemblyInfoInputs.cache
+/home/keonchae/URSUS/src/URSUS.Setup/obj/Release/win-x64/URSUS.Setup.AssemblyInfo.cs
+/home/keonchae/URSUS/src/URSUS.Setup/obj/Release/win-x64/URSUS.Setup.csproj.CoreCompileInputs.cache
+/home/keonchae/URSUS/bin/win-x64/URSUS.Setup.exe
+/home/keonchae/URSUS/bin/win-x64/URSUS.Setup.deps.json
+/home/keonchae/URSUS/bin/win-x64/URSUS.Setup.runtimeconfig.json
+/home/keonchae/URSUS/bin/win-x64/URSUS.Setup.dll
+/home/keonchae/URSUS/bin/win-x64/URSUS.Setup.pdb
+/home/keonchae/URSUS/src/URSUS.Setup/obj/Release/win-x64/URSUS.Se.44C70B5C.Up2Date
+/home/keonchae/URSUS/src/URSUS.Setup/obj/Release/win-x64/URSUS.Setup.dll
+/home/keonchae/URSUS/src/URSUS.Setup/obj/Release/win-x64/refint/URSUS.Setup.dll
+/home/keonchae/URSUS/src/URSUS.Setup/obj/Release/win-x64/URSUS.Setup.pdb
+/home/keonchae/URSUS/src/URSUS.Setup/obj/Release/win-x64/URSUS.Setup.genruntimeconfig.cache
+/home/keonchae/URSUS/src/URSUS.Setup/obj/Release/win-x64/ref/URSUS.Setup.dll
