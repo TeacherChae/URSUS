@@ -76,7 +76,7 @@ namespace URSUS.Setup
                 // WFS GetFeature — maxFeatures=1 로 최소 부하 요청
                 string url =
                     $"https://api.vworld.kr/req/wfs?service=WFS&version=2.0.0&request=GetFeature" +
-                    $"&typeName=lt_c_lisdregistsystem&maxFeatures=1&srsName=EPSG:4326" +
+                    $"&typeName=lt_c_ademd_info&maxFeatures=1&srsName=EPSG:4326" +
                     $"&output=application/json&key={trimmed}";
 
                 using var response = await _http.GetAsync(url, ct);
@@ -154,9 +154,9 @@ namespace URSUS.Setup
 
             try
             {
-                // 월평균소득 데이터 1건만 조회
+                // 상주인구 데이터 1건만 조회 (실제 사용하는 서비스)
                 string url =
-                    $"http://openapi.seoul.go.kr:8088/{trimmed}/json/tbGiGanByAdongW/1/1/";
+                    $"http://openapi.seoul.go.kr:8088/{trimmed}/json/VwsmAdstrdRepopW/1/1/";
 
                 using var response = await _http.GetAsync(url, ct);
 
@@ -164,22 +164,24 @@ namespace URSUS.Setup
                 {
                     string body = await response.Content.ReadAsStringAsync(ct);
 
-                    // 정상 응답: "tbGiGanByAdongW" 키가 포함됨
-                    if (body.Contains("\"tbGiGanByAdongW\""))
+                    // 정상 응답: 서비스명 키가 포함됨
+                    if (body.Contains("\"VwsmAdstrdRepopW\""))
                         return new ValidationResult(true, "서울 열린데이터 API 키가 유효합니다.");
 
-                    // 에러 응답: 인증 실패
+                    // 에러 응답: 데이터 없음 (인증은 성공)
                     if (body.Contains("INFO-200") || body.Contains("해당하는 데이터가 없습니다"))
                         return new ValidationResult(true,
                             "서울 열린데이터 API 키가 유효합니다. (데이터 0건이지만 인증 성공)");
 
-                    if (body.Contains("INFO-300") || body.Contains("인증키가 유효하지"))
+                    // 인증 실패 (INFO-100: 인증키 무효, INFO-300: 기타 인증 오류)
+                    if (body.Contains("INFO-100") || body.Contains("INFO-300") ||
+                        body.Contains("인증키가 유효하지"))
                         return new ValidationResult(false,
                             "서울 열린데이터 API 키가 유효하지 않습니다. 키를 다시 확인해주세요.",
                             ValidationErrorKind.Unauthorized);
 
                     // 기타 에러 코드
-                    if (body.Contains("\"RESULT\"") && body.Contains("\"CODE\""))
+                    if (body.Contains("RESULT") && body.Contains("CODE"))
                         return new ValidationResult(false,
                             "서울 열린데이터 API 응답에 오류가 있습니다. 키를 다시 확인해주세요.",
                             ValidationErrorKind.Unauthorized);

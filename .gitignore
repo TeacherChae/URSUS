@@ -3,8 +3,7 @@
 
 # Build output
 bin/
-src/URSUS/obj/
-src/URSUS.GH/obj/
+obj/
 # Runtime cache
 cache/
 src/URSUS/cache/

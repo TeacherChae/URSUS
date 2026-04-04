@@ -4,7 +4,7 @@
     <Nullable>enable</Nullable>
     <TargetExt>.gha</TargetExt>
     <EnableDynamicLoading>true</EnableDynamicLoading>
-    <OutputPath>..\..\bin\$(Configuration)\</OutputPath>
+    <OutputPath>..\..\bin\dist\</OutputPath>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
   </PropertyGroup>
   <ItemGroup>
@@ -17,5 +17,9 @@
                       Version="4.*"
                       ExcludeAssets="runtime" />
     <ProjectReference Include="..\URSUS\URSUS.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\URSUS\Resources\adstrd_legald_mapping.json"
+          CopyToOutputDirectory="PreserveNewest" Link="adstrd_legald_mapping.json" />
   </ItemGroup>
 </Project>

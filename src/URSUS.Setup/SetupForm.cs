@@ -23,7 +23,7 @@ namespace URSUS.Setup
     {
         // ── UI 상수 ─────────────────────────────────────────────────────
         private const int FORM_WIDTH  = 620;
-        private const int FORM_HEIGHT = 520;
+        private const int FORM_MIN_HEIGHT = 480;
 
         private static readonly Color BG_COLOR      = Color.White;
         private static readonly Color ACCENT_COLOR   = Color.FromArgb(45, 65, 145);   // URSUS 브랜드 블루
@@ -104,10 +104,10 @@ namespace URSUS.Setup
 
             // Form
             Text            = "URSUS Setup";
-            Size            = new Size(FORM_WIDTH, FORM_HEIGHT);
-            MinimumSize     = new Size(FORM_WIDTH, FORM_HEIGHT);
+            Size            = new Size(FORM_WIDTH, FORM_MIN_HEIGHT);
+            MinimumSize     = new Size(FORM_WIDTH, FORM_MIN_HEIGHT);
             MaximizeBox     = false;
-            FormBorderStyle = FormBorderStyle.FixedDialog;
+            FormBorderStyle = FormBorderStyle.Sizable;
             StartPosition   = FormStartPosition.CenterScreen;
             BackColor       = BG_COLOR;
 
@@ -219,6 +219,26 @@ namespace URSUS.Setup
             }
 
             _contentPanel.ResumeLayout(true);
+
+            // 컨텐츠 높이에 맞게 폼 크기 자동 조정
+            AdjustFormHeight();
+        }
+
+        private void AdjustFormHeight()
+        {
+            int contentBottom = 0;
+            foreach (Control c in _contentPanel.Controls)
+            {
+                int bottom = c.Bottom;
+                if (bottom > contentBottom)
+                    contentBottom = bottom;
+            }
+
+            // 헤더(70) + 컨텐츠 패딩(상20+하10) + 컨텐츠 높이 + 푸터(55) + 프레임 여백(40)
+            int requiredHeight = 70 + 30 + contentBottom + 55 + 40;
+            int newHeight = Math.Max(requiredHeight, FORM_MIN_HEIGHT);
+            if (Height != newHeight)
+                Height = newHeight;
         }
 
         private async void BtnNext_Click(object? sender, EventArgs e)
@@ -677,13 +697,32 @@ namespace URSUS.Setup
             _contentPanel.Controls.Add(_lblProgress);
         }
 
+        /// <summary>
+        /// URSUS.GH 빌드 산출물이 있는 디렉토리를 탐색한다.
+        /// 모든 프로젝트가 bin/dist/로 출력되므로 Setup.exe와 같은 폴더를 우선 사용.
+        /// </summary>
+        private static string ResolveSourceDir()
+        {
+            string baseDir = AppDomain.CurrentDomain.BaseDirectory;
+
+            // Setup.exe와 같은 폴더 (bin/dist/win-x64/)에 gha가 없으면 상위(bin/dist/) 탐색
+            if (File.Exists(Path.Combine(baseDir, "URSUS.GH.gha")))
+                return baseDir;
+
+            string? parentDir = Directory.GetParent(baseDir.TrimEnd(Path.DirectorySeparatorChar))?.FullName;
+            if (parentDir != null && File.Exists(Path.Combine(parentDir, "URSUS.GH.gha")))
+                return parentDir;
+
+            return baseDir;
+        }
+
         private async Task RunInstallAsync()
         {
             _progressBar.Visible = true;
             _progressBar.Value   = 0;
 
             string targetDir = _txtInstallPath.Text;
-            string sourceDir = AppDomain.CurrentDomain.BaseDirectory;
+            string sourceDir = ResolveSourceDir();
 
             try
             {

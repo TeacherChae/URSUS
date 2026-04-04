@@ -1,3 +1,0 @@
-/home/keonchae/URSUS/bin/win-x64/publish/URSUS.Setup.pdb
-/home/keonchae/URSUS/bin/win-x64/publish/URSUS.pdb
-/home/keonchae/URSUS/bin/win-x64/publish/URSUS.Setup.exe
