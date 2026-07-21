@@ -18,6 +18,7 @@ URSUS (Urban Research with Spatial Utility System)는 Rhino 8 / Grasshopper에�
 - [Troubleshooting](docs/troubleshooting.md)
 - [CSV export](docs/csv-export.md)
 - [Dataset interpretation](docs/dataset_interpretation_guide.md)
+- [Product journal and roadmap](docs/product-journal.md)
 
 ## 개발 검증
 

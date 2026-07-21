@@ -1,108 +1,94 @@
-# URSUS 데이터 소스 문서
+# URSUS 데이터 소스 기술 문서
 
-이 디렉토리는 URSUS 분석에 사용되는 원천 데이터의 명세와 가공 방식을 기록한다.
+이 디렉토리는 원천 API의 공간·시간 단위와 사용 field를 기록한다. 사용자가 결과를 해석할 때 필요한 공통 설명은 [데이터셋 해석 가이드](../dataset_interpretation_guide.md)를 기준으로 한다.
 
 ## 데이터 소스 목록
 
-| 파일 | 지표명 | 공간 단위 | 업데이트 주기 | 상태 |
+| 파일 | 지표 | 원천 공간 단위 | 관측 단위 | 제품 상태 |
 |---|---|---|---|---|
-| [avg_income.md](avg_income.md) | 행정동별 월평균 소득 | 행정동 | 분기 | ✅ 사용 중 |
-| [living_pop.md](living_pop.md) | 행정동별 생활인구 | 행정동 | 일별 (시간대별) | ✅ 사용 중 |
+| [avg_income.md](avg_income.md) | 월평균 소득 | 행정동 | 분기 | 사용 중 |
+| [resident_pop.md](resident_pop.md) | 상주인구 | 행정동 | 분기 | 사용 중 |
+| [transit_boarding.md](transit_boarding.md) | 대중교통 승차 | 행정동 | 일 | 사용 중 |
+| [living_pop.md](living_pop.md) | 생활인구 | 행정동 | 일×시간 | 비활성 — 제품 계약/성능 검증 필요 |
 
-## 가공 파이프라인 개요
+공시지가, 용도지역과 VWorld 경계는 서울 XML parser 계열이 아니므로 현재 [데이터셋 해석 가이드](../dataset_interpretation_guide.md)에 함께 설명한다.
 
-```
-원천 API (서울 열린데이터 광장)
-  │
-  ▼
-FetchAllRecords()          페이지네이션 자동 처리 (1,000행/페이지)
-  │
-  ▼
-AggregateFieldByAdstrd()   행정동(adstrd_cd) 기준 전기간 평균
-  │
-  ▼
-캐시 저장 (*.json, TTL 30일)
-  │
-  ▼
-MapToLegald()              adstrd_cd → legald_cd 매핑 (KIKmix 기반)
-  │
-  ▼
-BuildOverlayValues()       min-max 정규화 → 균등 평균 → [0, 1] overlay 값
-  │
-  ▼
-Visualizer (IDW 보간)
+## 현재 파이프라인
+
+```text
+원천 API
+  → source별 bounded parser / complete response 검증
+  → 원천 공간 단위와 집계 의미를 보존한 값
+  → query-keyed atomic cache
+  → 행정동↔법정동 mapping 또는 canonical legal ID 병합
+  → DistrictDataSet + Observation/Coverage/Provenance
+  → snapshot normalization / weighted overlay
+  → choropleth·extrusion 또는 사용자가 선택한 IDW trend
 ```
 
-## 공간 단위 체계
+- 서울 XML은 page 단위 streaming projection을 사용한다.
+- 서울 분기 지표는 최신 닫힌 분기 또는 명시 기간을 사용한다.
+- 교통은 최신 닫힌 월 또는 명시 기간을 사용한다.
+- pagination total, 실제 row count와 중복 identity가 맞아야 cache할 수 있다.
+- mapping되지 않은 지역을 전체 평균으로 채우지 않는다. missing과 mapping quality를 결과에 남긴다.
+- source별 집계는 `Mean`, `Sum`, `Category` 의미를 구분한다.
 
-| 단위 | 설명 | 코드 자릿수 | 비고 |
-|---|---|---|---|
-| 행정동 (adstrd) | 행정 운영 단위 | 8자리 | 서울 열린데이터 API 기준 |
-| 법정동 (legald) | 법적 경계 단위 | 8자리 | VWorld WFS API / 시각화 단위 |
+## 공간 단위
 
-- 행정동 ↔ 법정동 매핑: `refs/adstrd_legald_mapping.json` (KIKmix.20240201.xlsx 기반)
-- 동일 행정동이 복수의 법정동에 매핑되는 경우 평균값 적용
+| 단위 | 설명 | 코드 |
+|---|---|---|
+| 행정동 | 서울 통계의 원천 행정 단위 | provider field 기준 8자리 |
+| 법정동 | 경계·분석·시각화의 canonical 단위 | 내부 canonical legal ID 10자리 |
+| PNU | 필지 식별자 | 앞 10자리를 canonical legal ID로 변환 |
 
-## 정규화 방식
+행정동↔법정동 mapping은 패키지에 포함된 `adstrd_legald_mapping.json`을 사용한다. 사용자가 이 파일을 직접 배치하지 않으며 package contract가 누락을 차단한다.
 
-모든 지표는 시각화 전 **min-max 정규화** 를 적용한다.
+## 정규화와 overlay
 
-```
+정규화와 가중치는 원천 parser가 아니라 snapshot derived analysis에서 처리한다.
+
+```text
 normalized = (x - min) / (max - min)
+overlay = Σ(normalized × weight) / Σ(active weight)
 ```
 
-- 정규화 범위: 분석 대상 법정동 전체 (서울 내 BBOX 내)
-- fallback: 매핑 미존재 법정동 → 해당 지표의 전체 평균값 적용
-- 복수 지표 선택 시 균등 가중 평균 (weighted overlay)
-
-> 향후 사용자 정의 가중치 입력 지원 예정
+- 실제 값이 없는 layer/district는 전체 평균으로 대치하지 않는다.
+- 존재하는 layer만 district별로 weight를 재정규화한다.
+- zoning 같은 category는 기본 numeric overlay에서 제외한다.
+- IDW는 기본 표현이 아니라 행정구역 값을 연속장으로 가정한 선택적 trend mode다.
 
 ## 캐시 정책
 
-| 항목 | 내용 |
-|---|---|
-| 저장 위치 | `URSUS.dll`과 동일 폴더 |
-| TTL | 30일 (이후 자동 재요청) |
-| 무효화 | 캐시 파일 삭제 후 재실행 |
-| 파일명 | 각 지표 문서 참조 |
+- 저장 위치: OS 사용자 `LocalApplicationData` 아래 URSUS cache
+- key: source, schema, query intent, 기간, 요청 지역, CRS와 source별 parameter
+- 저장: temp file 후 atomic replace
+- 동시 동일 key 요청: origin fetch coalescing
+- 무효화: TTL, schema 변경, corruption, force refresh
+- force refresh 실패 시 이전 유효 cache는 보존
 
 ## 새 데이터셋 추가 체크리스트
 
-1. 이 디렉토리에 `{metric_name}.md` 문서 작성 (아래 템플릿 참조)
-2. `DataSeoulApiParser.cs`에 서비스 상수 및 `Get*ByAdstrd()` 메서드 추가
-   - `FetchAndCache(serviceName, keyField, valueField, cacheFileName, cacheDir)` 호출
-   - `keyField`: 행정동코드 필드명 확인 필수 (서비스마다 다름)
-3. `URSUSSolver.cs`의 `DS_*` 상수 추가 및 `Run()` 분기 추가
-4. `URSUSSolver_GH.cs` 주석의 Value List 항목 목록 업데이트
+1. `IDataSource` 또는 `IBoundaryDataSource`로 원천 계약을 구현한다.
+2. `DataSourceMetadata`에 ID, 단위, TTL과 API key requirement를 선언한다.
+3. 원천 공간 단위, 기간 선택, 집계 의미와 complete 조건을 먼저 문서화한다.
+4. parser는 cancellation, resource 상한과 secret redaction을 따른다.
+5. cache 전에 구조뿐 아니라 값·기간·coverage의 의미를 검증한다.
+6. `DataSourceRegistry`와 Solver display-name mapping에 등록한다.
+7. 정상, 0건, auth/error, schema drift, duplicate/pagination과 cache 회귀 테스트를 추가한다.
+8. 이 디렉토리의 source 문서와 [해석 가이드](../dataset_interpretation_guide.md)를 갱신한다.
 
-## 지표 문서 템플릿
+## source 문서 템플릿
 
 ```markdown
-# {지표명}
+# 지표명
 
 ## 개요
-...
-
-## 출처
-- 기관: ...
-- 서비스명: ...
-- API 엔드포인트: `http://openapi.seoul.go.kr:8088/{키}/xml/{SERVICE}/{start}/{end}/`
-
-## 업데이트 주기
-...
-
-## 공간 단위 및 커버리지
-...
-
-## 주요 필드
-
-| 필드명 | 타입 | 설명 |
-|---|---|---|
-| ... | ... | ... |
-
-## 가공 방법
-...
-
-## 알려진 한계
-...
+## 출처와 서비스 ID
+## 원천 공간 단위와 coverage
+## 관측 기간과 선택 정책
+## 사용 field
+## 집계와 mapping 의미
+## complete 조건
+## cache identity
+## 알려진 한계와 편향
 ```

@@ -1,5 +1,7 @@
 # IDW(Inverse Distance Weighting) 분석
 
+> 이 문서는 IDW의 개념과 한계를 설명하는 배경 자료다. 현재 URSUS의 기본 표현은 행정구역 값을 그대로 보여주는 choropleth이며, IDW는 사용자가 연속장 가정을 선택한 `Mode=2` trend 표현이다. 세부 입력·상한은 코드와 [데이터셋 해석 가이드](dataset_interpretation_guide.md)를 우선한다.
+
 > URSUS 프로젝트에서 사용하는 공간 보간 알고리즘의 원리·기능·실무 맥락·장단점 총정리
 
 ---

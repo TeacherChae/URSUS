@@ -6,6 +6,8 @@
 실제 해당 동에 주민등록된 인구 수 및 세대 구성 정보를 제공한다.
 생활인구(체류 추정)와 달리 행정 등록 기반의 확정 수치.
 
+> 제품은 전체 기간 평균이 아니라 현재 분기보다 이전인 **최신 닫힌 분기** 또는 사용자가 명시한 분기만 사용한다.
+
 ## 출처
 
 - **기관**: 서울특별시 (서울 열린데이터 광장)
@@ -48,20 +50,20 @@
 ## 가공 방법
 
 ```
-raw: 행정동 × 분기 레코드 (11,454행)
+raw: 행정동 × 분기 레코드 (page streaming)
   │
-  ▼ AggregateFieldByAdstrd(keyField="ADSTRD_CD", valueField="TOT_REPOP_CO")
-전기간 단순 평균 → 행정동별 대표값 (424개 내외)
+  ▼ 최신 닫힌 분기 또는 명시 분기만 선택
+선택 분기의 행정동별 상주인구 합계
   │
   ▼ MapToLegald()
-adstrd_cd → legald_cd 매핑 적용 → 법정동별 평균
+adstrd_cd → legald_cd 매핑 적용 → 총량 보존 균등 분배(EstimatedEqualSplit)
   │
   ▼ BuildOverlayValues()
 min-max 정규화 [0, 1]
 ```
 
-- 분기별 가중치 없이 단순 평균 적용
-- 캐시 파일: `resident_pop.json` (TTL 30일)
+- query intent, 기간, 예상 지역 set과 요청 지역을 포함한 cache key 사용 (TTL 30일)
+- 하나의 행정동이 여러 법정동에 대응할 때 실제 세부 분포가 없으므로 균등 분배한다. 이는 실측값이 아니라 mapping assumption이다.
 
 ## 알려진 한계
 
