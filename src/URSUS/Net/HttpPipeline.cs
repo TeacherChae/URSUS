@@ -69,7 +69,19 @@ public sealed class HttpPipeline
     }
 
     public async Task<string> GetStringAsync(Uri uri, CancellationToken cancellationToken)
+        => await ProcessStreamAsync(uri, async (stream, token) =>
+        {
+            using var reader = new StreamReader(stream, leaveOpen: true);
+            return await reader.ReadToEndAsync(token).ConfigureAwait(false);
+        }, cancellationToken).ConfigureAwait(false);
+
+    internal async Task<T> ProcessStreamAsync<T>(
+        Uri uri,
+        Func<Stream, CancellationToken, Task<T>> process,
+        CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(uri);
+        ArgumentNullException.ThrowIfNull(process);
         DateTimeOffset deadline = _clock.UtcNow + _overallTimeout;
         for (int attempt = 0; ; attempt++)
         {
@@ -82,6 +94,8 @@ public sealed class HttpPipeline
             {
                 using var response = await _client.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead,
                     timeout.Token).ConfigureAwait(false);
+                using var abortRegistration = timeout.Token.Register(
+                    static state => ((HttpResponseMessage)state!).Dispose(), response);
                 if (ShouldRetry(response.StatusCode) && attempt < _maxRetries)
                 {
                     TimeSpan delay = GetRetryDelay(response, attempt);
@@ -99,7 +113,16 @@ public sealed class HttpPipeline
                     continue;
                 }
                 response.EnsureSuccessStatusCode();
-                return await response.Content.ReadAsStringAsync(timeout.Token).ConfigureAwait(false);
+                await using Stream stream = await response.Content
+                    .ReadAsStreamAsync(timeout.Token).ConfigureAwait(false);
+                return await process(stream, timeout.Token).ConfigureAwait(false);
+            }
+            catch (Exception ex) when (timeout.IsCancellationRequested)
+            {
+                if (cancellationToken.IsCancellationRequested)
+                    throw new OperationCanceledException(
+                        "HTTP 작업이 취소되었습니다.", ex, cancellationToken);
+                throw new TimeoutException("HTTP 요청 timeout을 초과했습니다.", ex);
             }
             finally
             {

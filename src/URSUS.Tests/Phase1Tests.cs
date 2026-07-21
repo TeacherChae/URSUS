@@ -563,6 +563,160 @@ internal static class Phase1Tests
     }
 
     [Test]
+    internal static void SeoulSource_FailsClosedAndDoesNotCacheIncompletePagination()
+    {
+        var scenarios = new (string Name, string[] Pages)[]
+        {
+            ("total-count changed", new[]
+            {
+                SeoulPage(2, ("11110515", "2026Q1", "100")),
+                SeoulPage(3, ("11110530", "2026Q1", "200")),
+            }),
+            ("duplicate identity", new[]
+            {
+                SeoulPage(2, ("11110515", "2026Q1", "100")),
+                SeoulPage(2, ("11110515", "2026Q1", "100")),
+            }),
+            ("row-count mismatch", new[]
+            {
+                SeoulPage(1,
+                    ("11110515", "2026Q1", "100"),
+                    ("11110530", "2026Q1", "200")),
+            }),
+            ("premature empty page", new[]
+            {
+                SeoulPage(2, ("11110515", "2026Q1", "100")),
+                SeoulPage(2),
+            }),
+            ("max-page truncation", new[]
+            {
+                SeoulPage(1_000_001, ("11110515", "2026Q1", "100")),
+            }),
+            ("missing total-count", new[]
+            {
+                SeoulPageWithDeclaredTotal(null, ("11110515", "2026Q1", "100")),
+            }),
+            ("malformed total-count", new[]
+            {
+                SeoulPageWithDeclaredTotal("not-a-number", ("11110515", "2026Q1", "100")),
+            }),
+        };
+
+        foreach (var scenario in scenarios)
+        {
+            WithTemporaryDirectory(directory =>
+            {
+                var handler = new SequencedSeoulHandler(scenario.Pages);
+                var source = SeoulIncomeSource(handler, directory);
+                var query = SeoulQuery();
+
+                var first = source.FetchAsync(query).GetAwaiter().GetResult();
+                AssertEx.False(first.IsSuccess, scenario.Name);
+                AssertEx.Equal(ErrorCodes.SeoulPaginationIncomplete, first.Error!.Code,
+                    scenario.Name);
+                AssertEx.Equal(ErrorSeverity.Error, first.Error.Severity, scenario.Name);
+                AssertEx.True(first.Error.Message.Contains("pagination", StringComparison.OrdinalIgnoreCase),
+                    scenario.Name);
+                AssertEx.Equal(0, Directory.GetFiles(directory, "*.json").Length,
+                    $"{scenario.Name}: invalid result must not be cached");
+
+                var second = source.FetchAsync(query).GetAwaiter().GetResult();
+                AssertEx.False(second.IsSuccess, scenario.Name);
+                AssertEx.Equal(scenario.Pages.Length * 2, handler.RequestCount,
+                    $"{scenario.Name}: a second fetch must go back to the network");
+            });
+        }
+    }
+
+    [Test]
+    internal static void SeoulSource_CompletePaginationStillAllowsPartialDistrictCoverage()
+    {
+        WithTemporaryDirectory(directory =>
+        {
+            var handler = new SequencedSeoulHandler(new[]
+            {
+                SeoulPage(1, ("11110515", "2026Q1", "100")),
+            });
+            var source = SeoulIncomeSource(handler, directory);
+            var query = SeoulQuery();
+
+            var first = source.FetchAsync(query).GetAwaiter().GetResult();
+            AssertEx.True(first.IsSuccess);
+            AssertEx.False(first.Data!.Observation!.IsComplete,
+                "district coverage may be partial even when pagination is complete");
+            AssertEx.Equal(1, handler.RequestCount);
+
+            var cached = source.FetchAsync(query).GetAwaiter().GetResult();
+            AssertEx.True(cached.IsSuccess);
+            AssertEx.Equal(DeliveryOrigin.Cache, cached.DeliveryOrigin);
+            AssertEx.Equal(1, handler.RequestCount);
+        });
+    }
+
+    [Test]
+    internal static void SeoulSource_RejectsIncompleteAggregateAlreadyPresentInCurrentCacheSchema()
+    {
+        WithTemporaryDirectory(directory =>
+        {
+            var cache = new AtomicCacheStore(directory);
+            var query = SeoulQuery();
+            var cacheKey = SeoulCacheKey(query, SeoulOpenDataSourceBase.CacheSchemaVersion);
+            var incomplete = new SeoulAggregate(
+                new Dictionary<string, double> { ["11110515"] = 100 },
+                new ObservationWindow("2026Q1", false, 1, SeoulExpectedDistricts.Ids.Count),
+                1,
+                false,
+                new[] { "legacy incomplete pagination" });
+            cache.GetOrFetchAsync(cacheKey, false, TimeSpan.FromDays(30),
+                    _ => Task.FromResult(incomplete))
+                .GetAwaiter().GetResult();
+
+            var handler = new SequencedSeoulHandler(new[]
+            {
+                SeoulPage(1, ("11110515", "2026Q1", "100")),
+            });
+            var source = SeoulIncomeSource(handler, directory, cache);
+            var result = source.FetchAsync(query).GetAwaiter().GetResult();
+
+            AssertEx.False(result.IsSuccess);
+            AssertEx.Equal(ErrorCodes.SeoulPaginationIncomplete, result.Error!.Code);
+            AssertEx.Equal(0, handler.RequestCount,
+                "an incomplete cached aggregate must be rejected before mapping/overlay");
+        });
+    }
+
+    [Test]
+    internal static void SeoulSource_OldSchemaIncompleteCacheIsIgnoredAndReplacedFromNetwork()
+    {
+        WithTemporaryDirectory(directory =>
+        {
+            var cache = new AtomicCacheStore(directory);
+            var query = SeoulQuery();
+            var incomplete = new SeoulAggregate(
+                new Dictionary<string, double> { ["11110515"] = 100 },
+                new ObservationWindow("2026Q1", false, 1, SeoulExpectedDistricts.Ids.Count),
+                1,
+                false,
+                new[] { "old schema incomplete pagination" });
+            cache.GetOrFetchAsync(SeoulCacheKey(query, 2), false, TimeSpan.FromDays(30),
+                    _ => Task.FromResult(incomplete))
+                .GetAwaiter().GetResult();
+
+            var handler = new SequencedSeoulHandler(new[]
+            {
+                SeoulPage(1, ("11110515", "2026Q1", "100")),
+            });
+            var source = SeoulIncomeSource(handler, directory, cache);
+            var result = source.FetchAsync(query).GetAwaiter().GetResult();
+
+            AssertEx.True(result.IsSuccess);
+            AssertEx.Equal(DeliveryOrigin.Network, result.DeliveryOrigin);
+            AssertEx.Equal(1, handler.RequestCount,
+                "schema 2 cache must not bypass the schema 3 pagination invariant");
+        });
+    }
+
+    [Test]
     internal static void ZoningHistogramTransform_IsVersionedDefaultOffAndUnknownMissing()
     {
         var histogram = new ZoningCategoryHistogram(new Dictionary<string, int>
@@ -758,6 +912,55 @@ internal static class Phase1Tests
         AssertEx.True(typeof(VworldApiParser).GetConstructor(new[] { typeof(string), typeof(string) }) != null);
     }
 
+    private static SeoulAvgIncomeDataSource SeoulIncomeSource(
+        HttpMessageHandler handler,
+        string cacheDirectory,
+        AtomicCacheStore? cache = null)
+        => new(
+            new URSUS.Config.ApiKeyProvider(new Dictionary<string, string>
+            {
+                [URSUS.Config.ApiKeyProvider.KEY_SEOUL] = "secret",
+            }),
+            new HttpPipeline(new HttpClient(handler), maxRetries: 0),
+            new FrozenClock(new DateTimeOffset(2026, 5, 1, 0, 0, 0, TimeSpan.Zero)),
+            cache ?? new AtomicCacheStore(cacheDirectory));
+
+    private static DataQuery SeoulQuery() => new()
+    {
+        DistrictCodes = new[] { "11110101" },
+        TransportPolicy = new TransportPolicy(true),
+    };
+
+    private static PersistentCacheKey SeoulCacheKey(DataQuery query, int schemaVersion)
+    {
+        var cacheParameters = new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["transport.allowInsecureSeoulHttp"] = "true",
+            ["explicitPeriod"] = string.Empty,
+            ["expectedSet"] = SeoulExpectedDistricts.Version,
+        };
+        return PersistentCacheKey.Create("avg_income", schemaVersion, query.QueryIntent,
+            cacheParameters, query.DistrictCodes, CoordinateReferenceSystem.Epsg5179);
+    }
+
+    private static string SeoulPage(
+        int total,
+        params (string District, string Period, string Value)[] rows)
+        => SeoulPageWithDeclaredTotal(total.ToString(CultureInfo.InvariantCulture), rows);
+
+    private static string SeoulPageWithDeclaredTotal(
+        string? declaredTotal,
+        params (string District, string Period, string Value)[] rows)
+        => "<root>" +
+           (declaredTotal == null
+               ? string.Empty
+               : $"<list_total_count>{declaredTotal}</list_total_count>") +
+           string.Concat(rows.Select(row =>
+               $"<row><ADSTRD_CD>{row.District}</ADSTRD_CD>" +
+               $"<STDR_YYQU_CD>{row.Period}</STDR_YYQU_CD>" +
+               $"<MT_AVRG_INCOME_AMT>{row.Value}</MT_AVRG_INCOME_AMT></row>")) +
+           "</root>";
+
     private static BoundaryRing Ring(params (double x, double y)[] points)
         => new(points.Select(point => new Coordinate2D(point.x, point.y)).ToArray());
 
@@ -812,6 +1015,25 @@ internal static class Phase1Tests
             return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
             {
                 Content = new StringContent(_body, Encoding.UTF8, "application/xml"),
+            });
+        }
+    }
+
+    private sealed class SequencedSeoulHandler : HttpMessageHandler
+    {
+        private readonly string[] _pages;
+
+        public SequencedSeoulHandler(string[] pages) => _pages = pages;
+        public int RequestCount { get; private set; }
+
+        protected override Task<HttpResponseMessage> SendAsync(
+            HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            string page = _pages[RequestCount % _pages.Length];
+            RequestCount++;
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(page, Encoding.UTF8, "application/xml"),
             });
         }
     }

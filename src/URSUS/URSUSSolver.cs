@@ -365,7 +365,8 @@ namespace URSUS
                             coverageProbe.Layers.First(item => item.Name == pair.Key).Coverage,
                             pair.Value.CacheAge,
                             pair.Value.MappingQuality,
-                            pair.Value.CategoricalHistograms)),
+                            pair.Value.CategoricalHistograms,
+                            pair.Value.SampleCounts)),
                     districts.Where(district => district.Topology != null)
                         .ToDictionary(
                             district => DistrictCode.CanonicalizeLegal(district.DistrictCode),
@@ -514,6 +515,7 @@ namespace URSUS
                     result.CacheAge,
                     result.Data.MappingQuality,
                     result.Data.CategoricalHistograms,
+                    result.Data.SampleCounts,
                     result.Data.Warnings,
                     null);
             }
@@ -536,6 +538,7 @@ namespace URSUS
             TimeSpan? CacheAge,
             MappingQuality? MappingQuality,
             IReadOnlyDictionary<string, ZoningCategoryHistogram> CategoricalHistograms,
+            IReadOnlyDictionary<string, int> SampleCounts,
             IReadOnlyList<string> Warnings,
             SnapshotFailure? Failure)
         {
@@ -543,6 +546,7 @@ namespace URSUS
                 => new(new Dictionary<string, double>(), null, null, DateTimeOffset.UtcNow,
                     Caching.AcquisitionOrigin.Network, Caching.DeliveryOrigin.Network,
                     null, null, new Dictionary<string, ZoningCategoryHistogram>(),
+                    new Dictionary<string, int>(),
                     Array.Empty<string>(), new SnapshotFailure(sourceId, code, message));
         }
 

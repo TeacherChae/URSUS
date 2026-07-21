@@ -39,7 +39,35 @@ $RepoRoot    = Split-Path -Parent $PSScriptRoot
 $SolutionFile = Join-Path $RepoRoot "URSUS.sln"
 $IssFile     = Join-Path $PSScriptRoot "URSUS.iss"
 $DistDir     = Join-Path $RepoRoot "dist"
-$BinDir      = Join-Path $RepoRoot "bin" $Configuration
+$ManifestFile = Join-Path $PSScriptRoot "package-manifest.json"
+$PackageManifest = Get-Content $ManifestFile -Raw | ConvertFrom-Json
+$BinDir      = Join-Path $RepoRoot $PackageManifest.artifactRoot
+$RequiredFiles = @($PackageManifest.requiredRuntimeFiles)
+$SampleFiles = @($PackageManifest.sampleFiles)
+
+if (-not (Test-Path $DistDir)) {
+    New-Item -ItemType Directory -Path $DistDir -Force | Out-Null
+}
+
+function Copy-PackagePayload {
+    param(
+        [string]$SourceRoot,
+        [string]$DestinationRoot,
+        [object[]]$Files
+    )
+
+    foreach ($file in $Files) {
+        $sourcePath = Join-Path $SourceRoot $file
+        $destinationPath = Join-Path $DestinationRoot $file
+        if (-not (Test-Path -LiteralPath $sourcePath -PathType Leaf)) {
+            throw "Required package file missing: $file"
+        }
+
+        $destinationDirectory = Split-Path -Parent $destinationPath
+        New-Item -ItemType Directory -Path $destinationDirectory -Force | Out-Null
+        Copy-Item -LiteralPath $sourcePath -Destination $destinationPath -Force
+    }
+}
 
 Write-Host "======================================" -ForegroundColor Cyan
 Write-Host "  URSUS Build & Package Pipeline"       -ForegroundColor Cyan
@@ -85,7 +113,7 @@ if (-not $SkipBuild) {
         Copy-Item $SetupExe (Join-Path $DistDir "URSUS_Setup.exe") -Force
         Write-Host "  Setup.exe published → dist/URSUS_Setup.exe" -ForegroundColor Green
     } else {
-        Write-Host "  Warning: Setup.exe not found after publish." -ForegroundColor DarkYellow
+        throw "Setup.exe not found after publish: $SetupExe"
     }
 } else {
     Write-Host "[2/4] Skipping Setup.exe publish (using existing binaries)." -ForegroundColor DarkYellow
@@ -93,14 +121,6 @@ if (-not $SkipBuild) {
 
 # ── Step 3: Verify build output ─────────────────────────────────────────
 Write-Host "[3/4] Verifying build artifacts..." -ForegroundColor Yellow
-
-$RequiredFiles = @(
-    "URSUS.GH.gha",
-    "URSUS.dll",
-    "Clipper2Lib.dll",
-    "URSUS.GH.deps.json",
-    "URSUS.GH.runtimeconfig.json"
-)
 
 $Missing = @()
 foreach ($f in $RequiredFiles) {
@@ -118,8 +138,36 @@ if ($Missing.Count -gt 0) {
 
 Write-Host "  All required artifacts present." -ForegroundColor Green
 
-# ── Step 4: Inno Setup ──────────────────────────────────────────────────
-Write-Host "[4/4] Creating installer..." -ForegroundColor Yellow
+# Keep the runtime payload beside URSUS_Setup.exe so the standalone setup
+# can resolve and install the same contract as the Inno/portable packages.
+Copy-PackagePayload -SourceRoot $BinDir -DestinationRoot $DistDir -Files $RequiredFiles
+Write-Host "  Standalone Setup payload staged in $DistDir." -ForegroundColor Green
+
+# ── Step 4: Portable ZIP + Inno Setup ──────────────────────────────────
+Write-Host "[4/4] Creating packages..." -ForegroundColor Yellow
+
+$ZipName = "URSUS_portable.zip"
+$ZipPath = Join-Path $DistDir $ZipName
+$StagingDir = Join-Path $DistDir "_staging"
+
+if (Test-Path $StagingDir) { Remove-Item -Recurse -Force $StagingDir }
+New-Item -ItemType Directory -Path $StagingDir -Force | Out-Null
+
+Copy-PackagePayload -SourceRoot $BinDir -DestinationRoot $StagingDir -Files $RequiredFiles
+
+$SampleDir = Join-Path $StagingDir "samples"
+New-Item -ItemType Directory -Path $SampleDir -Force | Out-Null
+foreach ($sample in $SampleFiles) {
+    $samplePath = Join-Path $RepoRoot $sample
+    if (-not (Test-Path $samplePath)) {
+        throw "Required sample file missing: $sample"
+    }
+    Copy-Item $samplePath $SampleDir
+}
+
+Compress-Archive -Path "$StagingDir\*" -DestinationPath $ZipPath -Force
+Remove-Item -Recurse -Force $StagingDir
+Write-Host "  Created: $ZipPath" -ForegroundColor Green
 
 # Auto-detect Inno Setup compiler
 if ([string]::IsNullOrEmpty($InnoSetupPath)) {
@@ -136,42 +184,9 @@ if ([string]::IsNullOrEmpty($InnoSetupPath)) {
     }
 }
 
-# Ensure dist directory exists
-if (-not (Test-Path $DistDir)) {
-    New-Item -ItemType Directory -Path $DistDir -Force | Out-Null
-}
-
 if ([string]::IsNullOrEmpty($InnoSetupPath) -or -not (Test-Path $InnoSetupPath)) {
     Write-Host "  Inno Setup not found. Skipping installer creation." -ForegroundColor DarkYellow
     Write-Host "  Install Inno Setup 6 from: https://jrsoftware.org/isinfo.php" -ForegroundColor DarkYellow
-    Write-Host ""
-    Write-Host "  Alternatively, create a portable ZIP package:" -ForegroundColor DarkYellow
-
-    # Fallback: create ZIP package
-    $ZipName = "URSUS_portable.zip"
-    $ZipPath = Join-Path $DistDir $ZipName
-    $StagingDir = Join-Path $DistDir "_staging"
-
-    if (Test-Path $StagingDir) { Remove-Item -Recurse -Force $StagingDir }
-    New-Item -ItemType Directory -Path $StagingDir -Force | Out-Null
-
-    # Copy core files
-    foreach ($f in $RequiredFiles) {
-        Copy-Item (Join-Path $BinDir $f) $StagingDir
-    }
-    # Copy additional runtime DLLs
-    @("System.Drawing.Common.dll", "Microsoft.Win32.SystemEvents.dll") | ForEach-Object {
-        $src = Join-Path $BinDir $_
-        if (Test-Path $src) { Copy-Item $src $StagingDir }
-    }
-    # Copy mapping data
-    $mappingFile = Join-Path $RepoRoot "bin" "adstrd_legald_mapping.json"
-    if (Test-Path $mappingFile) { Copy-Item $mappingFile $StagingDir }
-
-    Compress-Archive -Path "$StagingDir\*" -DestinationPath $ZipPath -Force
-    Remove-Item -Recurse -Force $StagingDir
-
-    Write-Host "  Created: $ZipPath" -ForegroundColor Green
 } else {
     Write-Host "  Using Inno Setup: $InnoSetupPath"
     & $InnoSetupPath $IssFile

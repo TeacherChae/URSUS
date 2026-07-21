@@ -19,20 +19,6 @@ namespace URSUS.Config
     public sealed class PostInstallVerifier
     {
         // ── 핵심 파일 목록 ──────────────────────────────────────────────
-        private static readonly string[] REQUIRED_FILES = new[]
-        {
-            "URSUS.GH.gha",
-            "URSUS.dll",
-        };
-
-        private static readonly string[] OPTIONAL_FILES = new[]
-        {
-            "Clipper2Lib.dll",
-            "appsettings.json",
-            "URSUS.GH.deps.json",
-            "URSUS.GH.runtimeconfig.json",
-        };
-
         private const string SETTINGS_FILENAME = "appsettings.json";
 
         // ── 검증 결과 모델 ──────────────────────────────────────────────
@@ -196,7 +182,7 @@ namespace URSUS.Config
                 $"설치 디렉토리 확인: {installDir}"));
 
             // 필수 파일
-            foreach (string file in REQUIRED_FILES)
+            foreach (string file in DeploymentContract.RequiredRuntimeFiles)
             {
                 string path = Path.Combine(installDir, file);
                 bool exists = File.Exists(path);
@@ -209,22 +195,8 @@ namespace URSUS.Config
                     exists ? CheckSeverity.Info : CheckSeverity.Error));
             }
 
-            // 선택 파일 (경고만)
-            foreach (string file in OPTIONAL_FILES)
-            {
-                string path = Path.Combine(installDir, file);
-                bool exists = File.Exists(path);
-                report.Step1_Files.Add(new CheckItem(
-                    file,
-                    exists,
-                    exists
-                        ? $"{file} 확인 ✓"
-                        : $"{file} 파일이 없습니다 (기능 제한 가능).",
-                    exists ? CheckSeverity.Info : CheckSeverity.Warning));
-            }
-
             // Windows 파일 차단(Zone.Identifier) 확인
-            foreach (string file in REQUIRED_FILES)
+            foreach (string file in DeploymentContract.RequiredRuntimeFiles)
             {
                 string path = Path.Combine(installDir, file);
                 if (!File.Exists(path)) continue;

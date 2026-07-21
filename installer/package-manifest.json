@@ -1,0 +1,19 @@
+{
+  "artifactRoot": "bin/dist",
+  "requiredRuntimeFiles": [
+    "URSUS.GH.gha",
+    "URSUS.dll",
+    "Clipper2Lib.dll",
+    "System.Drawing.Common.dll",
+    "Microsoft.Win32.SystemEvents.dll",
+    "URSUS.GH.deps.json",
+    "URSUS.GH.runtimeconfig.json",
+    "adstrd_legald_mapping.json",
+    "runtimes/win/lib/net7.0/System.Drawing.Common.dll",
+    "runtimes/win/lib/net7.0/Microsoft.Win32.SystemEvents.dll"
+  ],
+  "sampleFiles": [
+    "URSUS_sample.gh",
+    "URSUS_pipeline_demo.ghx"
+  ]
+}

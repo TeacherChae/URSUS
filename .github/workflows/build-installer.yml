@@ -2,6 +2,8 @@ name: Build & Package URSUS
 
 on:
   push:
+    branches:
+      - main
     tags:
       - 'v*'
   pull_request:
@@ -15,7 +17,7 @@ on:
         type: boolean
 
 env:
-  DOTNET_VERSION: '7.0.x'
+  DOTNET_VERSION: '8.0.129'
   CONFIGURATION: 'Release'
 
 jobs:
@@ -33,37 +35,38 @@ jobs:
       - name: Restore dependencies
         run: dotnet restore URSUS.sln
 
+      - name: Run required test suite
+        run: dotnet run --project src/URSUS.Tests/URSUS.Tests.csproj -c Release --no-restore
+
       - name: Build
         run: dotnet build URSUS.sln -c ${{ env.CONFIGURATION }} --no-restore
 
-      - name: Verify build output
+      - name: Verify and stage package payload
         shell: pwsh
         run: |
-          $required = @(
-            "bin/Release/URSUS.GH.gha",
-            "bin/Release/URSUS.dll",
-            "bin/Release/Clipper2Lib.dll"
-          )
-          $missing = $required | Where-Object { -not (Test-Path $_) }
-          if ($missing) {
-            Write-Error "Missing build artifacts: $($missing -join ', ')"
-            exit 1
+          python installer/verify_package_contract.py
+          if ($LASTEXITCODE -ne 0) { throw "Packaging contract verification failed" }
+
+          $manifest = Get-Content installer/package-manifest.json -Raw | ConvertFrom-Json
+          $sourceRoot = Join-Path $PWD $manifest.artifactRoot
+          $packageRoot = Join-Path $PWD "dist/package"
+          if (Test-Path $packageRoot) { Remove-Item $packageRoot -Recurse -Force }
+          New-Item -ItemType Directory -Path $packageRoot -Force | Out-Null
+
+          foreach ($file in $manifest.requiredRuntimeFiles) {
+            $source = Join-Path $sourceRoot $file
+            $destination = Join-Path $packageRoot $file
+            New-Item -ItemType Directory -Path (Split-Path -Parent $destination) -Force | Out-Null
+            Copy-Item -LiteralPath $source -Destination $destination
           }
-          Write-Host "All build artifacts verified."
+          Write-Host "Package payload staged from $($manifest.artifactRoot)."
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
           name: URSUS-Release
-          path: |
-            bin/Release/URSUS.GH.gha
-            bin/Release/URSUS.dll
-            bin/Release/Clipper2Lib.dll
-            bin/Release/System.Drawing.Common.dll
-            bin/Release/Microsoft.Win32.SystemEvents.dll
-            bin/Release/URSUS.GH.deps.json
-            bin/Release/URSUS.GH.runtimeconfig.json
-            bin/adstrd_legald_mapping.json
+          path: dist/package/
+          if-no-files-found: error
           retention-days: 30
 
   installer:
@@ -77,7 +80,13 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: URSUS-Release
-          path: bin/Release
+          path: bin/dist
+
+      - name: Verify downloaded package payload
+        shell: pwsh
+        run: |
+          python installer/verify_package_contract.py
+          if ($LASTEXITCODE -ne 0) { throw "Downloaded package payload is incomplete" }
 
       - name: Install Inno Setup
         shell: pwsh
@@ -98,22 +107,21 @@ jobs:
       - name: Create portable ZIP
         shell: pwsh
         run: |
+          $manifest = Get-Content installer/package-manifest.json -Raw | ConvertFrom-Json
+          $sourceRoot = Join-Path $PWD $manifest.artifactRoot
           $staging = "dist/_staging"
+          if (Test-Path $staging) { Remove-Item $staging -Recurse -Force }
           New-Item -ItemType Directory -Path $staging -Force | Out-Null
-          $files = @(
-            "bin/Release/URSUS.GH.gha",
-            "bin/Release/URSUS.dll",
-            "bin/Release/Clipper2Lib.dll",
-            "bin/Release/System.Drawing.Common.dll",
-            "bin/Release/Microsoft.Win32.SystemEvents.dll",
-            "bin/Release/URSUS.GH.deps.json",
-            "bin/Release/URSUS.GH.runtimeconfig.json"
-          )
-          foreach ($f in $files) {
-            if (Test-Path $f) { Copy-Item $f $staging }
+          foreach ($file in $manifest.requiredRuntimeFiles) {
+            $source = Join-Path $sourceRoot $file
+            $destination = Join-Path $staging $file
+            New-Item -ItemType Directory -Path (Split-Path -Parent $destination) -Force | Out-Null
+            Copy-Item -LiteralPath $source -Destination $destination
           }
-          if (Test-Path "bin/adstrd_legald_mapping.json") {
-            Copy-Item "bin/adstrd_legald_mapping.json" $staging
+          $sampleDir = Join-Path $staging "samples"
+          New-Item -ItemType Directory -Path $sampleDir -Force | Out-Null
+          foreach ($sample in $manifest.sampleFiles) {
+            Copy-Item (Join-Path $PWD $sample) $sampleDir
           }
           Compress-Archive -Path "$staging/*" -DestinationPath "dist/URSUS_portable.zip" -Force
           Remove-Item -Recurse -Force $staging

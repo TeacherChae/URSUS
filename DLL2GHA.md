@@ -92,7 +92,8 @@ namespace URSUS.GH
         // Grasshopper 플러그인 탭에 표시되는 정보
         public override string Name        => "URSUS";
         public override string Description => "Urban Research with Spatial Utility System";
-        public override string Version     => "1.0.0";
+        public override string Version     =>
+            typeof(URSUSInfo).Assembly.GetName().Version?.ToString(3) ?? "0.3.0";
         public override string AuthorName  => "TeacherChae";
         public override string AuthorContact => "https://github.com/TeacherChae/URSUS";
 
@@ -426,25 +427,37 @@ cd /home/keonheechae/URSUS
 dotnet build src/URSUS.GH -c Release
 ```
 
-성공하면 `bin/Release/` 폴더에 다음 파일들이 생긴다:
+성공하면 `bin/dist/` 폴더에 다음 파일들이 생긴다:
 
 ```
-bin/Release/
+bin/dist/
 ├── URSUS.GH.gha          ← Grasshopper 플러그인
 ├── URSUS.dll              ← 로직 라이브러리
 ├── Clipper2Lib.dll        ← 의존성
-└── (기타 의존성 DLL들)
+├── System.Drawing.Common.dll
+├── Microsoft.Win32.SystemEvents.dll
+├── URSUS.GH.deps.json
+├── URSUS.GH.runtimeconfig.json
+├── adstrd_legald_mapping.json
+└── runtimes/win/lib/net7.0/
+    ├── System.Drawing.Common.dll
+    └── Microsoft.Win32.SystemEvents.dll
 ```
 
 ### 1-7. 수동 테스트
 
-빌드된 파일들을 Grasshopper Libraries 폴더에 복사한다:
+`installer/package-manifest.json`의 전체 payload를 상대 하위경로까지 보존하여
+Grasshopper Libraries 폴더에 복사한다. 루트 DLL만 골라 복사하면 Windows RID
+구현이 누락될 수 있다.
 
 ```
 %AppData%\Grasshopper\Libraries\
     URSUS.GH.gha
     URSUS.dll
     Clipper2Lib.dll
+    ...
+    runtimes\win\lib\net7.0\System.Drawing.Common.dll
+    runtimes\win\lib\net7.0\Microsoft.Win32.SystemEvents.dll
 ```
 
 Rhino를 재시작하면 Grasshopper 탭에 "URSUS" 카테고리가 나타난다.
@@ -828,12 +841,22 @@ dotnet publish src/URSUS.Setup -c Release \
 배포할 때 사용자에게 전달하는 폴더(또는 ZIP) 구조:
 
 ```
-URSUS-v1.0.0/
+URSUS-v0.3.0/
 ├── URSUS.Setup.exe            ← 사용자가 실행하는 유일한 파일
 ├── URSUS.GH.gha               ← Setup이 복사할 파일들
 ├── URSUS.dll                   │
 ├── Clipper2Lib.dll             │
-├── adstrd_legald_mapping.json  ← KIKmix에서 변환된 매핑 파일
+├── System.Drawing.Common.dll   │
+├── Microsoft.Win32.SystemEvents.dll
+├── URSUS.GH.deps.json
+├── URSUS.GH.runtimeconfig.json
+├── adstrd_legald_mapping.json  ← bin/dist의 패키지 payload
+├── runtimes/win/lib/net7.0/    ← deps.json이 선택하는 Windows RID 구현
+│   ├── System.Drawing.Common.dll
+│   └── Microsoft.Win32.SystemEvents.dll
+├── samples/
+│   ├── URSUS_sample.gh
+│   └── URSUS_pipeline_demo.ghx
 └── README.txt                  ← 간단한 안내
 ```
 
@@ -848,7 +871,7 @@ URSUS-v1.0.0/
 #!/bin/bash
 set -e
 
-VERSION="1.0.0"
+VERSION="0.3.0"
 RELEASE_DIR="release/URSUS-v${VERSION}"
 
 echo "=== URSUS v${VERSION} 릴리스 빌드 ==="
@@ -869,17 +892,26 @@ rm -rf "$RELEASE_DIR"
 mkdir -p "$RELEASE_DIR"
 
 # GHA 플러그인 파일들
-cp bin/Release/URSUS.GH.gha    "$RELEASE_DIR/"
-cp bin/Release/URSUS.dll        "$RELEASE_DIR/"
-cp bin/Release/Clipper2Lib.dll  "$RELEASE_DIR/"
+cp bin/dist/URSUS.GH.gha    "$RELEASE_DIR/"
+cp bin/dist/URSUS.dll        "$RELEASE_DIR/"
+cp bin/dist/Clipper2Lib.dll  "$RELEASE_DIR/"
+cp bin/dist/System.Drawing.Common.dll "$RELEASE_DIR/"
+cp bin/dist/Microsoft.Win32.SystemEvents.dll "$RELEASE_DIR/"
+cp bin/dist/URSUS.GH.deps.json "$RELEASE_DIR/"
+cp bin/dist/URSUS.GH.runtimeconfig.json "$RELEASE_DIR/"
+cp bin/dist/adstrd_legald_mapping.json "$RELEASE_DIR/"
+mkdir -p "$RELEASE_DIR/runtimes/win/lib/net7.0"
+cp bin/dist/runtimes/win/lib/net7.0/System.Drawing.Common.dll \
+   "$RELEASE_DIR/runtimes/win/lib/net7.0/"
+cp bin/dist/runtimes/win/lib/net7.0/Microsoft.Win32.SystemEvents.dll \
+   "$RELEASE_DIR/runtimes/win/lib/net7.0/"
+
+mkdir -p "$RELEASE_DIR/samples"
+cp URSUS_sample.gh "$RELEASE_DIR/samples/"
+cp URSUS_pipeline_demo.ghx "$RELEASE_DIR/samples/"
 
 # Setup.exe
 cp publish/URSUS.Setup.exe      "$RELEASE_DIR/"
-
-# 매핑 파일 (이미 생성되어 있다고 가정)
-if [ -f "src/cache/adstrd_legald_mapping.json" ]; then
-    cp src/cache/adstrd_legald_mapping.json "$RELEASE_DIR/"
-fi
 
 echo "✓ 릴리스 폴더 구성 완료: $RELEASE_DIR"
 echo ""

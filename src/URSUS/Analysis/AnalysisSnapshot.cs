@@ -18,7 +18,8 @@ public sealed record SnapshotLayer(
     double Coverage,
     TimeSpan? CacheAge = null,
     MappingQuality? MappingQuality = null,
-    IReadOnlyDictionary<string, ZoningCategoryHistogram>? CategoricalHistograms = null);
+    IReadOnlyDictionary<string, ZoningCategoryHistogram>? CategoricalHistograms = null,
+    IReadOnlyDictionary<string, int>? SampleCounts = null);
 public sealed record SnapshotFailure(string SourceId, string Code, string Message);
 public sealed record NormalizationStatistics(double? Minimum, double? Maximum, int FiniteCount);
 
@@ -61,6 +62,11 @@ public sealed class AnalysisSnapshot
                     : new ReadOnlyDictionary<string, ZoningCategoryHistogram>(
                         new Dictionary<string, ZoningCategoryHistogram>(
                             layer.CategoricalHistograms, StringComparer.Ordinal)),
+                SampleCounts = layer.SampleCounts == null
+                    ? null
+                    : new ReadOnlyDictionary<string, int>(
+                        new Dictionary<string, int>(
+                            layer.SampleCounts, StringComparer.Ordinal)),
             }, StringComparer.Ordinal));
         Topologies = new ReadOnlyDictionary<string, BoundaryTopology>(
             new Dictionary<string, BoundaryTopology>(

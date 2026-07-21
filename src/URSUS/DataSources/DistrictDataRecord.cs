@@ -25,6 +25,12 @@ namespace URSUS.DataSources
         /// 예: "원", "명", "건"
         /// </summary>
         public string? Unit { get; init; }
+
+        /// <summary>
+        /// Number of source observations contributing to <see cref="Value"/>.
+        /// Null means that the source does not expose sample-count provenance.
+        /// </summary>
+        public int? SampleCount { get; init; }
     }
 
     /// <summary>
@@ -40,8 +46,12 @@ namespace URSUS.DataSources
         /// </summary>
         public IReadOnlyDictionary<string, DistrictDataRecord> Records { get; }
 
+        /// <summary>Per-district source sample counts when supplied by the source.</summary>
+        public IReadOnlyDictionary<string, int> SampleCounts { get; }
+
         /// <summary>
-        /// 수집된 총 원시 레코드 수 (집계 전).
+        /// 집계 값에 실제로 기여한 원천 관측치 수.
+        /// 파서가 유효하지 않은 행을 제외하는 경우 전체 수신 행 수와 다를 수 있다.
         /// </summary>
         public int RawRecordCount { get; init; }
 
@@ -68,6 +78,10 @@ namespace URSUS.DataSources
         {
             Records = new System.Collections.ObjectModel.ReadOnlyDictionary<string, DistrictDataRecord>(
                 new Dictionary<string, DistrictDataRecord>(records, StringComparer.Ordinal));
+            SampleCounts = new System.Collections.ObjectModel.ReadOnlyDictionary<string, int>(
+                records.Where(pair => pair.Value.SampleCount.HasValue)
+                    .ToDictionary(pair => pair.Key, pair => pair.Value.SampleCount!.Value,
+                        StringComparer.Ordinal));
         }
 
         /// <summary>

@@ -8,6 +8,9 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\URSUS\URSUS.csproj" />
+    <!-- WinForms Setup 전체를 타겟하지 않고 Linux CI에서 키 검증 보안 경계를 직접 검증 -->
+    <Compile Include="..\URSUS.Setup\ApiKeyValidator.cs" Link="Setup\ApiKeyValidator.cs" />
+    <Compile Include="..\URSUS.Setup\DependencyInstaller.cs" Link="Setup\DependencyInstaller.cs" />
     <None Include="$(NuGetPackageRoot)rhinocommon/$(RhinoSdkVersion)/lib/net48/RhinoCommon.dll"
           Link="RhinoCommon.dll"
           CopyToOutputDirectory="PreserveNewest" />

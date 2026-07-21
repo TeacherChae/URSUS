@@ -23,6 +23,8 @@ namespace URSUS.DataSources
     /// </summary>
     public class LandPriceDataSource : IDataSource
     {
+        internal const int CacheSchemaVersion = 3;
+
         private readonly ApiKeyProvider _keyProvider;
         private readonly HttpPipeline _http;
         private readonly IClock _clock;
@@ -95,17 +97,39 @@ namespace URSUS.DataSources
                 var codesList = query.DistrictCodes.ToList();
                 int standardYear = ResolveStandardYear(query);
 
-                var cacheKey = PersistentCacheKey.Create(Metadata.Id, 2, query.QueryIntent,
+                // v3 stores LandPriceAggregate rather than a value-only dictionary.
+                // The key bump prevents an older entry from inventing provenance.
+                var cacheKey = PersistentCacheKey.Create(Metadata.Id, CacheSchemaVersion,
+                    query.QueryIntent,
                     new Dictionary<string, string>
                     {
                         ["stdrYear"] = standardYear.ToString(
                             (System.IFormatProvider?)System.Globalization.CultureInfo.InvariantCulture),
                     }, codesList, CoordinateReferenceSystem.Epsg5179);
+                async Task<Dictionary<string, LandPriceAggregate>> FetchValidated(
+                    CancellationToken token)
+                {
+                    var fetched = await parser.GetLandPriceAggregatesByLegalDistrictAsync(
+                            codesList, null, token, standardYear)
+                        .ConfigureAwait(false);
+                    if (!HasValidProvenance(fetched))
+                        throw new InvalidDataException(
+                            "공시지가 API 집계의 값 또는 표본 수가 유효하지 않습니다.");
+                    return fetched;
+                }
+
                 var cached = await _cache.GetOrFetchAsync(cacheKey, query.ForceRefresh,
-                    TimeSpan.FromDays(Metadata.CacheTtlDays),
-                    token => parser.GetLandPriceByLegalDistrictAsync(
-                        codesList, null, token, standardYear),
+                    TimeSpan.FromDays(Metadata.CacheTtlDays), FetchValidated,
                     cancellationToken).ConfigureAwait(false);
+                if (!HasValidProvenance(cached.Value))
+                {
+                    // A semantically corrupt but JSON-valid v3 envelope is not a hit.
+                    // Force-refresh repairs it atomically; network values are validated
+                    // before AtomicCacheStore is allowed to persist them.
+                    cached = await _cache.GetOrFetchAsync(cacheKey, forceRefresh: true,
+                        TimeSpan.FromDays(Metadata.CacheTtlDays), FetchValidated,
+                        cancellationToken).ConfigureAwait(false);
+                }
                 var data = cached.Value;
 
                 if (data.Count == 0)
@@ -118,10 +142,18 @@ namespace URSUS.DataSources
                 var origin = cached.DeliveryOrigin == DeliveryOrigin.Cache
                     ? DataOrigin.Cache : DataOrigin.Api;
 
-                var baseDataSet = DistrictDataSet.FromDictionary(data, "원/㎡");
-                var dataSet = new DistrictDataSet(baseDataSet.Records)
+                var records = data.ToDictionary(
+                    pair => pair.Key,
+                    pair => new DistrictDataRecord
+                    {
+                        DistrictCode = pair.Key,
+                        Value = pair.Value.Mean,
+                        Unit = "원/㎡",
+                        SampleCount = pair.Value.SampleCount,
+                    }, StringComparer.Ordinal);
+                var dataSet = new DistrictDataSet(records)
                 {
-                    RawRecordCount = baseDataSet.RawRecordCount,
+                    RawRecordCount = data.Values.Sum(item => item.SampleCount),
                     Observation = new ObservationWindow(
                         standardYear.ToString(
                             System.Globalization.CultureInfo.InvariantCulture),
@@ -160,5 +192,13 @@ namespace URSUS.DataSources
                     nameof(query));
             return year;
         }
+
+        private static bool HasValidProvenance(
+            IReadOnlyDictionary<string, LandPriceAggregate> data)
+            => data.All(pair =>
+                pair.Value is not null &&
+                DistrictCode.CanonicalizeLegal(pair.Key) == pair.Key &&
+                double.IsFinite(pair.Value.Mean) && pair.Value.Mean > 0 &&
+                pair.Value.SampleCount > 0);
     }
 }

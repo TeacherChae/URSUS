@@ -29,6 +29,7 @@ namespace URSUS.Setup
         private static readonly Color ACCENT_COLOR   = Color.FromArgb(45, 65, 145);   // URSUS 브랜드 블루
         private static readonly Color SUCCESS_COLOR  = Color.FromArgb(34, 139, 34);
         private static readonly Color ERROR_COLOR    = Color.FromArgb(200, 40, 40);
+        private static readonly Color WARNING_COLOR  = Color.FromArgb(180, 100, 0);
         private static readonly Color MUTED_COLOR    = Color.FromArgb(120, 120, 120);
         private static readonly Font  TITLE_FONT     = new("Segoe UI", 16f, FontStyle.Bold);
         private static readonly Font  SUBTITLE_FONT  = new("Segoe UI", 10f, FontStyle.Regular);
@@ -55,6 +56,7 @@ namespace URSUS.Setup
         private readonly Label      _lblDGStatus     = new();
         private readonly CheckBox   _chkSkipKeys     = new();
         private readonly CheckBox   _chkShowKeys     = new();
+        private readonly CheckBox   _chkAllowInsecureSeoulHttp = new();
         private readonly LinkLabel  _lnkVWorld       = new();
         private readonly LinkLabel  _lnkSeoul        = new();
         private readonly LinkLabel  _lnkDataGoKr     = new();
@@ -259,8 +261,15 @@ namespace URSUS.Setup
                     // 설치 실행
                     _btnNext.Enabled = false;
                     _btnBack.Enabled = false;
-                    await RunInstallAsync();
-                    ShowStep(4);
+                    if (await RunInstallAsync())
+                    {
+                        ShowStep(4);
+                    }
+                    else
+                    {
+                        _btnNext.Enabled = true;
+                        _btnBack.Enabled = true;
+                    }
                     break;
 
                 case 4:
@@ -357,8 +366,26 @@ namespace URSUS.Setup
                 async () => await ValidateDataGoKrAsync(),
                 ref y);
 
-            // ── 키 표시/숨김 토글 ──
+            // ── 서울 API 평문 전송 명시적 허용 ──
             y += 4;
+            _chkAllowInsecureSeoulHttp.Text =
+                "위험 인지: 서울 키를 암호화하지 않은 HTTP로 전송하여 원격 검증";
+            _chkAllowInsecureSeoulHttp.Font     = STATUS_FONT;
+            _chkAllowInsecureSeoulHttp.AutoSize = true;
+            _chkAllowInsecureSeoulHttp.Location = new Point(28, y);
+            _chkAllowInsecureSeoulHttp.CheckedChanged += (_, _) =>
+            {
+                _skKeyValid = false;
+                UpdateKeyStatus(_lblSKStatus,
+                    _chkAllowInsecureSeoulHttp.Checked
+                        ? "⚠ 평문 HTTP 원격 검증이 허용되었습니다. 검증 버튼을 누르세요."
+                        : "원격 검증 안 함: 서울 키를 HTTP로 전송하지 않습니다.",
+                    WARNING_COLOR);
+            };
+            _contentPanel.Controls.Add(_chkAllowInsecureSeoulHttp);
+            y += 24;
+
+            // ── 키 표시/숨김 토글 ──
             _chkShowKeys.Text     = "API 키 표시";
             _chkShowKeys.Font     = STATUS_FONT;
             _chkShowKeys.AutoSize = true;
@@ -471,7 +498,8 @@ namespace URSUS.Setup
         {
             await ValidateSingleKeyAsync(
                 _txtSeoulKey, _btnValidateSK, _lblSKStatus,
-                key => _validator.ValidateSeoulKeyAsync(key, GetOrCreateCts()),
+                key => _validator.ValidateSeoulKeyAsync(key, SeoulValidationPolicy(),
+                    GetOrCreateCts()),
                 valid => _skKeyValid = valid);
         }
 
@@ -507,8 +535,8 @@ namespace URSUS.Setup
                 var result = await validateFunc(key);
                 setValid(result.IsValid);
                 UpdateKeyStatus(lbl,
-                    (result.IsValid ? "✓ " : "✗ ") + result.Message,
-                    result.IsValid ? SUCCESS_COLOR : ERROR_COLOR);
+                    ValidationResultPrefix(result) + result.Message,
+                    ValidationResultColor(result));
             }
             catch (OperationCanceledException) { }
             finally
@@ -558,12 +586,13 @@ namespace URSUS.Setup
 
             try
             {
-                var results = await _validator.ValidateAllAsync(keys, _cts.Token);
+                var results = await _validator.ValidateAllAsync(keys,
+                    SeoulValidationPolicy(), _cts.Token);
 
                 foreach (var entry in results)
                 {
-                    string prefix = entry.Result.IsValid ? "✓ " : "✗ ";
-                    Color  color  = entry.Result.IsValid ? SUCCESS_COLOR : ERROR_COLOR;
+                    string prefix = ValidationResultPrefix(entry.Result);
+                    Color color = ValidationResultColor(entry.Result);
 
                     switch (entry.KeyName)
                     {
@@ -596,6 +625,23 @@ namespace URSUS.Setup
             _cts = new CancellationTokenSource();
             return _cts.Token;
         }
+
+        private TransportPolicy SeoulValidationPolicy()
+            => new(_chkAllowInsecureSeoulHttp.Checked);
+
+        private static Color ValidationResultColor(ApiKeyValidator.ValidationResult result)
+            => result.IsValid
+                ? SUCCESS_COLOR
+                : result.ErrorKind == ApiKeyValidator.ValidationErrorKind.RemoteValidationSkipped
+                    ? WARNING_COLOR
+                    : ERROR_COLOR;
+
+        private static string ValidationResultPrefix(ApiKeyValidator.ValidationResult result)
+            => result.IsValid
+                ? "✓ "
+                : result.ErrorKind == ApiKeyValidator.ValidationErrorKind.RemoteValidationSkipped
+                    ? "⚠ "
+                    : "✗ ";
 
         private static void UpdateKeyStatus(Label lbl, string text, Color color)
         {
@@ -668,11 +714,11 @@ namespace URSUS.Setup
 
             AddLabel("설치할 파일:", LABEL_FONT, Color.Black, ref y);
             y += 5;
-            string[] files = { "URSUS.GH.gha", "URSUS.dll", "Clipper2Lib.dll", "appsettings.json" };
-            foreach (string f in files)
+            foreach (string f in DeploymentContract.RequiredRuntimeFiles)
             {
                 AddLabel($"  •  {f}", SUBTITLE_FONT, Color.Black, ref y);
             }
+            AddLabel("  •  appsettings.json (설치 중 생성)", SUBTITLE_FONT, Color.Black, ref y);
             y += 15;
 
             // API 키 요약
@@ -716,7 +762,7 @@ namespace URSUS.Setup
             return baseDir;
         }
 
-        private async Task RunInstallAsync()
+        private async Task<bool> RunInstallAsync()
         {
             _progressBar.Visible = true;
             _progressBar.Value   = 0;
@@ -739,8 +785,9 @@ namespace URSUS.Setup
                     _lblProgress.ForeColor = ERROR_COLOR;
 
                     MessageBox.Show(
-                        check.ToSummary() + "\n\n설치를 계속하시겠습니까?\n(누락 파일은 건너뜁니다)",
-                        "파일 누락 경고", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        check.ToSummary() + "\n\n필수 파일을 모두 준비한 뒤 다시 시도해주세요.",
+                        "설치 중단", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return false;
                 }
 
                 // ── Phase 2: 파일 복사 + 차단 해제 ──
@@ -761,6 +808,13 @@ namespace URSUS.Setup
                             }
                             catch (ObjectDisposedException) { }
                         }));
+
+                if (!installResult.AllSucceeded)
+                {
+                    throw new InvalidOperationException(
+                        "필수 파일 설치에 실패했습니다: " +
+                        string.Join("; ", installResult.Errors));
+                }
 
                 // ── Phase 3: 설정 파일 생성 ──
                 _lblProgress.Text  = "설정 파일 생성 중...";
@@ -792,6 +846,8 @@ namespace URSUS.Setup
                     _lblProgress.Text      = $"설치 완료 (경고 {installResult.FailureCount}건)";
                     _lblProgress.ForeColor = Color.FromArgb(180, 120, 0);
                 }
+
+                return true;
             }
             catch (Exception ex)
             {
@@ -804,6 +860,7 @@ namespace URSUS.Setup
                     "수동으로 파일을 복사해주세요:\n" +
                     $"  대상 폴더: {targetDir}",
                     "설치 오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return false;
             }
         }
 

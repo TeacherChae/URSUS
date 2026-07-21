@@ -4,6 +4,8 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using URSUS.Config;
+using URSUS.DataSources;
+using URSUS.Net;
 
 namespace URSUS.Setup
 {
@@ -24,6 +26,18 @@ namespace URSUS.Setup
             _http = new HttpClient { Timeout = TimeSpan.FromSeconds(10) };
         }
 
+        /// <summary>
+        /// 검증 트래픽을 통제하는 호스트와 테스트를 위한 생성자.
+        /// validator가 handler의 소유권을 가진다.
+        /// </summary>
+        public ApiKeyValidator(HttpMessageHandler handler)
+        {
+            _http = new HttpClient(handler ?? throw new ArgumentNullException(nameof(handler)))
+            {
+                Timeout = TimeSpan.FromSeconds(10)
+            };
+        }
+
         // ── 검증 결과 ────────────────────────────────────────────────────
 
         public sealed record ValidationResult(
@@ -39,6 +53,7 @@ namespace URSUS.Setup
             NetworkError,
             Unauthorized,
             ServerError,
+            RemoteValidationSkipped,
             Unknown
         }
 
@@ -140,6 +155,14 @@ namespace URSUS.Setup
         /// </summary>
         public async Task<ValidationResult> ValidateSeoulKeyAsync(
             string apiKey, CancellationToken ct = default)
+            => await ValidateSeoulKeyAsync(apiKey, TransportPolicy.Default, ct);
+
+        /// <summary>
+        /// 서울 열린데이터 API의 HTTP 전송을 명시적으로 허용한 경우에만
+        /// 원격 키 검증을 수행한다. 기본 정책은 평문 전송을 거부한다.
+        /// </summary>
+        public async Task<ValidationResult> ValidateSeoulKeyAsync(
+            string apiKey, TransportPolicy transportPolicy, CancellationToken ct)
         {
             if (string.IsNullOrWhiteSpace(apiKey))
                 return new ValidationResult(false, "서울 열린데이터 API 키를 입력해주세요.", ValidationErrorKind.Empty);
@@ -151,6 +174,19 @@ namespace URSUS.Setup
                 return new ValidationResult(false,
                     "서울 열린데이터 API 키 형식이 올바르지 않습니다. (너무 짧음)",
                     ValidationErrorKind.FormatError);
+
+            // 키가 포함된 URL을 만들기 전에 전송 정책을 확인한다.
+            // 기본값은 fail-closed이며, 이 경우 네트워크 요청은 발생하지 않는다.
+            var validationEndpoint = new Uri("http://openapi.seoul.go.kr:8088/");
+            if (transportPolicy == null ||
+                !transportPolicy.IsAllowed(validationEndpoint, ProviderKind.Seoul))
+            {
+                return new ValidationResult(false,
+                    "기본 형식 검사만 통과했으며 원격 검증은 수행하지 않았습니다. " +
+                    "서울 API는 키를 암호화하지 않은 HTTP로 전송하므로, " +
+                    "설치 화면에서 위험을 확인하고 명시적으로 허용해야 합니다.",
+                    ValidationErrorKind.RemoteValidationSkipped);
+            }
 
             try
             {
@@ -201,16 +237,16 @@ namespace URSUS.Setup
                     "서울 열린데이터 서버 연결 시간 초과. 네트워크를 확인해주세요.",
                     ValidationErrorKind.NetworkError);
             }
-            catch (HttpRequestException ex)
+            catch (HttpRequestException)
             {
                 return new ValidationResult(false,
-                    $"서울 열린데이터 서버에 연결할 수 없습니다: {ex.Message}",
+                    "서울 열린데이터 서버에 연결할 수 없습니다. 네트워크를 확인해주세요.",
                     ValidationErrorKind.NetworkError);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 return new ValidationResult(false,
-                    $"서울 열린데이터 키 검증 중 오류: {ex.Message}",
+                    "서울 열린데이터 키 검증 중 오류가 발생했습니다.",
                     ValidationErrorKind.Unknown);
             }
         }
@@ -322,6 +358,14 @@ namespace URSUS.Setup
         /// <param name="ct">취소 토큰</param>
         public async Task<List<KeyValidationEntry>> ValidateAllAsync(
             Dictionary<string, string> keys, CancellationToken ct = default)
+            => await ValidateAllAsync(keys, TransportPolicy.Default, ct);
+
+        /// <summary>
+        /// 입력된 모든 키를 검증하되, 서울 키는 명시적인 전송 정책을 따른다.
+        /// </summary>
+        public async Task<List<KeyValidationEntry>> ValidateAllAsync(
+            Dictionary<string, string> keys, TransportPolicy transportPolicy,
+            CancellationToken ct)
         {
             var tasks = new List<(string keyName, string displayName, Task<ValidationResult> task)>();
 
@@ -336,7 +380,7 @@ namespace URSUS.Setup
                 !string.IsNullOrWhiteSpace(sk))
             {
                 tasks.Add((ApiKeyProvider.KEY_SEOUL, "서울 열린데이터",
-                    ValidateSeoulKeyAsync(sk, ct)));
+                    ValidateSeoulKeyAsync(sk, transportPolicy, ct)));
             }
 
             if (keys.TryGetValue(ApiKeyProvider.KEY_DATA_GO_KR, out string? dg) &&

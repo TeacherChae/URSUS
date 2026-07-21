@@ -1,4 +1,7 @@
+using System.Buffers;
+using System.Buffers.Binary;
 using System.Globalization;
+using System.Security.Cryptography;
 using System.Text;
 using URSUS.DataSources;
 using URSUS.Net;
@@ -15,6 +18,11 @@ public sealed record SeoulAggregate(
     bool PaginationComplete,
     IReadOnlyList<string> Warnings);
 
+internal sealed class SeoulPaginationException : Exception
+{
+    public SeoulPaginationException(string message) : base(message) { }
+}
+
 /// <summary>
 /// 서울 열린데이터 XML API의 bounded-page, true-async parser.
 /// 한 page의 projected fields만 메모리에 두고 기간/행정동 accumulator로 즉시 축약한다.
@@ -24,9 +32,13 @@ public sealed class DataSeoulApiParser
     private const string BaseUrl = "http://openapi.seoul.go.kr:8088";
     private const int PageSize = 1000;
     private const int MaxPages = 1000;
+    internal const int MaximumRows = PageSize * MaxPages;
+    internal const int MaximumRetainedAggregateEntries = 20_000;
     private readonly string _apiKey;
     private readonly HttpPipeline _http;
     private readonly IClock _clock;
+
+    internal int PeakRetainedAggregateEntries { get; private set; }
 
     public DataSeoulApiParser(string apiKey)
         : this(apiKey, null, null) { }
@@ -82,12 +94,11 @@ public sealed class DataSeoulApiParser
     {
         var policy = query.TransportPolicy ?? TransportPolicy.Default;
         var fields = new[] { keyField, valueField, periodField };
-        var aggregate = new Dictionary<(string period, string district), (double sum, int count)>();
-        var identities = new HashSet<string>(StringComparer.Ordinal);
-        var warnings = new List<string>();
+        var accumulator = new SelectedPeriodAccumulator(kind, query, _clock.UtcNow);
+        var identities = new HashSet<StableRowFingerprint>();
         int received = 0;
         int total = -1;
-        bool duplicate = false;
+        PeakRetainedAggregateEntries = 0;
 
         for (int page = 0; page < MaxPages; page++)
         {
@@ -95,46 +106,74 @@ public sealed class DataSeoulApiParser
             int end = start + PageSize - 1;
             var uri = new Uri($"{BaseUrl}/{_apiKey}/xml/{service}/{start}/{end}/");
             policy.EnsureAllowed(uri, ProviderKind.Seoul);
-            string xml = await _http.GetStringAsync(uri, cancellationToken).ConfigureAwait(false);
-            await using var stream = new MemoryStream(Encoding.UTF8.GetBytes(xml), writable: false);
-            var parsed = SeoulXmlStreamParser.Parse(stream, fields,
-                row => StableIdentity(row, keyField, valueField, periodField));
-            if (total < 0) total = parsed.TotalCount;
-            if (parsed.TotalCount != total)
-                warnings.Add($"pagination total changed: {total}->{parsed.TotalCount}");
+            int pageRows = 0;
+            SeoulXmlPageSummary parsed = await _http.ProcessStreamAsync(uri, (stream, token) =>
+                SeoulXmlStreamParser.ParseRowsAsync(stream, fields, (row, rowToken) =>
+                {
+                    rowToken.ThrowIfCancellationRequested();
+                    pageRows++;
+                    if (pageRows > PageSize)
+                        throw new SeoulPaginationException(
+                            $"서울 API pagination page 크기 상한을 초과했습니다 ({pageRows}/{PageSize}).");
+                    if (received + pageRows > MaximumRows)
+                        throw new SeoulPaginationException(
+                            $"서울 API pagination row 안전 상한을 초과했습니다 ({received + pageRows}/{MaximumRows}).");
 
-            foreach (var row in parsed.Rows)
+                    StableRowFingerprint identity = StableIdentity(
+                        row, keyField, valueField, periodField);
+                    if (!identities.Add(identity))
+                        throw new SeoulPaginationException(
+                            "서울 API pagination duplicate row가 감지되었습니다.");
+
+                    if (!row.TryGetValue(keyField, out string? district) ||
+                        !row.TryGetValue(periodField, out string? rawPeriod) ||
+                        !row.TryGetValue(valueField, out string? rawValue) ||
+                        !double.TryParse(rawValue, NumberStyles.Float | NumberStyles.AllowThousands,
+                            CultureInfo.InvariantCulture, out double value) || !double.IsFinite(value))
+                        return ValueTask.CompletedTask;
+                    string period = NormalizePeriod(kind, rawPeriod);
+                    if (period.Length == 0) return ValueTask.CompletedTask;
+                    accumulator.Add(period, district.Trim(), value);
+                    PeakRetainedAggregateEntries = Math.Max(
+                        PeakRetainedAggregateEntries, accumulator.RetainedEntryCount);
+                    return ValueTask.CompletedTask;
+                }, token), cancellationToken).ConfigureAwait(false);
+            if (parsed.TotalCount < 0)
+                throw new SeoulPaginationException(
+                    "서울 API pagination total count가 없습니다.");
+            if (total < 0)
             {
-                cancellationToken.ThrowIfCancellationRequested();
-                string identity = StableIdentity(row, keyField, valueField, periodField);
-                if (!identities.Add(identity)) { duplicate = true; continue; }
-                if (!row.TryGetValue(keyField, out string? district) ||
-                    !row.TryGetValue(periodField, out string? rawPeriod) ||
-                    !row.TryGetValue(valueField, out string? rawValue) ||
-                    !double.TryParse(rawValue, NumberStyles.Float | NumberStyles.AllowThousands,
-                        CultureInfo.InvariantCulture, out double value) || !double.IsFinite(value))
-                    continue;
-                string period = NormalizePeriod(kind, rawPeriod);
-                if (period.Length == 0) continue;
-                var key = (period, district.Trim());
-                aggregate.TryGetValue(key, out var previous);
-                aggregate[key] = (previous.sum + value, previous.count + 1);
+                total = parsed.TotalCount;
+                if (total > MaximumRows)
+                    throw new SeoulPaginationException(
+                        $"서울 API pagination 안전 상한을 초과했습니다 ({total}/{MaximumRows}).");
             }
+            if (parsed.TotalCount != total)
+                throw new SeoulPaginationException(
+                    $"서울 API pagination total count가 변경되었습니다 ({total}->{parsed.TotalCount}).");
 
-            received += parsed.Rows.Count;
-            if (parsed.Rows.Count == 0 || (total >= 0 && received >= total)) break;
+            received += parsed.RowCount;
+            if (parsed.RowCount == 0 && received < total)
+                throw new SeoulPaginationException(
+                    $"서울 API pagination이 조기 종료되었습니다 ({received}/{total}).");
+            if (received > total)
+                throw new SeoulPaginationException(
+                    $"서울 API pagination row count가 일치하지 않습니다 ({received}/{total}).");
+            if (received == total) break;
+            if (page == MaxPages - 1)
+                throw new SeoulPaginationException(
+                    $"서울 API pagination 안전 상한에서 잘렸습니다 ({received}/{total}).");
         }
 
-        bool paginationComplete = total >= 0 && received == total && !duplicate;
+        bool paginationComplete = total >= 0 && received == total;
         if (!paginationComplete)
-            warnings.Add($"pagination incomplete: received={received}, expected={total}, duplicate={duplicate}");
+            throw new SeoulPaginationException(
+                $"서울 API pagination이 완결되지 않았습니다 ({received}/{total}).");
 
-        string selectedPeriod = SelectPeriod(aggregate.Keys.Select(key => key.period).Distinct(),
-            kind, query, _clock.UtcNow);
+        string selectedPeriod = accumulator.GetSelectedPeriod();
+        IReadOnlyDictionary<(string period, string district), (double sum, int count)> aggregate =
+            accumulator.Entries;
         var selected = aggregate
-            .Where(pair => kind == SeoulMetricKind.TransitBoarding
-                ? pair.Key.period.StartsWith(selectedPeriod, StringComparison.Ordinal)
-                : pair.Key.period == selectedPeriod)
             .GroupBy(pair => pair.Key.district, StringComparer.Ordinal)
             .ToDictionary(
                 group => group.Key,
@@ -150,7 +189,6 @@ public sealed class DataSeoulApiParser
         if (kind == SeoulMetricKind.TransitBoarding)
         {
             var days = aggregate.Keys
-                .Where(key => key.period.StartsWith(selectedPeriod, StringComparison.Ordinal))
                 .GroupBy(key => key.period, StringComparer.Ordinal)
                 .ToList();
             temporalComplete = days.Count >= 28 && days.All(day =>
@@ -165,15 +203,52 @@ public sealed class DataSeoulApiParser
                         StringComparer.Ordinal)
                     .OrderBy(id => id, StringComparer.Ordinal).ToArray()),
             },
-            received, paginationComplete, warnings);
+            received, paginationComplete, Array.Empty<string>());
     }
 
-    private static string StableIdentity(
+    private static StableRowFingerprint StableIdentity(
         IReadOnlyDictionary<string, string> row,
         string keyField,
         string valueField,
         string periodField)
-        => $"{row.GetValueOrDefault(keyField)}|{row.GetValueOrDefault(periodField)}|{row.GetValueOrDefault(valueField)}";
+    {
+        string key = row.GetValueOrDefault(keyField);
+        string period = row.GetValueOrDefault(periodField);
+        string value = row.GetValueOrDefault(valueField);
+        int byteCount = checked(
+            12 + Encoding.UTF8.GetByteCount(key) +
+            Encoding.UTF8.GetByteCount(period) + Encoding.UTF8.GetByteCount(value));
+        byte[]? rented = null;
+        Span<byte> input = byteCount <= 256
+            ? stackalloc byte[byteCount]
+            : (rented = ArrayPool<byte>.Shared.Rent(byteCount)).AsSpan(0, byteCount);
+        try
+        {
+            int offset = 0;
+            WriteFramedUtf8(key, input, ref offset);
+            WriteFramedUtf8(period, input, ref offset);
+            WriteFramedUtf8(value, input, ref offset);
+            Span<byte> digest = stackalloc byte[32];
+            SHA256.HashData(input, digest);
+            return new StableRowFingerprint(
+                BinaryPrimitives.ReadUInt64LittleEndian(digest),
+                BinaryPrimitives.ReadUInt64LittleEndian(digest[8..]),
+                BinaryPrimitives.ReadUInt64LittleEndian(digest[16..]),
+                BinaryPrimitives.ReadUInt64LittleEndian(digest[24..]));
+        }
+        finally
+        {
+            if (rented != null) ArrayPool<byte>.Shared.Return(rented);
+        }
+    }
+
+    private static void WriteFramedUtf8(string value, Span<byte> destination, ref int offset)
+    {
+        int byteCount = Encoding.UTF8.GetByteCount(value);
+        BinaryPrimitives.WriteInt32LittleEndian(destination[offset..], byteCount);
+        offset += sizeof(int);
+        offset += Encoding.UTF8.GetBytes(value, destination[offset..]);
+    }
 
     private static string NormalizePeriod(SeoulMetricKind kind, string raw)
     {
@@ -187,35 +262,6 @@ public sealed class DataSeoulApiParser
         return string.Empty;
     }
 
-    private static string SelectPeriod(
-        IEnumerable<string> candidates,
-        SeoulMetricKind kind,
-        DataQuery query,
-        DateTimeOffset now)
-    {
-        var list = candidates.ToList();
-        if (query.QueryIntent == QueryIntent.ExplicitPeriod)
-        {
-            string explicitPeriod = query.ExplicitPeriod?.Trim() ?? string.Empty;
-            if (!list.Contains(explicitPeriod, StringComparer.Ordinal))
-                throw new InvalidOperationException($"요청 관측기간이 없습니다: {explicitPeriod}");
-            return explicitPeriod;
-        }
-        if (kind == SeoulMetricKind.TransitBoarding)
-        {
-            string currentMonth = now.ToString("yyyyMM", CultureInfo.InvariantCulture);
-            return list.Select(period => period.Length >= 6 ? period[..6] : string.Empty)
-                       .Where(period => period.Length == 6 && string.CompareOrdinal(period, currentMonth) < 0)
-                       .Distinct(StringComparer.Ordinal)
-                       .OrderByDescending(period => period, StringComparer.Ordinal).FirstOrDefault()
-                   ?? throw new InvalidOperationException("닫힌 관측 월이 없습니다.");
-        }
-        string currentQuarter = $"{now.Year}Q{((now.Month - 1) / 3) + 1}";
-        return list.Where(period => QuarterOrder(period) < QuarterOrder(currentQuarter))
-                   .OrderByDescending(QuarterOrder).FirstOrDefault()
-               ?? throw new InvalidOperationException("닫힌 관측 분기가 없습니다.");
-    }
-
     private static int QuarterOrder(string period)
         => period.Length == 6 && int.TryParse(period[..4], out int year) &&
            int.TryParse(period[5..], out int quarter)
@@ -227,6 +273,85 @@ public sealed class DataSeoulApiParser
         CacheDirectory = cacheDir,
         TransportPolicy = new TransportPolicy(AllowInsecureSeoulHttp: true),
     };
+
+    private readonly record struct StableRowFingerprint(ulong A, ulong B, ulong C, ulong D);
+
+    private sealed class SelectedPeriodAccumulator
+    {
+        private readonly SeoulMetricKind _kind;
+        private readonly QueryIntent _intent;
+        private readonly string _explicitPeriod;
+        private readonly string _currentMonth;
+        private readonly int _currentQuarterOrder;
+        private readonly Dictionary<(string period, string district), (double sum, int count)> _entries = new();
+        private string? _selectedPeriod;
+
+        public SelectedPeriodAccumulator(SeoulMetricKind kind, DataQuery query, DateTimeOffset now)
+        {
+            _kind = kind;
+            _intent = query.QueryIntent;
+            _explicitPeriod = query.ExplicitPeriod?.Trim() ?? string.Empty;
+            _currentMonth = now.ToString("yyyyMM", CultureInfo.InvariantCulture);
+            _currentQuarterOrder = QuarterOrder($"{now.Year}Q{((now.Month - 1) / 3) + 1}");
+        }
+
+        public int RetainedEntryCount => _entries.Count;
+
+        public IReadOnlyDictionary<(string period, string district), (double sum, int count)> Entries
+            => _entries;
+
+        public void Add(string period, string district, double value)
+        {
+            string candidate = _kind == SeoulMetricKind.TransitBoarding
+                ? period[..6]
+                : period;
+            if (_intent == QueryIntent.ExplicitPeriod)
+            {
+                if (_explicitPeriod.Length == 0 ||
+                    (_kind == SeoulMetricKind.TransitBoarding
+                        ? !period.StartsWith(_explicitPeriod, StringComparison.Ordinal)
+                        : !period.Equals(_explicitPeriod, StringComparison.Ordinal)))
+                    return;
+                _selectedPeriod = _explicitPeriod;
+            }
+            else
+            {
+                bool closed = _kind == SeoulMetricKind.TransitBoarding
+                    ? string.CompareOrdinal(candidate, _currentMonth) < 0
+                    : QuarterOrder(candidate) < _currentQuarterOrder;
+                if (!closed) return;
+                if (_selectedPeriod == null || IsAfter(candidate, _selectedPeriod))
+                {
+                    _entries.Clear();
+                    _selectedPeriod = candidate;
+                }
+                else if (!candidate.Equals(_selectedPeriod, StringComparison.Ordinal))
+                {
+                    return;
+                }
+            }
+
+            var key = (period, district);
+            if (!_entries.ContainsKey(key) && _entries.Count >= MaximumRetainedAggregateEntries)
+                throw new SeoulPaginationException(
+                    $"서울 API aggregation 안전 상한을 초과했습니다 ({_entries.Count + 1}/{MaximumRetainedAggregateEntries}).");
+            _entries.TryGetValue(key, out var previous);
+            _entries[key] = (previous.sum + value, previous.count + 1);
+        }
+
+        public string GetSelectedPeriod()
+            => _selectedPeriod ?? throw new InvalidOperationException(
+                _intent == QueryIntent.ExplicitPeriod
+                    ? $"요청 관측기간이 없습니다: {_explicitPeriod}"
+                    : _kind == SeoulMetricKind.TransitBoarding
+                        ? "닫힌 관측 월이 없습니다."
+                        : "닫힌 관측 분기가 없습니다.");
+
+        private bool IsAfter(string candidate, string selected)
+            => _kind == SeoulMetricKind.TransitBoarding
+                ? string.CompareOrdinal(candidate, selected) > 0
+                : QuarterOrder(candidate) > QuarterOrder(selected);
+    }
 }
 
 internal static class ReadOnlyDictionaryExtensions

@@ -6,11 +6,85 @@ using URSUS.Execution;
 using URSUS.Config;
 using URSUS.Visualization;
 using URSUS.Geometry;
+using URSUS.Net;
+using URSUS.Setup;
+using System.Net;
 
 namespace URSUS.Tests;
 
 internal static class Phase2Tests
 {
+    [Test]
+    internal static void SetupSeoulValidation_DefaultAndValidateAllDoNotSendKeyOverHttp()
+    {
+        const string key = "seoul-secret-key-12345";
+        var handler = new RecordingHandler(_ =>
+            new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent("{\"VwsmAdstrdRepopW\":{}}")
+            });
+        using var validator = new ApiKeyValidator(handler);
+
+        // Legacy calls with an explicitly defaulted token must remain unambiguous.
+        var single = validator.ValidateSeoulKeyAsync(key, default(CancellationToken))
+            .GetAwaiter().GetResult();
+        AssertEx.False(single.IsValid);
+        AssertEx.Equal(ApiKeyValidator.ValidationErrorKind.RemoteValidationSkipped,
+            single.ErrorKind);
+        AssertEx.False(single.Message.Contains(key, StringComparison.Ordinal));
+
+        var all = validator.ValidateAllAsync(new Dictionary<string, string>
+        {
+            [ApiKeyProvider.KEY_SEOUL] = key,
+        }, default(CancellationToken)).GetAwaiter().GetResult();
+        AssertEx.Equal(1, all.Count);
+        AssertEx.Equal(ApiKeyValidator.ValidationErrorKind.RemoteValidationSkipped,
+            all[0].Result.ErrorKind);
+        AssertEx.Equal(0, handler.Calls);
+    }
+
+    [Test]
+    internal static void SetupSeoulValidation_ExplicitOptInControlsNetworkAndRedactsFailures()
+    {
+        const string key = "seoul-secret-key-12345";
+        var successHandler = new RecordingHandler(request =>
+        {
+            AssertEx.Equal(Uri.UriSchemeHttp, request.RequestUri!.Scheme);
+            return new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent("{\"VwsmAdstrdRepopW\":{}}")
+            };
+        });
+        using (var validator = new ApiKeyValidator(successHandler))
+        {
+            var result = validator.ValidateSeoulKeyAsync(key, new TransportPolicy(true),
+                    default)
+                .GetAwaiter().GetResult();
+            AssertEx.True(result.IsValid);
+            AssertEx.Equal(1, successHandler.Calls);
+
+            var all = validator.ValidateAllAsync(new Dictionary<string, string>
+            {
+                [ApiKeyProvider.KEY_SEOUL] = key,
+            }, new TransportPolicy(true), default).GetAwaiter().GetResult();
+            AssertEx.Equal(1, all.Count);
+            AssertEx.True(all[0].Result.IsValid);
+            AssertEx.Equal(2, successHandler.Calls);
+        }
+
+        var failureHandler = new RecordingHandler(_ =>
+            throw new HttpRequestException($"request failed for {key}"));
+        using (var validator = new ApiKeyValidator(failureHandler))
+        {
+            var result = validator.ValidateSeoulKeyAsync(key, new TransportPolicy(true),
+                    default)
+                .GetAwaiter().GetResult();
+            AssertEx.False(result.IsValid);
+            AssertEx.Equal(ApiKeyValidator.ValidationErrorKind.NetworkError, result.ErrorKind);
+            AssertEx.False(result.Message.Contains(key, StringComparison.Ordinal));
+        }
+    }
+
     [Test]
     internal static void RunCoordinator_RequiresEdgeAndDiscardsSupersededResult()
     {
@@ -677,6 +751,22 @@ internal static class Phase2Tests
             Started.Set();
             await Task.Delay(TimeSpan.FromSeconds(10), cancellationToken);
             throw new InvalidOperationException("unreachable");
+        }
+    }
+
+    private sealed class RecordingHandler : HttpMessageHandler
+    {
+        private readonly Func<HttpRequestMessage, HttpResponseMessage> _respond;
+        public int Calls { get; private set; }
+
+        public RecordingHandler(Func<HttpRequestMessage, HttpResponseMessage> respond)
+            => _respond = respond;
+
+        protected override Task<HttpResponseMessage> SendAsync(
+            HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            Calls++;
+            return Task.FromResult(_respond(request));
         }
     }
 

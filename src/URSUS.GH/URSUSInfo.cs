@@ -10,7 +10,8 @@ namespace URSUS.GH
     {
         public override string Name        => "URSUS";
         public override string Description => "Urban Research with Spatial Utility System";
-        public override string Version     => "1.0.0";
+        public override string Version     =>
+            typeof(URSUSInfo).Assembly.GetName().Version?.ToString(3) ?? "0.3.0";
         public override string AuthorName  => "TeacherChae";
         public override string AuthorContact => "https://github.com/TeacherChae/URSUS";
 

@@ -13,6 +13,12 @@ using URSUS.Caching;
 namespace URSUS.Parsers
 {
     /// <summary>
+    /// A legal district's land-price mean together with the number of source
+    /// observations that contributed to it.
+    /// </summary>
+    public sealed record LandPriceAggregate(double Mean, int SampleCount);
+
+    /// <summary>
     /// 공공데이터포털(data.go.kr) 표준지공시지가 API → 법정동별 평균 공시지가.
     ///
     /// - 시군구 단위(5자리)로 일괄 조회하여 API 호출 횟수를 최소화
@@ -66,22 +72,62 @@ namespace URSUS.Parsers
             List<string> legalDistrictCodes, string? cacheDir = null,
             CancellationToken cancellationToken = default, int? standardYear = null)
         {
-            string? cachePath = cacheDir != null
+            // Retain read compatibility with the pre-provenance value-only cache
+            // for callers of this legacy API. Typed consumers never read this file.
+            string? legacyCachePath = cacheDir != null
                 ? Path.Combine(cacheDir, "land_price.json")
                 : null;
+            if (legacyCachePath != null && IsCacheValid(legacyCachePath))
+            {
+                double remaining = CACHE_TTL_DAYS
+                    - (DateTime.UtcNow - File.GetLastWriteTimeUtc(legacyCachePath)).TotalDays;
+                Console.WriteLine(
+                    $"[CACHE] land_price 캐시 사용 (만료까지 {remaining:F1}일)");
+                return FilterByRequestedCodes(LoadLegacyCache(legacyCachePath), legalDistrictCodes);
+            }
 
-            if (cachePath != null && IsCacheValid(cachePath))
+            var aggregates = await GetLandPriceAggregatesByLegalDistrictAsync(
+                    legalDistrictCodes, cacheDir, cancellationToken, standardYear)
+                .ConfigureAwait(false);
+            return aggregates.ToDictionary(pair => pair.Key, pair => pair.Value.Mean,
+                StringComparer.Ordinal);
+        }
+
+        /// <summary>
+        /// Returns the mean land price and its contributing sample count per
+        /// canonical legal-district ID. Its cache schema is intentionally
+        /// separate from the legacy value-only cache.
+        /// </summary>
+        public Dictionary<string, LandPriceAggregate> GetLandPriceAggregatesByLegalDistrict(
+            List<string> legalDistrictCodes, string? cacheDir = null)
+            => GetLandPriceAggregatesByLegalDistrictAsync(legalDistrictCodes, cacheDir)
+                .GetAwaiter().GetResult();
+
+        public async Task<Dictionary<string, LandPriceAggregate>>
+            GetLandPriceAggregatesByLegalDistrictAsync(
+                List<string> legalDistrictCodes, string? cacheDir = null,
+                CancellationToken cancellationToken = default, int? standardYear = null)
+        {
+            int resolvedStandardYear = standardYear ?? (_clock.UtcNow.Year - 1);
+            string? cachePath = cacheDir != null
+                ? BuildAggregateCachePath(
+                    cacheDir, legalDistrictCodes, resolvedStandardYear, standardYear.HasValue)
+                : null;
+
+            if (cachePath != null && IsCacheValid(cachePath) &&
+                TryLoadAggregateCache(cachePath, out var cached))
             {
                 double remaining = CACHE_TTL_DAYS
                     - (DateTime.UtcNow - File.GetLastWriteTimeUtc(cachePath)).TotalDays;
                 Console.WriteLine(
-                    $"[CACHE] land_price 캐시 사용 (만료까지 {remaining:F1}일)");
-                return FilterByRequestedCodes(LoadCache(cachePath), legalDistrictCodes);
+                    $"[CACHE] land_price provenance 캐시 사용 (만료까지 {remaining:F1}일)");
+                return FilterAggregatesByRequestedCodes(
+                    cached, legalDistrictCodes);
             }
 
             Console.WriteLine("[CACHE] land_price API 호출 중...");
             var result = await FetchLandPricesAsync(
-                    legalDistrictCodes, standardYear, cancellationToken)
+                    legalDistrictCodes, resolvedStandardYear, cancellationToken)
                 .ConfigureAwait(false);
 
             if (cachePath != null && result.Count > 0)
@@ -94,7 +140,7 @@ namespace URSUS.Parsers
         //  Fetch — 시군구 단위 일괄 조회
         // ─────────────────────────────────────────────────────────────────
 
-        private async Task<Dictionary<string, double>> FetchLandPricesAsync(
+        private async Task<Dictionary<string, LandPriceAggregate>> FetchLandPricesAsync(
             List<string> codes, int? standardYear, CancellationToken cancellationToken)
         {
             // 기준연도: 공시지가는 매년 1월 1일 기준으로 공시 → 전년도 사용
@@ -135,11 +181,11 @@ namespace URSUS.Parsers
             var codesSet = new HashSet<string>(
                 codes.Select(DistrictCode.CanonicalizeLegal)
                     .Where(code => !string.IsNullOrEmpty(code)));
-            var result = new Dictionary<string, double>();
+            var result = new Dictionary<string, LandPriceAggregate>();
             foreach (var (key, (sum, cnt)) in acc)
             {
                 if (codesSet.Contains(key))
-                    result[key] = sum / cnt;
+                    result[key] = new LandPriceAggregate(sum / cnt, cnt);
             }
 
             Console.WriteLine(
@@ -288,6 +334,34 @@ namespace URSUS.Parsers
                 .ToDictionary(group => group.Key, group => group.Average(item => item.Value));
         }
 
+        private static Dictionary<string, LandPriceAggregate> FilterAggregatesByRequestedCodes(
+            Dictionary<string, LandPriceAggregate> cached, List<string> codes)
+        {
+            var codesSet = new HashSet<string>(
+                codes.Select(DistrictCode.CanonicalizeLegal)
+                    .Where(code => !string.IsNullOrEmpty(code)), StringComparer.Ordinal);
+            var accumulator = new Dictionary<string, (double weightedSum, int count)>(
+                StringComparer.Ordinal);
+            foreach (var (rawCode, aggregate) in cached)
+            {
+                string code = DistrictCode.CanonicalizeLegal(rawCode);
+                if (code.Length == 0 || !codesSet.Contains(code) || aggregate.SampleCount <= 0)
+                    continue;
+                if (accumulator.TryGetValue(code, out var previous))
+                    accumulator[code] = (
+                        previous.weightedSum + aggregate.Mean * aggregate.SampleCount,
+                        checked(previous.count + aggregate.SampleCount));
+                else
+                    accumulator[code] = (aggregate.Mean * aggregate.SampleCount,
+                        aggregate.SampleCount);
+            }
+            return accumulator.ToDictionary(
+                pair => pair.Key,
+                pair => new LandPriceAggregate(
+                    pair.Value.weightedSum / pair.Value.count, pair.Value.count),
+                StringComparer.Ordinal);
+        }
+
         // ─────────────────────────────────────────────────────────────────
         //  Cache
         // ─────────────────────────────────────────────────────────────────
@@ -299,7 +373,24 @@ namespace URSUS.Parsers
                    < CACHE_TTL_DAYS;
         }
 
-        private static void SaveCache(Dictionary<string, double> data, string path)
+        private static string BuildAggregateCachePath(
+            string cacheDir, IEnumerable<string> codes, int standardYear, bool explicitYear)
+        {
+            var key = PersistentCacheKey.Create(
+                "land_price_parser", 2,
+                explicitYear ? QueryIntent.ExplicitPeriod : QueryIntent.Latest,
+                new Dictionary<string, string>
+                {
+                    ["stdrYear"] = standardYear.ToString(
+                        System.Globalization.CultureInfo.InvariantCulture),
+                },
+                codes,
+                CoordinateReferenceSystem.Epsg5179);
+            return Path.Combine(cacheDir, $"land_price.v2.{key.Value}.json");
+        }
+
+        private static void SaveCache(
+            Dictionary<string, LandPriceAggregate> data, string path)
         {
             Directory.CreateDirectory(Path.GetDirectoryName(path)!);
             File.WriteAllText(path,
@@ -309,11 +400,33 @@ namespace URSUS.Parsers
             Console.WriteLine($"[CACHE] land_price 저장 완료 ({data.Count}건)");
         }
 
-        private static Dictionary<string, double> LoadCache(string path)
+        private static Dictionary<string, double> LoadLegacyCache(string path)
         {
             string json = File.ReadAllText(path, System.Text.Encoding.UTF8);
             return JsonSerializer.Deserialize<Dictionary<string, double>>(json)
                    ?? new Dictionary<string, double>();
+        }
+
+        private static bool TryLoadAggregateCache(
+            string path, out Dictionary<string, LandPriceAggregate> data)
+        {
+            data = new Dictionary<string, LandPriceAggregate>();
+            try
+            {
+                string json = File.ReadAllText(path, System.Text.Encoding.UTF8);
+                var candidate =
+                    JsonSerializer.Deserialize<Dictionary<string, LandPriceAggregate>>(json);
+                if (candidate == null || candidate.Count == 0 || candidate.Any(pair =>
+                        DistrictCode.CanonicalizeLegal(pair.Key).Length == 0 ||
+                        pair.Value is null ||
+                        !double.IsFinite(pair.Value.Mean) || pair.Value.Mean <= 0 ||
+                        pair.Value.SampleCount <= 0))
+                    return false;
+                data = candidate;
+                return true;
+            }
+            catch (JsonException) { return false; }
+            catch (IOException) { return false; }
         }
     }
 }

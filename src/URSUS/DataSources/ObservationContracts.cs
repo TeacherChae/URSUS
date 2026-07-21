@@ -98,11 +98,18 @@ public sealed record TransportPolicy(bool AllowInsecureSeoulHttp = false)
              value.Equals("yes", StringComparison.OrdinalIgnoreCase)));
     }
 
+    public bool IsAllowed(Uri uri, Net.ProviderKind provider)
+    {
+        if (uri == null) throw new ArgumentNullException(nameof(uri));
+        if (uri.Scheme.Equals(Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase)) return true;
+        if (provider == Net.ProviderKind.Seoul && AllowInsecureSeoulHttp &&
+            uri.Scheme.Equals(Uri.UriSchemeHttp, StringComparison.OrdinalIgnoreCase)) return true;
+        return false;
+    }
+
     public void EnsureAllowed(Uri uri, Net.ProviderKind provider)
     {
-        if (uri.Scheme.Equals(Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase)) return;
-        if (provider == Net.ProviderKind.Seoul && AllowInsecureSeoulHttp &&
-            uri.Scheme.Equals(Uri.UriSchemeHttp, StringComparison.OrdinalIgnoreCase)) return;
+        if (IsAllowed(uri, provider)) return;
         throw new InvalidOperationException($"허용되지 않은 전송 방식: {Net.SecretRedactor.Redact(uri.ToString())}");
     }
 }

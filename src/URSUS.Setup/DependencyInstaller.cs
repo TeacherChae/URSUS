@@ -17,20 +17,11 @@ namespace URSUS.Setup
     public static class DependencyInstaller
     {
         // ── 배포 대상 파일 ──────────────────────────────────────────────
-        private static readonly string[] REQUIRED_FILES = new[]
-        {
-            "URSUS.dll",
-            "URSUS.GH.gha",
-        };
+        private static readonly IReadOnlyList<string> REQUIRED_FILES =
+            DeploymentContract.RequiredRuntimeFiles;
 
-        private static readonly string[] OPTIONAL_FILES = new[]
-        {
-            "Clipper2Lib.dll",
-            "URSUS.deps.json",
-            "URSUS.GH.deps.json",
-            "URSUS.GH.runtimeconfig.json",
-            "adstrd_legald_mapping.json",
-        };
+        private static readonly IReadOnlyList<string> OPTIONAL_FILES =
+            Array.Empty<string>();
 
         // ── 결과 모델 ──────────────────────────────────────────────────
 
@@ -143,12 +134,24 @@ namespace URSUS.Setup
 
                 if (!File.Exists(srcPath))
                 {
-                    result.SkippedCount++;
+                    if (REQUIRED_FILES.Contains(file))
+                    {
+                        result.FailureCount++;
+                        result.Errors.Add($"{file}: 필수 설치 파일이 없습니다.");
+                    }
+                    else
+                    {
+                        result.SkippedCount++;
+                    }
                     continue;
                 }
 
                 try
                 {
+                    string? destinationDirectory = Path.GetDirectoryName(dstPath);
+                    if (!string.IsNullOrEmpty(destinationDirectory))
+                        Directory.CreateDirectory(destinationDirectory);
+
                     File.Copy(srcPath, dstPath, overwrite: true);
                     UnblockFile(dstPath);
                     result.SuccessCount++;

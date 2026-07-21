@@ -26,6 +26,8 @@ namespace URSUS.DataSources
     /// </summary>
     public abstract class SeoulOpenDataSourceBase : IDataSource
     {
+        internal const int CacheSchemaVersion = 3;
+
         protected readonly ApiKeyProvider KeyProvider;
         private readonly HttpPipeline _http;
         private readonly IClock _clock;
@@ -133,15 +135,17 @@ namespace URSUS.DataSources
                 };
                 if (query.Parameters != null)
                     foreach (var pair in query.Parameters) cacheParameters[pair.Key] = pair.Value;
-                var cacheKey = PersistentCacheKey.Create(Metadata.Id, 2, query.QueryIntent,
+                var cacheKey = PersistentCacheKey.Create(Metadata.Id, CacheSchemaVersion,
+                    query.QueryIntent,
                     cacheParameters, query.DistrictCodes, CoordinateReferenceSystem.Epsg5179);
                 var cached = await _cache.GetOrFetchAsync(
                     cacheKey,
                     query.ForceRefresh,
                     TimeSpan.FromDays(Metadata.CacheTtlDays),
-                    token => FetchRawDataAsync(parser, query, token),
+                    async token => EnsurePaginationComplete(
+                        await FetchRawDataAsync(parser, query, token).ConfigureAwait(false)),
                     cancellationToken).ConfigureAwait(false);
-                var raw = cached.Value;
+                var raw = EnsurePaginationComplete(cached.Value);
                 var rawData = raw.Values.ToDictionary(pair => pair.Key, pair => pair.Value,
                     StringComparer.Ordinal);
 
@@ -183,6 +187,16 @@ namespace URSUS.DataSources
                     cached.DeliveryOrigin, cached.CacheAge);
             }
             catch (OperationCanceledException) { throw; }
+            catch (SeoulPaginationException ex)
+            {
+                string safeMessage = SecretRedactor.Redact(ex.Message);
+                return DataResult<DistrictDataSet>.Failure(
+                    DataSourceError.ParseError(
+                        safeMessage,
+                        ErrorCodes.SeoulPaginationIncomplete,
+                        new InvalidOperationException(safeMessage)),
+                    sw.Elapsed);
+            }
             catch (Exception ex)
             {
                 string safeMessage = SecretRedactor.Redact(ex.Message);
@@ -199,6 +213,15 @@ namespace URSUS.DataSources
 
         internal static string GetNoDataErrorCode(string sourceId)
             => ErrorCodes.SeoulNoData;
+
+        private static SeoulAggregate EnsurePaginationComplete(SeoulAggregate aggregate)
+        {
+            if (!aggregate.PaginationComplete)
+                throw new SeoulPaginationException(
+                    $"서울 API pagination이 완결되지 않았습니다 " +
+                    $"(received={aggregate.RawRecordCount}).");
+            return aggregate;
+        }
 
         // ─────────────────────────────────────────────────────────────────
         //  행정동 → 법정동 매핑 (URSUSSolver.MapToLegald 로직 이전)

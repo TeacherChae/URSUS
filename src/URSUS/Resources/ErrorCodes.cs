@@ -115,6 +115,9 @@ namespace URSUS.Resources
         public const string BoundaryNoData = "URS307";
         public const string BoundaryTopologyInvalid = "URS308";
 
+        /// <summary>서울 API pagination 응답 불완전 또는 무결성 위반</summary>
+        public const string SeoulPaginationIncomplete = "URS309";
+
         // ═══════════════════════════════════════════════════════════════
         //  4xx — 입력 검증
         // ═══════════════════════════════════════════════════════════════

@@ -5,7 +5,7 @@
 ; ==========================================================================
 
 #define MyAppName      "URSUS"
-#define MyAppVersion   "0.2.0"
+#define MyAppVersion   "0.3.0"
 #define MyAppPublisher "TeacherChae"
 #define MyAppURL       "https://github.com/TeacherChae/URSUS"
 
@@ -34,8 +34,7 @@ WizardStyle=modern
 ; SetupIconFile: uncomment when docs\icon\ursus_icon.ico exists
 ; SetupIconFile=..\docs\icon\ursus_icon.ico
 UninstallDisplayIcon={app}\URSUS.GH.gha
-; LicenseFile: uncomment when a root LICENSE file exists
-; LicenseFile=..\LICENSE
+LicenseFile=..\LICENSE
 ; Minimum Windows 10
 MinVersion=10.0
 ; Version info shown in Add/Remove Programs
@@ -64,22 +63,24 @@ Name: "cache";    Description: "오프라인 캐시 데이터 (Offline cache)"; 
 
 [Files]
 ; --- Core plug-in assemblies ---
-Source: "..\bin\Release\URSUS.GH.gha";                DestDir: "{app}"; Components: core; Flags: ignoreversion
-Source: "..\bin\Release\URSUS.dll";                    DestDir: "{app}"; Components: core; Flags: ignoreversion
-Source: "..\bin\Release\Clipper2Lib.dll";              DestDir: "{app}"; Components: core; Flags: ignoreversion
-Source: "..\bin\Release\System.Drawing.Common.dll";    DestDir: "{app}"; Components: core; Flags: ignoreversion
-Source: "..\bin\Release\Microsoft.Win32.SystemEvents.dll"; DestDir: "{app}"; Components: core; Flags: ignoreversion
-
-; --- Data mapping files ---
-Source: "..\bin\adstrd_legald_mapping.json";           DestDir: "{app}"; Components: core; Flags: ignoreversion
+Source: "..\bin\dist\URSUS.GH.gha";                DestDir: "{app}"; Components: core; Flags: ignoreversion
+Source: "..\bin\dist\URSUS.dll";                    DestDir: "{app}"; Components: core; Flags: ignoreversion
+Source: "..\bin\dist\Clipper2Lib.dll";              DestDir: "{app}"; Components: core; Flags: ignoreversion
+Source: "..\bin\dist\System.Drawing.Common.dll";    DestDir: "{app}"; Components: core; Flags: ignoreversion
+Source: "..\bin\dist\Microsoft.Win32.SystemEvents.dll"; DestDir: "{app}"; Components: core; Flags: ignoreversion
 
 ; --- Runtime config (needed by .NET 7 GHA loader) ---
-Source: "..\bin\Release\URSUS.GH.deps.json";          DestDir: "{app}"; Components: core; Flags: ignoreversion
-Source: "..\bin\Release\URSUS.GH.runtimeconfig.json"; DestDir: "{app}"; Components: core; Flags: ignoreversion
+Source: "..\bin\dist\URSUS.GH.deps.json";          DestDir: "{app}"; Components: core; Flags: ignoreversion
+Source: "..\bin\dist\URSUS.GH.runtimeconfig.json"; DestDir: "{app}"; Components: core; Flags: ignoreversion
+
+; --- Data mapping files ---
+Source: "..\bin\dist\adstrd_legald_mapping.json";      DestDir: "{app}"; Components: core; Flags: ignoreversion
+Source: "..\bin\dist\runtimes\win\lib\net7.0\System.Drawing.Common.dll"; DestDir: "{app}\runtimes\win\lib\net7.0"; Components: core; Flags: ignoreversion
+Source: "..\bin\dist\runtimes\win\lib\net7.0\Microsoft.Win32.SystemEvents.dll"; DestDir: "{app}\runtimes\win\lib\net7.0"; Components: core; Flags: ignoreversion
 
 ; --- Sample Grasshopper definitions ---
 Source: "..\URSUS_sample.gh";                          DestDir: "{app}\samples"; Components: samples; Flags: ignoreversion
-Source: "..\URSUS_demo_1.gh";                          DestDir: "{app}\samples"; Components: samples; Flags: ignoreversion
+Source: "..\URSUS_pipeline_demo.ghx";                  DestDir: "{app}\samples"; Components: samples; Flags: ignoreversion
 
 ; --- Offline cache seed data ---
 Source: "..\cache\*";                                  DestDir: "{app}\cache"; Components: cache; Flags: ignoreversion recursesubdirs createallsubdirs skipifsourcedoesntexist
@@ -656,7 +657,20 @@ end;
 //  Post-install verification — 3-Step 검증
 // =========================================================================
 
-// Step 1: 핵심 파일 존재 확인
+procedure CheckRequiredFile(
+  const InstallDir, FileName: String;
+  var MissingFiles: String;
+  var FileCount, MissCount: Integer);
+begin
+  if FileExists(InstallDir + '\' + FileName) then
+    FileCount := FileCount + 1
+  else begin
+    MissingFiles := MissingFiles + '  ✗ ' + FileName + #13#10;
+    MissCount := MissCount + 1;
+  end;
+end;
+
+// Step 1: 전체 필수 런타임 payload 존재 확인
 function VerifyStep1_Files(const InstallDir: String): String;
 var
   MissingFiles: String;
@@ -666,27 +680,17 @@ begin
   FileCount := 0;
   MissCount := 0;
 
-  // 필수 파일 검사
-  if FileExists(InstallDir + '\URSUS.GH.gha') then
-    FileCount := FileCount + 1
-  else begin
-    MissingFiles := MissingFiles + '  ✗ URSUS.GH.gha' + #13#10;
-    MissCount := MissCount + 1;
-  end;
-
-  if FileExists(InstallDir + '\URSUS.dll') then
-    FileCount := FileCount + 1
-  else begin
-    MissingFiles := MissingFiles + '  ✗ URSUS.dll' + #13#10;
-    MissCount := MissCount + 1;
-  end;
-
-  if FileExists(InstallDir + '\Clipper2Lib.dll') then
-    FileCount := FileCount + 1
-  else begin
-    MissingFiles := MissingFiles + '  ✗ Clipper2Lib.dll' + #13#10;
-    MissCount := MissCount + 1;
-  end;
+  // package-manifest.json과 동일한 순서. 정적 계약 검증기가 drift를 차단한다.
+  CheckRequiredFile(InstallDir, 'URSUS.GH.gha', MissingFiles, FileCount, MissCount);
+  CheckRequiredFile(InstallDir, 'URSUS.dll', MissingFiles, FileCount, MissCount);
+  CheckRequiredFile(InstallDir, 'Clipper2Lib.dll', MissingFiles, FileCount, MissCount);
+  CheckRequiredFile(InstallDir, 'System.Drawing.Common.dll', MissingFiles, FileCount, MissCount);
+  CheckRequiredFile(InstallDir, 'Microsoft.Win32.SystemEvents.dll', MissingFiles, FileCount, MissCount);
+  CheckRequiredFile(InstallDir, 'URSUS.GH.deps.json', MissingFiles, FileCount, MissCount);
+  CheckRequiredFile(InstallDir, 'URSUS.GH.runtimeconfig.json', MissingFiles, FileCount, MissCount);
+  CheckRequiredFile(InstallDir, 'adstrd_legald_mapping.json', MissingFiles, FileCount, MissCount);
+  CheckRequiredFile(InstallDir, 'runtimes\win\lib\net7.0\System.Drawing.Common.dll', MissingFiles, FileCount, MissCount);
+  CheckRequiredFile(InstallDir, 'runtimes\win\lib\net7.0\Microsoft.Win32.SystemEvents.dll', MissingFiles, FileCount, MissCount);
 
   if MissCount = 0 then
     Result := '✓ Step 1: 핵심 파일 ' + IntToStr(FileCount) + '개 확인 완료'
