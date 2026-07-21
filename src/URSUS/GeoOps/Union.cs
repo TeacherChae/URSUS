@@ -29,11 +29,12 @@ namespace URSUS.GeoOps
         /// <param name="curves">입력 PolylineCurve 목록</param>
         /// <param name="snapTol">인접 간격 폐합 허용 오차 (미터, 기본 5.0)</param>
         /// <returns>면적이 가장 큰 외곽선 PolylineCurve</returns>
-        public static PolylineCurve? Compute(IEnumerable<PolylineCurve> curves, double snapTol = 5.0)
+        public static PolylineCurve? Compute(IEnumerable<PolylineCurve> curves, double snapTol = 5.0,
+            CancellationToken cancellationToken = default)
         {
             // ── 1. 유효한 닫힌 Curve 수집 ─────────────────────────────────
             var valid = curves
-                .Where(c => c != null && c.IsClosed)
+                .Where(c => { cancellationToken.ThrowIfCancellationRequested(); return c != null && c.IsClosed; })
                 .ToList();
 
             if (valid.Count == 0)
@@ -46,7 +47,8 @@ namespace URSUS.GeoOps
             var paths = new Paths64(valid.Count);
             foreach (var curve in valid)
             {
-                var path = CurveToPath64(curve);
+                cancellationToken.ThrowIfCancellationRequested();
+                var path = CurveToPath64(curve, cancellationToken);
                 if (path.Count >= 3)
                     paths.Add(path);
             }
@@ -60,6 +62,7 @@ namespace URSUS.GeoOps
             // ── 3. InflatePaths: snapTol 만큼 외부로 확장 (gap 폐합) ──────
             if (snapTol > 0)
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 long delta = (long)(snapTol * SCALE);
                 paths = Clipper.InflatePaths(
                     paths, delta,
@@ -69,6 +72,7 @@ namespace URSUS.GeoOps
 
             // ── 4. Clipper.Union ──────────────────────────────────────────
             Paths64 solution = Clipper.Union(paths, FillRule.NonZero);
+            cancellationToken.ThrowIfCancellationRequested();
             Console.WriteLine($"[Union] 입력={valid.Count}개 → Union={solution.Count}개 경로");
 
             if (solution.Count == 0)
@@ -78,24 +82,29 @@ namespace URSUS.GeoOps
             }
 
             // ── 5. 면적 최대 경로 선택 ────────────────────────────────────
-            Path64 largest = solution
-                .OrderByDescending(p => Math.Abs(Clipper.Area(p)))
-                .First();
+            Path64 largest = solution.OrderByDescending(p =>
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                return Math.Abs(Clipper.Area(p));
+            }).First();
 
             // ── 6. Path64 → Rhino PolylineCurve ──────────────────────────
-            return Path64ToCurve(largest);
+            return Path64ToCurve(largest, cancellationToken);
         }
 
         // ─────────────────────────────────────────────────────────────────
         //  변환 헬퍼
         // ─────────────────────────────────────────────────────────────────
 
-        private static Path64 CurveToPath64(PolylineCurve curve)
+        private static Path64 CurveToPath64(PolylineCurve curve, CancellationToken cancellationToken)
         {
             var pl   = curve.ToPolyline();
             var path = new Path64(pl.Count);
             foreach (Point3d pt in pl)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
                 path.Add(new Point64((long)(pt.X * SCALE), (long)(pt.Y * SCALE)));
+            }
 
             // 닫힌 폴리라인의 마지막 점은 첫 점 중복이므로 제거
             if (path.Count > 1
@@ -106,11 +115,14 @@ namespace URSUS.GeoOps
             return path;
         }
 
-        private static PolylineCurve Path64ToCurve(Path64 path)
+        private static PolylineCurve Path64ToCurve(Path64 path, CancellationToken cancellationToken)
         {
             var points = new List<Point3d>(path.Count + 1);
             foreach (var pt in path)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
                 points.Add(new Point3d(pt.X / SCALE, pt.Y / SCALE, 0));
+            }
 
             // 닫기
             if (points.Count > 0)

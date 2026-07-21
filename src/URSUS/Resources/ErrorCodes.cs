@@ -47,6 +47,9 @@ namespace URSUS.Resources
         /// <summary>API 키 저장 실패</summary>
         public const string ApiKeySaveFailed = "URS107";
 
+        /// <summary>공공데이터포털 API 키 미설정</summary>
+        public const string DataGoKrKeyMissing = "URS108";
+
         // ═══════════════════════════════════════════════════════════════
         //  2xx — 네트워크 / API 호출
         // ═══════════════════════════════════════════════════════════════
@@ -78,6 +81,19 @@ namespace URSUS.Resources
         /// <summary>데이터 수집 중 일반 오류</summary>
         public const string DataCollectionFailed = "URS209";
 
+        /// <summary>데이터 수집 취소</summary>
+        public const string DataCollectionCancelled = "URS210";
+
+        /// <summary>개별 데이터 소스 수집 실패</summary>
+        public const string DataSourceFailed = "URS211";
+
+        public const string BoundaryCancelled = "URS212";
+        public const string BoundaryFailed = "URS213";
+        public const string LandPriceCancelled = "URS214";
+        public const string LandPriceFailed = "URS215";
+        public const string ZoningCancelled = "URS216";
+        public const string ZoningFailed = "URS217";
+
         // ═══════════════════════════════════════════════════════════════
         //  3xx — 데이터 파싱 / 매핑
         // ═══════════════════════════════════════════════════════════════
@@ -90,6 +106,14 @@ namespace URSUS.Resources
 
         /// <summary>매핑 JSON 파싱 실패</summary>
         public const string MappingJsonParseFailed = "URS303";
+
+        /// <summary>서울 데이터 소스 정상 응답이나 데이터 없음</summary>
+        public const string SeoulNoData = "URS304";
+
+        public const string LandPriceNoData = "URS305";
+        public const string ZoningNoData = "URS306";
+        public const string BoundaryNoData = "URS307";
+        public const string BoundaryTopologyInvalid = "URS308";
 
         // ═══════════════════════════════════════════════════════════════
         //  4xx — 입력 검증
@@ -109,6 +133,13 @@ namespace URSUS.Resources
 
         /// <summary>Legal Codes 비어 있음</summary>
         public const string LegalCodesEmpty = "URS405";
+
+        /// <summary>데이터 소스가 요청 지역을 지원하지 않음</summary>
+        public const string UnsupportedCoverage = "URS406";
+
+        public const string BoundaryAddressMissing = "URS407";
+        public const string LandPriceCodesMissing = "URS408";
+        public const string ZoningCodesMissing = "URS409";
 
         // ═══════════════════════════════════════════════════════════════
         //  5xx — 파일 I/O / 내보내기

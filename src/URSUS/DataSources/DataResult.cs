@@ -1,5 +1,6 @@
 namespace URSUS.DataSources
 {
+    using URSUS.Caching;
     /// <summary>
     /// 데이터 소스 호출 결과를 담는 봉투(envelope) 타입.
     ///
@@ -24,19 +25,41 @@ namespace URSUS.DataSources
         /// <summary>호출 소요 시간</summary>
         public TimeSpan Elapsed { get; }
 
+        public DateTimeOffset? RetrievedAt { get; }
+        public AcquisitionOrigin? AcquisitionOrigin { get; }
+        public DeliveryOrigin? DeliveryOrigin { get; }
+        public TimeSpan? CacheAge { get; }
+
         private DataResult(bool isSuccess, T? data, DataSourceError? error,
-                           DataOrigin origin, TimeSpan elapsed)
+                           DataOrigin origin, TimeSpan elapsed,
+                           DateTimeOffset? retrievedAt = null,
+                           AcquisitionOrigin? acquisitionOrigin = null,
+                           DeliveryOrigin? deliveryOrigin = null,
+                           TimeSpan? cacheAge = null)
         {
             IsSuccess = isSuccess;
             Data      = data;
             Error     = error;
             Origin    = origin;
             Elapsed   = elapsed;
+            RetrievedAt = retrievedAt;
+            AcquisitionOrigin = acquisitionOrigin;
+            DeliveryOrigin = deliveryOrigin;
+            CacheAge = cacheAge;
         }
 
         /// <summary>성공 결과 생성</summary>
         public static DataResult<T> Success(T data, DataOrigin origin, TimeSpan elapsed)
             => new(true, data, null, origin, elapsed);
+
+        public static DataResult<T> Success(
+            T data, DataOrigin origin, TimeSpan elapsed,
+            DateTimeOffset? retrievedAt,
+            AcquisitionOrigin? acquisitionOrigin,
+            DeliveryOrigin? deliveryOrigin,
+            TimeSpan? cacheAge)
+            => new(true, data, null, origin, elapsed, retrievedAt,
+                acquisitionOrigin, deliveryOrigin, cacheAge);
 
         /// <summary>실패 결과 생성</summary>
         public static DataResult<T> Failure(DataSourceError error, TimeSpan elapsed)
@@ -48,7 +71,8 @@ namespace URSUS.DataSources
             if (!IsSuccess || Data == null)
                 return DataResult<TOut>.Failure(Error!, Elapsed);
 
-            return DataResult<TOut>.Success(transform(Data), Origin, Elapsed);
+            return DataResult<TOut>.Success(transform(Data), Origin, Elapsed,
+                RetrievedAt, AcquisitionOrigin, DeliveryOrigin, CacheAge);
         }
     }
 

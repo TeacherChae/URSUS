@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using URSUS.Config;
+using URSUS.Net;
+using URSUS.Caching;
 
 namespace URSUS.DataSources
 {
@@ -25,6 +27,8 @@ namespace URSUS.DataSources
     /// </summary>
     public static class DefaultDataSourceBootstrapper
     {
+        // Solver는 Run generation마다 새 key-bound registry/source를 만들 수 있지만,
+        // socket handler는 process 수명으로 재사용해 반복 실행 시 고갈을 막는다.
         /// <summary>
         /// 모든 내장 데이터 소스를 레지스트리에 등록한다.
         /// 이미 등록된 소스가 있으면 덮어쓴다 (재호출 안전).
@@ -38,8 +42,10 @@ namespace URSUS.DataSources
             if (keyProvider == null) throw new ArgumentNullException(nameof(keyProvider));
 
             int count = 0;
-            count += RegisterStatisticSources(registry, keyProvider);
-            RegisterBoundarySources(registry, keyProvider);
+            var pipeline = new HttpPipeline(HttpClientLifetime.Shared, maxConcurrency: 8);
+            var cache = new AtomicCacheStore();
+            count += RegisterStatisticSources(registry, keyProvider, pipeline, cache);
+            RegisterBoundarySources(registry, keyProvider, pipeline, cache);
             return count;
         }
 
@@ -48,9 +54,11 @@ namespace URSUS.DataSources
         /// </summary>
         /// <returns>등록된 소스 수</returns>
         public static int RegisterStatisticSources(
-            IDataSourceRegistry registry, ApiKeyProvider keyProvider)
+            IDataSourceRegistry registry, ApiKeyProvider keyProvider,
+            HttpPipeline? sharedPipeline = null,
+            AtomicCacheStore? sharedCache = null)
         {
-            var sources = CreateBuiltInSources(keyProvider);
+            var sources = CreateBuiltInSources(keyProvider, sharedPipeline, sharedCache);
             foreach (var source in sources)
             {
                 registry.Register(source);
@@ -62,9 +70,11 @@ namespace URSUS.DataSources
         /// 경계 데이터 소스를 등록한다.
         /// </summary>
         public static void RegisterBoundarySources(
-            IDataSourceRegistry registry, ApiKeyProvider keyProvider)
+            IDataSourceRegistry registry, ApiKeyProvider keyProvider,
+            HttpPipeline? sharedPipeline = null,
+            AtomicCacheStore? sharedCache = null)
         {
-            var boundarySource = new VWorldBoundaryDataSource(keyProvider);
+            var boundarySource = new VWorldBoundaryDataSource(keyProvider, sharedPipeline, sharedCache);
             registry.RegisterBoundary(boundarySource);
         }
 
@@ -74,20 +84,22 @@ namespace URSUS.DataSources
         /// 새 데이터 소스를 추가할 때 이 메서드에 한 줄만 추가하면 된다.
         /// API 키가 없는 소스도 등록됨 — ValidateConfiguration()에서 런타임에 검증.
         /// </summary>
-        internal static IReadOnlyList<IDataSource> CreateBuiltInSources(ApiKeyProvider keyProvider)
+        internal static IReadOnlyList<IDataSource> CreateBuiltInSources(
+            ApiKeyProvider keyProvider, HttpPipeline? sharedPipeline = null,
+            AtomicCacheStore? sharedCache = null)
         {
             return new List<IDataSource>
             {
                 // ── 인구통계 (Demographic) ───────────────────────────
-                new SeoulAvgIncomeDataSource(keyProvider),
-                new SeoulResidentPopDataSource(keyProvider),
+                new SeoulAvgIncomeDataSource(keyProvider, sharedPipeline, cache: sharedCache),
+                new SeoulResidentPopDataSource(keyProvider, sharedPipeline, cache: sharedCache),
 
                 // ── 교통 (Transportation) ────────────────────────────
-                new SeoulTransitDataSource(keyProvider),
+                new SeoulTransitDataSource(keyProvider, sharedPipeline, cache: sharedCache),
 
                 // ── 토지이용 (LandUse) ───────────────────────────────
-                new LandPriceDataSource(keyProvider),
-                new ZoningDataSource(keyProvider),
+                new LandPriceDataSource(keyProvider, sharedPipeline, cache: sharedCache),
+                new ZoningDataSource(keyProvider, sharedPipeline, sharedCache),
 
                 // ── 새 데이터 소스 추가 시 여기에 한 줄 추가 ─────────
                 // new NoiseDataSource(keyProvider),

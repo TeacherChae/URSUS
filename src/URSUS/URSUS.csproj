@@ -25,7 +25,7 @@
 
   <ItemGroup>
     <!-- Rhino 8 / .NET 7 기반 — runtime DLL은 Rhino가 제공하므로 ExcludeAssets="runtime" -->
-    <PackageReference Include="RhinoCommon" Version="8.17.*" ExcludeAssets="runtime" />
+    <PackageReference Include="RhinoCommon" Version="$(RhinoSdkVersion)" ExcludeAssets="runtime" />
 
     <!-- 2D Polygon Boolean Union (GeoUnion.cs 대체) -->
     <PackageReference Include="Clipper2" Version="2.*" />

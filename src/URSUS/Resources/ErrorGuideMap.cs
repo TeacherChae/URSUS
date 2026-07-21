@@ -26,7 +26,7 @@ namespace URSUS.Resources
         // ═══════════════════════════════════════════════════════════════
 
         /// <summary>URSUS GitHub Wiki 기본 경로</summary>
-        private const string WikiBase = "https://github.com/DaeguURSUS/URSUS/wiki";
+        private const string WikiBase = "https://github.com/TeacherChae/URSUS/wiki";
 
         /// <summary>VWorld 개발자 포털</summary>
         private const string VWorldPortal = "https://www.vworld.kr/dev/v4dv_2ddataguide2_s001.do";

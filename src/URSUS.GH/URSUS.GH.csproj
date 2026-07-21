@@ -9,7 +9,7 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Grasshopper"
-                      Version="8.17.25066.7001"
+                      Version="$(RhinoSdkVersion)"
                       ExcludeAssets="runtime" />
     <PackageReference Include="System.Drawing.Common"
                       Version="7.*" />

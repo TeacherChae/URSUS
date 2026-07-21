@@ -6,6 +6,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using URSUS.Config;
 using URSUS.Parsers;
+using URSUS.Resources;
+using URSUS.Net;
+using URSUS.Caching;
 
 namespace URSUS.DataSources
 {
@@ -21,10 +24,20 @@ namespace URSUS.DataSources
     public class LandPriceDataSource : IDataSource
     {
         private readonly ApiKeyProvider _keyProvider;
+        private readonly HttpPipeline _http;
+        private readonly IClock _clock;
+        private readonly AtomicCacheStore _cache;
 
         public LandPriceDataSource(ApiKeyProvider keyProvider)
+            : this(keyProvider, null, null, null) { }
+
+        public LandPriceDataSource(ApiKeyProvider keyProvider, HttpPipeline? http,
+            IClock? clock = null, AtomicCacheStore? cache = null)
         {
             _keyProvider = keyProvider ?? throw new ArgumentNullException(nameof(keyProvider));
+            _http = http ?? new HttpPipeline(HttpClientLifetime.Shared, maxConcurrency: 8);
+            _clock = clock ?? SystemClock.Instance;
+            _cache = cache ?? new AtomicCacheStore(clock: _clock);
         }
 
         public DataSourceMetadata Metadata { get; } = new DataSourceMetadata
@@ -47,7 +60,7 @@ namespace URSUS.DataSources
             {
                 return DataSourceError.ApiKeyMissing(
                     "DataGoKrKey (공공데이터포털)",
-                    "URS301");
+                    ErrorCodes.DataGoKrKeyMissing);
             }
             return null;
         }
@@ -57,6 +70,7 @@ namespace URSUS.DataSources
             CancellationToken cancellationToken = default)
         {
             var sw = Stopwatch.StartNew();
+            cancellationToken.ThrowIfCancellationRequested();
 
             // 사전 조건 검증
             var configError = ValidateConfiguration();
@@ -69,7 +83,7 @@ namespace URSUS.DataSources
             if (query.DistrictCodes == null || query.DistrictCodes.Count == 0)
             {
                 return DataResult<DistrictDataSet>.Failure(
-                    new DataSourceError("URS302",
+                    new DataSourceError(ErrorCodes.LandPriceCodesMissing,
                         "공시지가 조회에 필요한 법정동 코드 목록이 없습니다.\n" +
                         "→ 경계 데이터(VWorld)가 먼저 수집되어야 합니다."),
                     sw.Elapsed);
@@ -77,49 +91,74 @@ namespace URSUS.DataSources
 
             try
             {
-                // 동기 파서를 Task.Run으로 래핑하여 비동기 인터페이스 충족
-                var parser = new LandPriceApiParser(apiKey);
+                var parser = new LandPriceApiParser(apiKey, _http, _clock);
                 var codesList = query.DistrictCodes.ToList();
+                int standardYear = ResolveStandardYear(query);
 
-                var data = await Task.Run(
-                    () => parser.GetLandPriceByLegalDistrict(
-                        codesList, query.CacheDirectory),
-                    cancellationToken);
+                var cacheKey = PersistentCacheKey.Create(Metadata.Id, 2, query.QueryIntent,
+                    new Dictionary<string, string>
+                    {
+                        ["stdrYear"] = standardYear.ToString(
+                            (System.IFormatProvider?)System.Globalization.CultureInfo.InvariantCulture),
+                    }, codesList, CoordinateReferenceSystem.Epsg5179);
+                var cached = await _cache.GetOrFetchAsync(cacheKey, query.ForceRefresh,
+                    TimeSpan.FromDays(Metadata.CacheTtlDays),
+                    token => parser.GetLandPriceByLegalDistrictAsync(
+                        codesList, null, token, standardYear),
+                    cancellationToken).ConfigureAwait(false);
+                var data = cached.Value;
 
                 if (data.Count == 0)
                 {
                     return DataResult<DistrictDataSet>.Failure(
-                        DataSourceError.NoData("공시지가", "URS303"),
+                        DataSourceError.NoData("공시지가", ErrorCodes.LandPriceNoData),
                         sw.Elapsed);
                 }
 
-                var origin = sw.Elapsed.TotalSeconds < 1
-                    ? DataOrigin.Cache
-                    : DataOrigin.Api;
+                var origin = cached.DeliveryOrigin == DeliveryOrigin.Cache
+                    ? DataOrigin.Cache : DataOrigin.Api;
 
-                var dataSet = DistrictDataSet.FromDictionary(data, "원/㎡");
+                var baseDataSet = DistrictDataSet.FromDictionary(data, "원/㎡");
+                var dataSet = new DistrictDataSet(baseDataSet.Records)
+                {
+                    RawRecordCount = baseDataSet.RawRecordCount,
+                    Observation = new ObservationWindow(
+                        standardYear.ToString(
+                            System.Globalization.CultureInfo.InvariantCulture),
+                        true, data.Count, data.Count),
+                };
                 sw.Stop();
 
-                return DataResult<DistrictDataSet>.Success(dataSet, origin, sw.Elapsed);
+                return DataResult<DistrictDataSet>.Success(dataSet, origin, sw.Elapsed,
+                    cached.RetrievedAt, cached.AcquisitionOrigin,
+                    cached.DeliveryOrigin, cached.CacheAge);
             }
-            catch (OperationCanceledException)
-            {
-                return DataResult<DistrictDataSet>.Failure(
-                    new DataSourceError("URS304",
-                        "공시지가 데이터 수집이 취소되었습니다.",
-                        ErrorSeverity.Warning),
-                    sw.Elapsed);
-            }
+            catch (OperationCanceledException) { throw; }
             catch (Exception ex)
             {
+                string safeMessage = SecretRedactor.Redact(ex.Message);
                 return DataResult<DistrictDataSet>.Failure(
-                    new DataSourceError("URS305",
-                        $"공시지가 데이터 수집 실패: {ex.Message}\n" +
+                    new DataSourceError(ErrorCodes.LandPriceFailed,
+                        $"공시지가 데이터 수집 실패: {safeMessage}\n" +
                         "→ API 키와 네트워크 연결을 확인해주세요.\n" +
                         "→ 발급: https://www.data.go.kr/data/15058747/openapi.do",
-                        ErrorSeverity.Error, ex),
+                        ErrorSeverity.Error, new InvalidOperationException(safeMessage)),
                     sw.Elapsed);
             }
+        }
+
+        private int ResolveStandardYear(DataQuery query)
+        {
+            if (query.QueryIntent != QueryIntent.ExplicitPeriod)
+                return _clock.UtcNow.Year - 1;
+            if (!int.TryParse(query.ExplicitPeriod,
+                    System.Globalization.NumberStyles.None,
+                    System.Globalization.CultureInfo.InvariantCulture, out int year) ||
+                year < 1900 || year > _clock.UtcNow.Year)
+                throw new ArgumentException(
+                    "공시지가 명시 기간은 1900~현재연도의 4자리 stdrYear여야 합니다.",
+                    nameof(query));
+            return year;
         }
     }
 }

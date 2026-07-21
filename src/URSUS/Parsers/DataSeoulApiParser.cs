@@ -1,258 +1,237 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Net.Http;
-using System.Text.Json;
-using System.Xml.Linq;
+using System.Globalization;
+using System.Text;
+using URSUS.DataSources;
+using URSUS.Net;
+using URSUS.Caching;
 
-namespace URSUS.Parsers
+namespace URSUS.Parsers;
+
+public enum SeoulMetricKind { AverageIncome, ResidentPopulation, TransitBoarding }
+
+public sealed record SeoulAggregate(
+    IReadOnlyDictionary<string, double> Values,
+    ObservationWindow Observation,
+    int RawRecordCount,
+    bool PaginationComplete,
+    IReadOnlyList<string> Warnings);
+
+/// <summary>
+/// 서울 열린데이터 XML API의 bounded-page, true-async parser.
+/// 한 page의 projected fields만 메모리에 두고 기간/행정동 accumulator로 즉시 축약한다.
+/// </summary>
+public sealed class DataSeoulApiParser
 {
-    /// <summary>
-    /// 서울 열린데이터 광장 XML API → 레코드 목록.
-    /// data_seoul_api_parser.py (DataSeoulOpenAPIParser) 포팅.
-    ///
-    /// - 자동 페이지네이션 (list_total_count 기반)
-    /// - avg_income.json 캐시 (TTL 30일)
-    /// </summary>
-    public class DataSeoulApiParser
+    private const string BaseUrl = "http://openapi.seoul.go.kr:8088";
+    private const int PageSize = 1000;
+    private const int MaxPages = 1000;
+    private readonly string _apiKey;
+    private readonly HttpPipeline _http;
+    private readonly IClock _clock;
+
+    public DataSeoulApiParser(string apiKey)
+        : this(apiKey, null, null) { }
+
+    public DataSeoulApiParser(string apiKey, HttpPipeline? http, IClock? clock = null)
     {
-        private const int    CACHE_TTL_DAYS = 30;
-        private const string BASE_URL       = "http://openapi.seoul.go.kr:8088";
-        private const string SVC_AVG_INCOME    = "VwsmAdstrdNcmCnsmpW";
-        private const string SVC_LIVING_POP    = "SPOP_LOCAL_RESD_DONG";
-        private const string SVC_RESIDENT_POP  = "VwsmAdstrdRepopW";
-        private const string SVC_TRANSIT       = "tpssPassengerCnt";
-
-        private readonly string     _apiKey;
-        private readonly HttpClient _http;
-
-        public DataSeoulApiParser(string apiKey)
-        {
-            _apiKey = apiKey;
-            _http   = new HttpClient { Timeout = TimeSpan.FromSeconds(30) };
-        }
-
-        // ─────────────────────────────────────────────────────────────────
-        //  Public API
-        // ─────────────────────────────────────────────────────────────────
-
-        /// <summary>
-        /// 행정동 기준 월 평균 소득 맵을 반환한다 (캐시 적용).
-        /// key = adstrd_cd, value = mt_avrg_income_amt 평균
-        /// </summary>
-        public Dictionary<string, double> GetAvgIncomeByAdstrd(string? cacheDir = null)
-            => FetchAndCache(SVC_AVG_INCOME, "ADSTRD_CD",      "MT_AVRG_INCOME_AMT", "avg_income.json",  cacheDir);
-
-        /// <summary>
-        /// 행정동 기준 생활인구 맵을 반환한다 (캐시 적용).
-        /// key = adstrd_cd, value = TOT_LVPOP_CO 시간대 평균
-        /// (TMZON_PD_SE 00~23시 × 날짜별 전체 평균 — 동 간 상대 비교용으로 유효)
-        /// </summary>
-        public Dictionary<string, double> GetLivingPopByAdstrd(string? cacheDir = null)
-            => FetchAndCache(SVC_LIVING_POP, "ADSTRD_CODE_SE", "TOT_LVPOP_CO",       "living_pop.json",    cacheDir);
-
-        /// <summary>
-        /// 행정동 기준 상주인구 맵을 반환한다 (캐시 적용).
-        /// key = adstrd_cd, value = TOT_REPOP_CO 분기 평균
-        /// </summary>
-        public Dictionary<string, double> GetResidentPopByAdstrd(string? cacheDir = null)
-            => FetchAndCache(SVC_RESIDENT_POP, "ADSTRD_CD",  "TOT_REPOP_CO", "resident_pop.json",    cacheDir);
-
-        /// <summary>
-        /// 행정동 기준 일평균 대중교통 승차 승객 수 맵을 반환한다 (캐시 적용).
-        /// key = dong_id (= adstrd_cd 체계), value = PSNG_NO 일평균
-        /// </summary>
-        public Dictionary<string, double> GetTransitBoardingByAdstrd(string? cacheDir = null)
-            => FetchAndCache(SVC_TRANSIT,      "DONG_ID",    "PSNG_NO",      "transit_boarding.json", cacheDir);
-
-        // ─────────────────────────────────────────────────────────────────
-        //  공통 fetch + cache 헬퍼
-        // ─────────────────────────────────────────────────────────────────
-
-        private Dictionary<string, double> FetchAndCache(
-            string serviceName, string keyField, string valueField,
-            string cacheFileName, string? cacheDir)
-        {
-            string? cachePath = cacheDir != null
-                ? Path.Combine(cacheDir, cacheFileName)
-                : null;
-
-            if (cachePath != null && IsCacheValid(cachePath))
-            {
-                double remaining = CACHE_TTL_DAYS
-                    - (DateTime.UtcNow - File.GetLastWriteTimeUtc(cachePath)).TotalDays;
-                Console.WriteLine($"[CACHE] {cacheFileName} 캐시 사용 (만료까지 {remaining:F1}일)");
-                return LoadCache(cachePath);
-            }
-
-            Console.WriteLine($"[CACHE] {cacheFileName} API 호출 중...");
-            var records = FetchAllRecords(serviceName);
-            var grouped = AggregateFieldByAdstrd(records, keyField, valueField);
-
-            if (cachePath != null)
-                SaveCache(grouped, cachePath);
-
-            return grouped;
-        }
-
-        // ─────────────────────────────────────────────────────────────────
-        //  Fetch + Pagination
-        // ─────────────────────────────────────────────────────────────────
-
-        private List<Dictionary<string, string>> FetchAllRecords(string serviceName)
-        {
-            const int pageSize    = 1000;
-            const int maxParallel = 40;
-
-            // 1페이지로 total_count 파악
-            string firstUrl  = BuildUrl(serviceName, 1, pageSize);
-            var    firstRoot = FetchXml(firstUrl);
-            int?   total     = GetListTotalCount(firstRoot);
-            var    all       = XmlToRecords(firstRoot);
-
-            if (!total.HasValue || all.Count >= total.Value)
-                return all;
-
-            Console.WriteLine($"[INFO] list_total_count = {total.Value}, 병렬 페이지 요청 시작");
-
-            // 나머지 페이지 범위 계산
-            var ranges = new List<(int start, int end)>();
-            for (int s = pageSize + 1; s <= total.Value; s += pageSize)
-                ranges.Add((s, s + pageSize - 1));
-
-            // maxParallel 단위로 묶어서 병렬 요청
-            var results = new Dictionary<string, string>[ranges.Count][];
-            for (int i = 0; i < ranges.Count; i += maxParallel)
-            {
-                int batchEnd = Math.Min(i + maxParallel, ranges.Count);
-                var tasks = new System.Threading.Tasks.Task<List<Dictionary<string, string>>>[batchEnd - i];
-
-                for (int j = i; j < batchEnd; j++)
-                {
-                    int idx = j;
-                    var (s, e) = ranges[idx];
-                    string url = BuildUrl(serviceName, s, e);
-                    tasks[idx - i] = System.Threading.Tasks.Task.Run(() => XmlToRecords(FetchXml(url)));
-                }
-
-                var batchResults = System.Threading.Tasks.Task.WhenAll(tasks).GetAwaiter().GetResult();
-                for (int j = 0; j < batchResults.Length; j++)
-                    results[i + j] = batchResults[j].ToArray();
-
-                Console.WriteLine($"[INFO] {Math.Min(i + maxParallel, ranges.Count)}/{ranges.Count} 페이지 완료");
-            }
-
-            foreach (var batch in results)
-                if (batch != null) all.AddRange(batch);
-
-            return all;
-        }
-
-        // ─────────────────────────────────────────────────────────────────
-        //  Aggregate: 행정동 코드 기준 지정 필드 평균 계산
-        // ─────────────────────────────────────────────────────────────────
-
-        private static Dictionary<string, double> AggregateFieldByAdstrd(
-            List<Dictionary<string, string>> records, string keyField, string valueField)
-        {
-            var acc = new Dictionary<string, (double sum, int count)>();
-
-            foreach (var row in records)
-            {
-                if (!row.TryGetValue(keyField, out string? cd)
-                    || !row.TryGetValue(valueField, out string? amtStr))
-                    continue;
-
-                if (!double.TryParse(amtStr, out double amt)) continue;
-
-                if (acc.TryGetValue(cd, out var prev))
-                    acc[cd] = (prev.sum + amt, prev.count + 1);
-                else
-                    acc[cd] = (amt, 1);
-            }
-
-            var result = new Dictionary<string, double>();
-            foreach (var (k, (sum, cnt)) in acc)
-                result[k] = sum / cnt;
-            return result;
-        }
-
-        // ─────────────────────────────────────────────────────────────────
-        //  XML helpers
-        // ─────────────────────────────────────────────────────────────────
-
-        private XElement FetchXml(string url)
-        {
-            string body = _http.GetStringAsync(url).GetAwaiter().GetResult();
-            var root = XElement.Parse(body);
-
-            // API 에러 코드 확인
-            var result = root.Descendants("RESULT").FirstOrDefault() ??
-                         root.Descendants("result").FirstOrDefault();
-            if (result != null)
-            {
-                string code = result.Element("CODE")?.Value.Trim()
-                           ?? result.Element("code")?.Value.Trim() ?? "";
-                string msg  = result.Element("MESSAGE")?.Value.Trim()
-                           ?? result.Element("message")?.Value.Trim() ?? "";
-
-                if (!string.IsNullOrEmpty(code)
-                    && code != "INFO-000"
-                    && !msg.Contains("정상"))
-                    throw new InvalidOperationException($"API 오류: {code} - {msg}");
-            }
-
-            return root;
-        }
-
-        private static List<Dictionary<string, string>> XmlToRecords(XElement root)
-        {
-            var records = new List<Dictionary<string, string>>();
-            foreach (var row in root.Descendants("row"))
-            {
-                var rec = new Dictionary<string, string>();
-                foreach (var child in row.Elements())
-                    rec[child.Name.LocalName] = child.Value.Trim();
-                records.Add(rec);
-            }
-            return records;
-        }
-
-        private static int? GetListTotalCount(XElement root)
-        {
-            var node = root.Descendants("list_total_count").FirstOrDefault()
-                    ?? root.Descendants("LIST_TOTAL_COUNT").FirstOrDefault();
-            if (node == null || string.IsNullOrWhiteSpace(node.Value)) return null;
-            return int.TryParse(node.Value.Trim(), out int n) ? n : null;
-        }
-
-        private string BuildUrl(string serviceName, int start, int end)
-            => $"{BASE_URL}/{_apiKey}/xml/{serviceName}/{start}/{end}/";
-
-        // ─────────────────────────────────────────────────────────────────
-        //  Cache
-        // ─────────────────────────────────────────────────────────────────
-
-        private static bool IsCacheValid(string path)
-        {
-            if (!File.Exists(path)) return false;
-            return (DateTime.UtcNow - File.GetLastWriteTimeUtc(path)).TotalDays < CACHE_TTL_DAYS;
-        }
-
-        private static void SaveCache(Dictionary<string, double> data, string path)
-        {
-            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-            File.WriteAllText(path,
-                JsonSerializer.Serialize(data, new JsonSerializerOptions { WriteIndented = false }),
-                System.Text.Encoding.UTF8);
-            Console.WriteLine($"[CACHE] avg_income 저장 완료 ({data.Count}건)");
-        }
-
-        private static Dictionary<string, double> LoadCache(string path)
-        {
-            string json = File.ReadAllText(path, System.Text.Encoding.UTF8);
-            return JsonSerializer.Deserialize<Dictionary<string, double>>(json)
-                   ?? new Dictionary<string, double>();
-        }
+        _apiKey = string.IsNullOrWhiteSpace(apiKey)
+            ? throw new ArgumentException("서울 API 키가 필요합니다.", nameof(apiKey))
+            : apiKey;
+        _http = http ?? new HttpPipeline(HttpClientLifetime.Shared, maxConcurrency: 8);
+        _clock = clock ?? SystemClock.Instance;
     }
+
+    public Task<SeoulAggregate> GetAvgIncomeByAdstrdAsync(
+        DataQuery query, CancellationToken cancellationToken = default)
+        => FetchAsync(SeoulMetricKind.AverageIncome, "VwsmAdstrdNcmCnsmpW",
+            "ADSTRD_CD", "MT_AVRG_INCOME_AMT", "STDR_YYQU_CD", query, cancellationToken);
+
+    public Task<SeoulAggregate> GetResidentPopByAdstrdAsync(
+        DataQuery query, CancellationToken cancellationToken = default)
+        => FetchAsync(SeoulMetricKind.ResidentPopulation, "VwsmAdstrdRepopW",
+            "ADSTRD_CD", "TOT_REPOP_CO", "STDR_YYQU_CD", query, cancellationToken);
+
+    public Task<SeoulAggregate> GetTransitBoardingByAdstrdAsync(
+        DataQuery query, CancellationToken cancellationToken = default)
+        => FetchAsync(SeoulMetricKind.TransitBoarding, "tpssPassengerCnt",
+            "DONG_ID", "PSNG_NO", "CRTR_DD", query, cancellationToken);
+
+    [Obsolete("DataQuery와 CancellationToken을 받는 async API를 사용하세요.")]
+    public Dictionary<string, double> GetAvgIncomeByAdstrd(string? cacheDir = null)
+        => new(GetAvgIncomeByAdstrdAsync(LegacyQuery(cacheDir)).GetAwaiter().GetResult().Values);
+
+    [Obsolete("DataQuery와 CancellationToken을 받는 async API를 사용하세요.")]
+    public Dictionary<string, double> GetResidentPopByAdstrd(string? cacheDir = null)
+        => new(GetResidentPopByAdstrdAsync(LegacyQuery(cacheDir)).GetAwaiter().GetResult().Values);
+
+    [Obsolete("DataQuery와 CancellationToken을 받는 async API를 사용하세요.")]
+    public Dictionary<string, double> GetTransitBoardingByAdstrd(string? cacheDir = null)
+        => new(GetTransitBoardingByAdstrdAsync(LegacyQuery(cacheDir)).GetAwaiter().GetResult().Values);
+
+    [Obsolete("대용량 생활인구 source는 제품 계약이 확정될 때까지 비활성입니다.")]
+    public Dictionary<string, double> GetLivingPopByAdstrd(string? cacheDir = null)
+        => throw new NotSupportedException("생활인구 source는 현재 비활성입니다.");
+
+    private async Task<SeoulAggregate> FetchAsync(
+        SeoulMetricKind kind,
+        string service,
+        string keyField,
+        string valueField,
+        string periodField,
+        DataQuery query,
+        CancellationToken cancellationToken)
+    {
+        var policy = query.TransportPolicy ?? TransportPolicy.Default;
+        var fields = new[] { keyField, valueField, periodField };
+        var aggregate = new Dictionary<(string period, string district), (double sum, int count)>();
+        var identities = new HashSet<string>(StringComparer.Ordinal);
+        var warnings = new List<string>();
+        int received = 0;
+        int total = -1;
+        bool duplicate = false;
+
+        for (int page = 0; page < MaxPages; page++)
+        {
+            int start = page * PageSize + 1;
+            int end = start + PageSize - 1;
+            var uri = new Uri($"{BaseUrl}/{_apiKey}/xml/{service}/{start}/{end}/");
+            policy.EnsureAllowed(uri, ProviderKind.Seoul);
+            string xml = await _http.GetStringAsync(uri, cancellationToken).ConfigureAwait(false);
+            await using var stream = new MemoryStream(Encoding.UTF8.GetBytes(xml), writable: false);
+            var parsed = SeoulXmlStreamParser.Parse(stream, fields,
+                row => StableIdentity(row, keyField, valueField, periodField));
+            if (total < 0) total = parsed.TotalCount;
+            if (parsed.TotalCount != total)
+                warnings.Add($"pagination total changed: {total}->{parsed.TotalCount}");
+
+            foreach (var row in parsed.Rows)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                string identity = StableIdentity(row, keyField, valueField, periodField);
+                if (!identities.Add(identity)) { duplicate = true; continue; }
+                if (!row.TryGetValue(keyField, out string? district) ||
+                    !row.TryGetValue(periodField, out string? rawPeriod) ||
+                    !row.TryGetValue(valueField, out string? rawValue) ||
+                    !double.TryParse(rawValue, NumberStyles.Float | NumberStyles.AllowThousands,
+                        CultureInfo.InvariantCulture, out double value) || !double.IsFinite(value))
+                    continue;
+                string period = NormalizePeriod(kind, rawPeriod);
+                if (period.Length == 0) continue;
+                var key = (period, district.Trim());
+                aggregate.TryGetValue(key, out var previous);
+                aggregate[key] = (previous.sum + value, previous.count + 1);
+            }
+
+            received += parsed.Rows.Count;
+            if (parsed.Rows.Count == 0 || (total >= 0 && received >= total)) break;
+        }
+
+        bool paginationComplete = total >= 0 && received == total && !duplicate;
+        if (!paginationComplete)
+            warnings.Add($"pagination incomplete: received={received}, expected={total}, duplicate={duplicate}");
+
+        string selectedPeriod = SelectPeriod(aggregate.Keys.Select(key => key.period).Distinct(),
+            kind, query, _clock.UtcNow);
+        var selected = aggregate
+            .Where(pair => kind == SeoulMetricKind.TransitBoarding
+                ? pair.Key.period.StartsWith(selectedPeriod, StringComparison.Ordinal)
+                : pair.Key.period == selectedPeriod)
+            .GroupBy(pair => pair.Key.district, StringComparer.Ordinal)
+            .ToDictionary(
+                group => group.Key,
+                group => kind == SeoulMetricKind.ResidentPopulation
+                    ? group.Sum(pair => pair.Value.sum)
+                    : kind == SeoulMetricKind.TransitBoarding
+                        ? group.Average(pair => pair.Value.sum)
+                        : group.Sum(pair => pair.Value.sum) / group.Sum(pair => pair.Value.count),
+                StringComparer.Ordinal);
+        int observed = selected.Keys.Count(SeoulExpectedDistricts.Ids.Contains);
+        int expected = SeoulExpectedDistricts.Ids.Count;
+        bool temporalComplete = true;
+        if (kind == SeoulMetricKind.TransitBoarding)
+        {
+            var days = aggregate.Keys
+                .Where(key => key.period.StartsWith(selectedPeriod, StringComparison.Ordinal))
+                .GroupBy(key => key.period, StringComparer.Ordinal)
+                .ToList();
+            temporalComplete = days.Count >= 28 && days.All(day =>
+                day.Select(item => item.district).Distinct(StringComparer.Ordinal)
+                    .Count(SeoulExpectedDistricts.Ids.Contains) >= Math.Ceiling(expected * 0.95));
+        }
+        bool complete = paginationComplete && observed == expected && temporalComplete;
+        return new SeoulAggregate(selected,
+            new ObservationWindow(selectedPeriod, complete, observed, expected)
+            {
+                MissingIds = Array.AsReadOnly(SeoulExpectedDistricts.Ids.Except(selected.Keys,
+                        StringComparer.Ordinal)
+                    .OrderBy(id => id, StringComparer.Ordinal).ToArray()),
+            },
+            received, paginationComplete, warnings);
+    }
+
+    private static string StableIdentity(
+        IReadOnlyDictionary<string, string> row,
+        string keyField,
+        string valueField,
+        string periodField)
+        => $"{row.GetValueOrDefault(keyField)}|{row.GetValueOrDefault(periodField)}|{row.GetValueOrDefault(valueField)}";
+
+    private static string NormalizePeriod(SeoulMetricKind kind, string raw)
+    {
+        string digits = new(raw.Where(char.IsDigit).ToArray());
+        if (kind == SeoulMetricKind.TransitBoarding)
+            return digits.Length >= 8 ? digits[..8] : string.Empty;
+        if (raw.Length == 6 && raw[4] == 'Q') return raw.ToUpperInvariant();
+        if (digits.Length >= 5 && int.TryParse(digits[..4], out int year) &&
+            int.TryParse(digits[4..], out int quarter) && quarter is >= 1 and <= 4)
+            return $"{year}Q{quarter}";
+        return string.Empty;
+    }
+
+    private static string SelectPeriod(
+        IEnumerable<string> candidates,
+        SeoulMetricKind kind,
+        DataQuery query,
+        DateTimeOffset now)
+    {
+        var list = candidates.ToList();
+        if (query.QueryIntent == QueryIntent.ExplicitPeriod)
+        {
+            string explicitPeriod = query.ExplicitPeriod?.Trim() ?? string.Empty;
+            if (!list.Contains(explicitPeriod, StringComparer.Ordinal))
+                throw new InvalidOperationException($"요청 관측기간이 없습니다: {explicitPeriod}");
+            return explicitPeriod;
+        }
+        if (kind == SeoulMetricKind.TransitBoarding)
+        {
+            string currentMonth = now.ToString("yyyyMM", CultureInfo.InvariantCulture);
+            return list.Select(period => period.Length >= 6 ? period[..6] : string.Empty)
+                       .Where(period => period.Length == 6 && string.CompareOrdinal(period, currentMonth) < 0)
+                       .Distinct(StringComparer.Ordinal)
+                       .OrderByDescending(period => period, StringComparer.Ordinal).FirstOrDefault()
+                   ?? throw new InvalidOperationException("닫힌 관측 월이 없습니다.");
+        }
+        string currentQuarter = $"{now.Year}Q{((now.Month - 1) / 3) + 1}";
+        return list.Where(period => QuarterOrder(period) < QuarterOrder(currentQuarter))
+                   .OrderByDescending(QuarterOrder).FirstOrDefault()
+               ?? throw new InvalidOperationException("닫힌 관측 분기가 없습니다.");
+    }
+
+    private static int QuarterOrder(string period)
+        => period.Length == 6 && int.TryParse(period[..4], out int year) &&
+           int.TryParse(period[5..], out int quarter)
+            ? year * 4 + quarter - 1
+            : int.MinValue;
+
+    private static DataQuery LegacyQuery(string? cacheDir) => new()
+    {
+        CacheDirectory = cacheDir,
+        TransportPolicy = new TransportPolicy(AllowInsecureSeoulHttp: true),
+    };
+}
+
+internal static class ReadOnlyDictionaryExtensions
+{
+    public static string GetValueOrDefault(
+        this IReadOnlyDictionary<string, string> dictionary, string key)
+        => dictionary.TryGetValue(key, out string? value) ? value : string.Empty;
 }

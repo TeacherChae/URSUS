@@ -9,7 +9,7 @@ namespace URSUS.DataSources
     public record DistrictDataRecord
     {
         /// <summary>
-        /// 법정동 코드 (10자리).
+        /// 법정동 canonical ID (VWorld emd_cd와 동일한 8자리).
         /// 모든 데이터 소스가 동일한 코드 체계를 사용해야 비교/합산이 가능하다.
         /// </summary>
         public required string DistrictCode { get; init; }
@@ -51,9 +51,23 @@ namespace URSUS.DataSources
         /// </summary>
         public int UnmappedCount { get; init; }
 
+        /// <summary>선택된 단일 관측기간과 완결성.</summary>
+        public ObservationWindow? Observation { get; init; }
+
+        /// <summary>행정동→법정동 변환 시 사용된 불확실성 정책.</summary>
+        public Analysis.MappingQuality? MappingQuality { get; init; }
+
+        /// <summary>expected-set, pagination, mapping 등 구조화된 품질 경고.</summary>
+        public IReadOnlyList<string> Warnings { get; init; } = Array.Empty<string>();
+
+        /// <summary>범주형 원천을 숫자 overlay로 투영하기 전의 법정동별 histogram.</summary>
+        public IReadOnlyDictionary<string, Analysis.ZoningCategoryHistogram> CategoricalHistograms
+            { get; init; } = new Dictionary<string, Analysis.ZoningCategoryHistogram>();
+
         public DistrictDataSet(IReadOnlyDictionary<string, DistrictDataRecord> records)
         {
-            Records = records;
+            Records = new System.Collections.ObjectModel.ReadOnlyDictionary<string, DistrictDataRecord>(
+                new Dictionary<string, DistrictDataRecord>(records, StringComparer.Ordinal));
         }
 
         /// <summary>
@@ -66,9 +80,12 @@ namespace URSUS.DataSources
             var records = new Dictionary<string, DistrictDataRecord>();
             foreach (var (code, value) in data)
             {
-                records[code] = new DistrictDataRecord
+                string canonical = DistrictCode.CanonicalizeLegal(code);
+                if (string.IsNullOrEmpty(canonical))
+                    continue;
+                records[canonical] = new DistrictDataRecord
                 {
-                    DistrictCode = code,
+                    DistrictCode = canonical,
                     Value        = value,
                     Unit         = unit
                 };
@@ -85,7 +102,11 @@ namespace URSUS.DataSources
         {
             var result = new Dictionary<string, double>();
             foreach (var (code, record) in Records)
-                result[code] = record.Value;
+            {
+                string canonical = DistrictCode.CanonicalizeLegal(code);
+                if (!string.IsNullOrEmpty(canonical))
+                    result[canonical] = record.Value;
+            }
             return result;
         }
     }

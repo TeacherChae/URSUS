@@ -4,6 +4,11 @@ using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Text.Json;
+using System.Security.Cryptography;
+using System.Text;
+using URSUS.DataSources;
+using URSUS.Net;
+using URSUS.Analysis;
 
 namespace URSUS.Parsers
 {
@@ -30,7 +35,7 @@ namespace URSUS.Parsers
     {
         private const int    CACHE_TTL_DAYS = 30;
         private const string BASE_URL =
-            "http://apis.data.go.kr/1611000/nsdi/LandUseService/attr/getLandUseAttr";
+            "https://apis.data.go.kr/1611000/nsdi/LandUseService/attr/getLandUseAttr";
 
         /// <summary>용도지역명 필드</summary>
         private const string ZONE_NAME_FIELD = "prposAreaDstrcCodeNm";
@@ -39,12 +44,15 @@ namespace URSUS.Parsers
         private const string LD_CODE_FIELD = "ldCode";
 
         private readonly string     _apiKey;
-        private readonly HttpClient _http;
+        private readonly HttpPipeline _http;
 
         public ZoningApiParser(string apiKey)
+            : this(apiKey, null) { }
+
+        public ZoningApiParser(string apiKey, HttpPipeline? http)
         {
             _apiKey = apiKey ?? throw new ArgumentNullException(nameof(apiKey));
-            _http   = new HttpClient { Timeout = TimeSpan.FromSeconds(30) };
+            _http   = http ?? new HttpPipeline(HttpClientLifetime.Shared, maxConcurrency: 8);
         }
 
         // ─────────────────────────────────────────────────────────────────
@@ -92,8 +100,8 @@ namespace URSUS.Parsers
             if (zoneName.Contains("농림"))     return 1.0;
             if (zoneName.Contains("자연환경")) return 1.0;
 
-            // 알 수 없는 유형 → 중간값
-            return 2.0;
+            // 알 수 없는 유형은 임의 숫자화하지 않고 결측 처리
+            return 0.0;
         }
 
         // ─────────────────────────────────────────────────────────────────
@@ -102,12 +110,18 @@ namespace URSUS.Parsers
 
         /// <summary>
         /// 법정동 코드 목록에 대한 평균 용도지역 개발밀도 점수를 반환한다 (캐시 적용).
-        /// key = 법정동코드(10자리), value = 평균 개발밀도 점수 (1~5)
+        /// key = canonical 법정동 ID(8자리), value = 평균 개발밀도 점수 (1~5)
         /// </summary>
         /// <param name="legalDistrictCodes">법정동 코드 목록</param>
         /// <param name="cacheDir">캐시 디렉터리 경로 (null이면 캐시 비활성)</param>
         public Dictionary<string, double> GetZoningScoreByDistrict(
             List<string> legalDistrictCodes, string? cacheDir = null)
+            => GetZoningScoreByDistrictAsync(legalDistrictCodes, cacheDir)
+                .GetAwaiter().GetResult();
+
+        public async Task<Dictionary<string, double>> GetZoningScoreByDistrictAsync(
+            List<string> legalDistrictCodes, string? cacheDir = null,
+            CancellationToken cancellationToken = default)
         {
             string? cachePath = cacheDir != null
                 ? Path.Combine(cacheDir, "zoning_score.json")
@@ -123,7 +137,8 @@ namespace URSUS.Parsers
             }
 
             Console.WriteLine("[CACHE] zoning_score API 호출 중...");
-            var result = FetchZoningScores(legalDistrictCodes);
+            var result = await FetchZoningScoresAsync(legalDistrictCodes, cancellationToken)
+                .ConfigureAwait(false);
 
             if (cachePath != null && result.Count > 0)
                 SaveCache(result, cachePath);
@@ -131,11 +146,36 @@ namespace URSUS.Parsers
             return result;
         }
 
+        public async Task<Dictionary<string, ZoningCategoryHistogram>> GetZoningHistogramByDistrictAsync(
+            List<string> legalDistrictCodes, CancellationToken cancellationToken = default)
+        {
+            var requested = legalDistrictCodes.Select(DistrictCode.CanonicalizeLegal)
+                .Where(code => code.Length > 0).ToHashSet(StringComparer.Ordinal);
+            var counts = new Dictionary<string, Dictionary<string, int>>(StringComparer.Ordinal);
+            foreach (string sigCode in requested.Select(code => code[..5]).Distinct(StringComparer.Ordinal))
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                var records = await FetchCategoriesForSigAsync(sigCode, cancellationToken)
+                    .ConfigureAwait(false);
+                foreach (var (rawCode, category) in records)
+                {
+                    string code = DistrictCode.CanonicalizeLegal(rawCode);
+                    if (!requested.Contains(code) || string.IsNullOrWhiteSpace(category)) continue;
+                    if (!counts.TryGetValue(code, out var histogram))
+                        counts[code] = histogram = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+                    histogram[category] = histogram.GetValueOrDefault(category) + 1;
+                }
+            }
+            return counts.ToDictionary(pair => pair.Key,
+                pair => new ZoningCategoryHistogram(pair.Value), StringComparer.Ordinal);
+        }
+
         // ─────────────────────────────────────────────────────────────────
         //  Fetch — 시군구 단위 일괄 조회
         // ─────────────────────────────────────────────────────────────────
 
-        private Dictionary<string, double> FetchZoningScores(List<string> codes)
+        private async Task<Dictionary<string, double>> FetchZoningScoresAsync(
+            List<string> codes, CancellationToken cancellationToken)
         {
             // 시군구(5자리) 단위로 그룹핑하여 API 호출 횟수 최소화
             var sigCodes = codes
@@ -150,33 +190,27 @@ namespace URSUS.Parsers
             int completed = 0;
             foreach (string sigCode in sigCodes)
             {
-                try
+                var records = await FetchForSigAsync(sigCode, cancellationToken)
+                    .ConfigureAwait(false);
+                foreach (var (ldCode, score) in records)
                 {
-                    var records = FetchForSig(sigCode);
-                    foreach (var (ldCode, score) in records)
-                    {
-                        string key = NormalizeLdCode(ldCode);
-                        if (string.IsNullOrEmpty(key)) continue;
+                    string key = DistrictCode.CanonicalizeLegal(ldCode);
+                    if (string.IsNullOrEmpty(key)) continue;
 
-                        if (acc.TryGetValue(key, out var prev))
-                            acc[key] = (prev.sum + score, prev.count + 1);
-                        else
-                            acc[key] = (score, 1);
-                    }
-                    completed++;
-                    Console.WriteLine(
-                        $"[INFO] 용도지역 시군구 {completed}/{sigCodes.Count} 완료 ({sigCode})");
+                    if (acc.TryGetValue(key, out var prev))
+                        acc[key] = (prev.sum + score, prev.count + 1);
+                    else
+                        acc[key] = (score, 1);
                 }
-                catch (Exception ex)
-                {
-                    completed++;
-                    Console.WriteLine(
-                        $"[WARN] 용도지역 조회 실패 (시군구 {sigCode}): {ex.Message}");
-                }
+                completed++;
+                Console.WriteLine(
+                    $"[INFO] 용도지역 시군구 {completed}/{sigCodes.Count} 완료 ({sigCode})");
             }
 
             // 평균 계산 + 요청된 코드만 필터
-            var codesSet = new HashSet<string>(codes);
+            var codesSet = new HashSet<string>(
+                codes.Select(DistrictCode.CanonicalizeLegal)
+                    .Where(code => !string.IsNullOrEmpty(code)));
             var result = new Dictionary<string, double>();
             foreach (var (key, (sum, cnt)) in acc)
             {
@@ -192,63 +226,82 @@ namespace URSUS.Parsers
         /// <summary>
         /// 시군구 코드(5자리) 기준으로 토지이용규제정보를 페이지네이션하여 수집.
         /// </summary>
-        private List<(string ldCode, double score)> FetchForSig(string sigCode)
+        private async Task<List<(string ldCode, double score)>> FetchForSigAsync(
+            string sigCode, CancellationToken cancellationToken)
         {
-            var results = new List<(string, double)>();
-            int pageNo = 1;
+            var categories = await FetchCategoriesForSigAsync(sigCode, cancellationToken)
+                .ConfigureAwait(false);
+            return categories.Select(row => (row.ldCode, score: GetZoningScore(row.category)))
+                .Where(row => row.score > 0).ToList();
+        }
+
+        private async Task<List<(string ldCode, string category)>> FetchCategoriesForSigAsync(
+            string sigCode, CancellationToken cancellationToken)
+        {
+            var results = new List<(string, string)>();
             const int numOfRows = 1000;
-            const int maxPages  = 30; // 안전 제한
-
-            while (pageNo <= maxPages)
+            const int maxPages = 30;
+            int? expectedTotal = null;
+            int received = 0;
+            var identities = new HashSet<string>(StringComparer.Ordinal);
+            for (int pageNo = 1; pageNo <= maxPages; pageNo++)
             {
-                string url = BuildUrl(sigCode, pageNo, numOfRows);
-                string body = _http.GetStringAsync(url).GetAwaiter().GetResult();
-
+                string body = await _http.GetStringAsync(
+                    new Uri(BuildUrl(sigCode, pageNo, numOfRows)), cancellationToken).ConfigureAwait(false);
                 using var doc = JsonDocument.Parse(body);
-                var root = doc.RootElement;
-
-                // 응답 구조: { "landUses": { "landUse": [...] } }
-                if (!root.TryGetProperty("landUses", out var container))
-                    break;
-
-                // 에러 코드 확인
-                if (container.TryGetProperty("resultCode", out var codeElem))
-                {
-                    string resultCode = codeElem.GetString() ?? "";
-                    if (resultCode != "000")
-                    {
-                        string msg = container.TryGetProperty("resultMsg", out var msgElem)
-                            ? msgElem.GetString() ?? ""
-                            : "Unknown error";
-                        throw new InvalidOperationException(
-                            $"토지이용규제정보 API 오류: {resultCode} - {msg}");
-                    }
-                }
-
-                // landUse 배열이 없으면 데이터 없음
+                if (!doc.RootElement.TryGetProperty("landUses", out var container))
+                    throw new InvalidOperationException("용도지역 API 응답에 landUses가 없습니다.");
+                if (container.TryGetProperty("resultCode", out var codeElem) &&
+                    (codeElem.GetString() ?? "") != "000")
+                    throw new InvalidOperationException(
+                        $"용도지역 API 오류: {codeElem} - " +
+                        (container.TryGetProperty("resultMsg", out var msg) ? msg.ToString() : "Unknown error"));
+                int pageTotal = ReadRequiredTotal(container);
+                if (expectedTotal is null) expectedTotal = pageTotal;
+                else if (expectedTotal.Value != pageTotal)
+                    throw new InvalidOperationException("용도지역 API totalCount가 페이지 사이에 변경되었습니다.");
                 if (!container.TryGetProperty("landUse", out var items))
-                    break;
-
+                {
+                    if (pageTotal == 0) break;
+                    throw new InvalidOperationException("용도지역 API 행이 totalCount보다 먼저 종료되었습니다.");
+                }
                 int count = 0;
                 foreach (var item in items.EnumerateArray())
                 {
-                    string ldCode  = GetStringProp(item, LD_CODE_FIELD);
-                    string zoneName = GetStringProp(item, ZONE_NAME_FIELD);
-
-                    double score = GetZoningScore(zoneName);
-                    if (!string.IsNullOrEmpty(ldCode) && score > 0)
-                    {
-                        results.Add((ldCode, score));
-                    }
+                    if (!identities.Add(HashIdentity(item.GetRawText())))
+                        throw new InvalidOperationException("용도지역 pagination duplicate row가 감지되었습니다.");
+                    string code = GetStringProp(item, LD_CODE_FIELD);
+                    string category = GetStringProp(item, ZONE_NAME_FIELD);
+                    if (code.Length > 0 && category.Length > 0) results.Add((code, category));
                     count++;
                 }
-
-                if (count < numOfRows) break;
-                pageNo++;
+                received += count;
+                if (received > pageTotal)
+                    throw new InvalidOperationException("용도지역 수신 행 수가 totalCount를 초과했습니다.");
+                if (received == pageTotal) break;
+                if (count < numOfRows)
+                    throw new InvalidOperationException(
+                        $"용도지역 pagination이 조기 종료되었습니다 ({received}/{pageTotal}).");
+                if (pageNo == maxPages)
+                    throw new InvalidOperationException(
+                        $"용도지역 pagination 안전 상한을 초과했습니다 ({received}/{pageTotal}).");
             }
-
+            if (expectedTotal is null || received != expectedTotal.Value)
+                throw new InvalidOperationException(
+                    $"용도지역 pagination이 완결되지 않았습니다 ({received}/{expectedTotal?.ToString() ?? "?"}).");
             return results;
         }
+
+        private static int ReadRequiredTotal(JsonElement container)
+        {
+            if (!container.TryGetProperty("totalCount", out var total) ||
+                !int.TryParse(total.ToString(), out int value) || value < 0)
+                throw new InvalidOperationException("용도지역 API totalCount가 없거나 유효하지 않습니다.");
+            return value;
+        }
+
+        private static string HashIdentity(string value)
+            => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(value)));
 
         private string BuildUrl(string ldCode, int pageNo, int numOfRows)
         {
@@ -264,13 +317,6 @@ namespace URSUS.Parsers
         //  Helpers
         // ─────────────────────────────────────────────────────────────────
 
-        private static string NormalizeLdCode(string ldCode)
-        {
-            if (string.IsNullOrEmpty(ldCode)) return "";
-            if (ldCode.Length >= 10) return ldCode.Substring(0, 10);
-            return ldCode.PadRight(10, '0');
-        }
-
         private static string GetStringProp(JsonElement elem, string propName)
         {
             if (elem.TryGetProperty(propName, out var prop))
@@ -285,10 +331,15 @@ namespace URSUS.Parsers
         private static Dictionary<string, double> FilterByRequestedCodes(
             Dictionary<string, double> cached, List<string> codes)
         {
-            var codesSet = new HashSet<string>(codes);
+            var codesSet = new HashSet<string>(
+                codes.Select(DistrictCode.CanonicalizeLegal)
+                    .Where(code => !string.IsNullOrEmpty(code)));
             return cached
-                .Where(kv => codesSet.Contains(kv.Key))
-                .ToDictionary(kv => kv.Key, kv => kv.Value);
+                .Select(kv => new KeyValuePair<string, double>(
+                    DistrictCode.CanonicalizeLegal(kv.Key), kv.Value))
+                .Where(kv => !string.IsNullOrEmpty(kv.Key) && codesSet.Contains(kv.Key))
+                .GroupBy(kv => kv.Key)
+                .ToDictionary(group => group.Key, group => group.Average(item => item.Value));
         }
 
         // ─────────────────────────────────────────────────────────────────

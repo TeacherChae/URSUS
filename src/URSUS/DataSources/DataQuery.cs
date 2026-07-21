@@ -18,6 +18,12 @@ namespace URSUS.DataSources
         public BoundingBox? Bounds { get; init; }
 
         /// <summary>
+        /// CRS가 타입으로 고정된 신규 공간 범위. 신규 실행 경로는 이 값을 우선한다.
+        /// legacy <see cref="Bounds"/>는 EPSG:5179로 해석한다.
+        /// </summary>
+        public SpatialBounds? TypedBounds { get; init; }
+
+        /// <summary>
         /// 분석 대상 법정동 코드 목록.
         /// 통계 데이터 소스에서 필터링에 사용.
         /// null이면 전체 조회.
@@ -35,6 +41,15 @@ namespace URSUS.DataSources
         /// true면 기존 캐시를 무시하고 API를 재호출한다.
         /// </summary>
         public bool ForceRefresh { get; init; } = false;
+
+        /// <summary>latest 또는 명시 관측기간 조회 의도.</summary>
+        public QueryIntent QueryIntent { get; init; } = QueryIntent.Latest;
+
+        /// <summary>QueryIntent가 ExplicitPeriod일 때의 source별 기간 ID.</summary>
+        public string? ExplicitPeriod { get; init; }
+
+        /// <summary>평문 서울 API 사용을 포함한 typed 전송 정책.</summary>
+        public TransportPolicy TransportPolicy { get; init; } = TransportPolicy.FromEnvironment();
 
         /// <summary>
         /// 소스별 추가 파라미터 (확장용).

@@ -6,6 +6,10 @@ using System.Threading;
 using System.Threading.Tasks;
 using URSUS.Config;
 using URSUS.Parsers;
+using URSUS.Resources;
+using URSUS.Net;
+using URSUS.Caching;
+using URSUS.Geometry;
 
 namespace URSUS.DataSources
 {
@@ -35,6 +39,8 @@ namespace URSUS.DataSources
     public class VWorldBoundaryDataSource : IBoundaryDataSource
     {
         private readonly ApiKeyProvider _keyProvider;
+        private readonly HttpPipeline _http;
+        private readonly AtomicCacheStore _cache;
 
         /// <summary>파라미터 키: 중심 주소 (단일 주소 + 반경 모드)</summary>
         public const string PARAM_ADDRESS = "address";
@@ -49,8 +55,14 @@ namespace URSUS.DataSources
         public const double MIN_AREA = 100.0;
 
         public VWorldBoundaryDataSource(ApiKeyProvider keyProvider)
+            : this(keyProvider, null, null) { }
+
+        public VWorldBoundaryDataSource(ApiKeyProvider keyProvider, HttpPipeline? http,
+            AtomicCacheStore? cache = null)
         {
             _keyProvider = keyProvider ?? throw new ArgumentNullException(nameof(keyProvider));
+            _http = http ?? new HttpPipeline(HttpClientLifetime.Shared, maxConcurrency: 8);
+            _cache = cache ?? new AtomicCacheStore();
         }
 
         public DataSourceMetadata Metadata { get; } = new DataSourceMetadata
@@ -73,7 +85,7 @@ namespace URSUS.DataSources
             {
                 return DataSourceError.ApiKeyMissing(
                     "VWorldKey (VWorld 공간정보 오픈플랫폼)",
-                    "URS101");
+                    ErrorCodes.VWorldKeyMissing);
             }
             return null;
         }
@@ -91,6 +103,7 @@ namespace URSUS.DataSources
             CancellationToken cancellationToken = default)
         {
             var sw = Stopwatch.StartNew();
+            cancellationToken.ThrowIfCancellationRequested();
 
             // 사전 조건 검증
             var configError = ValidateConfiguration();
@@ -104,10 +117,17 @@ namespace URSUS.DataSources
             string? address2 = query.Parameters?.TryGetValue(PARAM_ADDRESS2, out var a2) == true ? a2 : null;
             string? radiusStr = query.Parameters?.TryGetValue(PARAM_RADIUS_KM, out var r) == true ? r : null;
 
-            if (string.IsNullOrWhiteSpace(address))
+            SpatialBounds? typedBounds = query.TypedBounds;
+            if (typedBounds == null && query.Bounds is { } legacyBounds && legacyBounds.IsValid)
+                typedBounds = new SpatialBounds(
+                    legacyBounds.Min.X, legacyBounds.Min.Y,
+                    legacyBounds.Max.X, legacyBounds.Max.Y,
+                    CoordinateReferenceSystem.Epsg5179);
+
+            if (typedBounds == null && string.IsNullOrWhiteSpace(address))
             {
                 return DataResult<BoundaryDataSet>.Failure(
-                    new DataSourceError("URS102",
+                    new DataSourceError(ErrorCodes.BoundaryAddressMissing,
                         "경계 데이터 조회에 주소가 필요합니다.\n" +
                         "→ DataQuery.Parameters에 \"address\" 키로 주소를 전달해주세요."),
                     sw.Elapsed);
@@ -115,33 +135,55 @@ namespace URSUS.DataSources
 
             try
             {
-                var parser = new VworldApiParser(apiKey, query.CacheDirectory);
-
-                // 동기 파서를 Task.Run으로 래핑
-                List<LegalDistrictRecord> rawDistricts;
-
-                if (!string.IsNullOrWhiteSpace(address2))
+                var parser = new VworldApiParser(apiKey, null, _http);
+                var identity = new Dictionary<string, string>(StringComparer.Ordinal)
                 {
-                    // BBOX 모드
-                    rawDistricts = await Task.Run(
-                        () => parser.GetLegalDistrictsByBBox(address, address2),
-                        cancellationToken);
+                    ["address"] = address?.Trim() ?? string.Empty,
+                    ["address2"] = address2?.Trim() ?? string.Empty,
+                    ["radiusKm"] = radiusStr?.Trim() ?? "15",
+                };
+                if (typedBounds != null)
+                {
+                    var normalized = typedBounds.Normalize();
+                    identity["bounds"] = string.Join(",",
+                        normalized.MinX.ToString("R", System.Globalization.CultureInfo.InvariantCulture),
+                        normalized.MinY.ToString("R", System.Globalization.CultureInfo.InvariantCulture),
+                        normalized.MaxX.ToString("R", System.Globalization.CultureInfo.InvariantCulture),
+                        normalized.MaxY.ToString("R", System.Globalization.CultureInfo.InvariantCulture));
+                    identity["boundsCrs"] = normalized.Crs.ToString();
                 }
-                else
-                {
-                    // 단일 주소 + 반경 모드
-                    double radiusKm = 15.0;
-                    if (!string.IsNullOrWhiteSpace(radiusStr) &&
-                        double.TryParse(radiusStr, System.Globalization.NumberStyles.Any,
-                            System.Globalization.CultureInfo.InvariantCulture, out double parsed))
+                var cacheKey = PersistentCacheKey.Create(Metadata.Id, 3, query.QueryIntent,
+                    identity, null, CoordinateReferenceSystem.Epsg5179);
+                var cached = await _cache.GetOrFetchAsync(cacheKey, query.ForceRefresh,
+                    TimeSpan.FromDays(Metadata.CacheTtlDays), async token =>
                     {
-                        radiusKm = parsed;
-                    }
-
-                    rawDistricts = await Task.Run(
-                        () => parser.GetLegalDistricts(address, radiusKm),
-                        cancellationToken);
-                }
+                        List<LegalDistrictRecord> fetched;
+                        if (typedBounds != null)
+                        {
+                            fetched = await parser.GetLegalDistrictsByBoundsAsync(
+                                typedBounds, token).ConfigureAwait(false);
+                        }
+                        else if (!string.IsNullOrWhiteSpace(address2))
+                        {
+                            fetched = await parser.GetLegalDistrictsByBBoxAsync(
+                                address!, address2, token).ConfigureAwait(false);
+                        }
+                        else
+                        {
+                            double radiusKm = 15.0;
+                            if (!string.IsNullOrWhiteSpace(radiusStr) &&
+                                !double.TryParse(radiusStr, System.Globalization.NumberStyles.Float,
+                                    System.Globalization.CultureInfo.InvariantCulture, out radiusKm))
+                                throw new ArgumentException("radiusKm는 invariant numeric이어야 합니다.");
+                            if (!double.IsFinite(radiusKm) || radiusKm <= 0 || radiusKm > 100)
+                                throw new ArgumentOutOfRangeException(nameof(radiusKm),
+                                    "radiusKm는 0 초과 100 이하여야 합니다.");
+                            fetched = await parser.GetLegalDistrictsAsync(
+                                address!, radiusKm, token).ConfigureAwait(false);
+                        }
+                        return fetched.Select(BoundaryCacheRecord.From).ToList();
+                    }, cancellationToken).ConfigureAwait(false);
+                var rawDistricts = cached.Value.Select(record => record.ToLegalRecord()).ToList();
 
                 int rawCount = rawDistricts.Count;
 
@@ -153,7 +195,7 @@ namespace URSUS.DataSources
                 if (filtered.Count == 0)
                 {
                     return DataResult<BoundaryDataSet>.Failure(
-                        DataSourceError.NoData("법정동 경계", "URS103"),
+                        DataSourceError.NoData("법정동 경계", ErrorCodes.BoundaryNoData),
                         sw.Elapsed);
                 }
 
@@ -164,17 +206,19 @@ namespace URSUS.DataSources
                     Name         = d.Name,
                     Geometry     = d.Geometry,
                     Area         = d.Area,
-                    Centroid     = d.Centroid
+                    Centroid     = d.Centroid,
+                    Topology     = d.Topology,
                 }).ToList();
 
-                var origin = sw.Elapsed.TotalSeconds < 1
-                    ? DataOrigin.Cache
-                    : DataOrigin.Api;
+                var origin = cached.DeliveryOrigin == DeliveryOrigin.Cache
+                    ? DataOrigin.Cache : DataOrigin.Api;
 
                 var dataSet = new BoundaryDataSet(records)
                 {
                     RawFeatureCount  = rawCount,
-                    FilteredOutCount = rawCount - filtered.Count
+                    FilteredOutCount = rawCount - filtered.Count,
+                    Warnings = filtered.SelectMany(record =>
+                        record.Warnings ?? Array.Empty<string>()).ToArray(),
                 };
 
                 sw.Stop();
@@ -183,26 +227,72 @@ namespace URSUS.DataSources
                     $"(원시 {rawCount}건, 필터 제외 {rawCount - filtered.Count}건, " +
                     $"{(origin == DataOrigin.Cache ? "캐시" : "API")}, {sw.Elapsed.TotalSeconds:F1}s)");
 
-                return DataResult<BoundaryDataSet>.Success(dataSet, origin, sw.Elapsed);
+                return DataResult<BoundaryDataSet>.Success(dataSet, origin, sw.Elapsed,
+                    cached.RetrievedAt, cached.AcquisitionOrigin,
+                    cached.DeliveryOrigin, cached.CacheAge);
             }
-            catch (OperationCanceledException)
+            catch (OperationCanceledException) { throw; }
+            catch (BoundaryTopologyParseException ex)
             {
+                string safeMessage = SecretRedactor.Redact(ex.Message);
                 return DataResult<BoundaryDataSet>.Failure(
-                    new DataSourceError("URS104",
-                        "경계 데이터 수집이 취소되었습니다.",
-                        ErrorSeverity.Warning),
+                    new DataSourceError(ErrorCodes.BoundaryTopologyInvalid,
+                        $"경계 topology가 유효하지 않습니다: {safeMessage}",
+                        ErrorSeverity.Error, new InvalidDataException(safeMessage)),
                     sw.Elapsed);
             }
             catch (Exception ex)
             {
+                string safeMessage = SecretRedactor.Redact(ex.Message);
                 return DataResult<BoundaryDataSet>.Failure(
-                    new DataSourceError("URS105",
-                        $"경계 데이터 수집 실패: {ex.Message}\n" +
+                    new DataSourceError(ErrorCodes.BoundaryFailed,
+                        $"경계 데이터 수집 실패: {safeMessage}\n" +
                         "→ VWorld API 키와 네트워크 연결을 확인해주세요.\n" +
                         "→ 발급: https://www.vworld.kr/",
-                        ErrorSeverity.Error, ex),
+                        ErrorSeverity.Error, new InvalidOperationException(safeMessage)),
                     sw.Elapsed);
             }
+        }
+
+        private sealed record BoundaryCacheRecord(
+            string DistrictCode,
+            string Name,
+            IReadOnlyList<IReadOnlyList<IReadOnlyList<double[]>>> Parts,
+            IReadOnlyList<string>? Warnings)
+        {
+            public static BoundaryCacheRecord From(LegalDistrictRecord record)
+            {
+                var topology = record.Topology ?? BoundaryTopology.Create(new[]
+                {
+                    new BoundaryPart(new BoundaryRing(record.Geometry.ToPolyline()
+                        .Select(point => new Coordinate2D(point.X, point.Y)).ToArray()),
+                        Array.Empty<BoundaryRing>()),
+                });
+                var parts = topology.Parts.Select(part =>
+                    (IReadOnlyList<IReadOnlyList<double[]>>)new[] { part.Outer }.Concat(part.Holes)
+                        .Select(ring => (IReadOnlyList<double[]>)ring.Points
+                            .Select(point => new[] { point.X, point.Y }).ToArray())
+                        .ToArray()).ToArray();
+                return new BoundaryCacheRecord(record.LegaldCd, record.Name, parts,
+                    record.Warnings?.ToArray() ?? Array.Empty<string>());
+            }
+
+            public LegalDistrictRecord ToLegalRecord()
+            {
+                var parts = Parts.Select(part => new BoundaryPart(
+                    ReadRing(part[0]), part.Skip(1).Select(ReadRing).ToArray())).ToArray();
+                var topology = BoundaryTopology.Create(parts);
+                var outer = topology.Parts.OrderByDescending(part => Math.Abs(part.Outer.SignedArea))
+                    .First().Outer;
+                var curve = new Rhino.Geometry.Polyline(outer.Points
+                    .Select(point => new Rhino.Geometry.Point3d(point.X, point.Y, 0))).ToPolylineCurve();
+                return new LegalDistrictRecord(DistrictCode, Name, curve, topology.Area,
+                    new Rhino.Geometry.Point3d(topology.Centroid.X, topology.Centroid.Y, 0),
+                    topology, Warnings ?? Array.Empty<string>());
+            }
+
+            private static BoundaryRing ReadRing(IReadOnlyList<double[]> points)
+                => new(points.Select(point => new Coordinate2D(point[0], point[1])).ToArray());
         }
     }
 }

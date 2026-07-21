@@ -6,6 +6,10 @@ using System.Threading;
 using System.Threading.Tasks;
 using URSUS.Config;
 using URSUS.Parsers;
+using URSUS.Resources;
+using URSUS.Analysis;
+using URSUS.Caching;
+using URSUS.Net;
 
 namespace URSUS.DataSources
 {
@@ -23,10 +27,23 @@ namespace URSUS.DataSources
     public abstract class SeoulOpenDataSourceBase : IDataSource
     {
         protected readonly ApiKeyProvider KeyProvider;
+        private readonly HttpPipeline _http;
+        private readonly IClock _clock;
+        private readonly AtomicCacheStore _cache;
 
         protected SeoulOpenDataSourceBase(ApiKeyProvider keyProvider)
+            : this(keyProvider, null, null, null) { }
+
+        protected SeoulOpenDataSourceBase(
+            ApiKeyProvider keyProvider,
+            HttpPipeline? http,
+            IClock? clock,
+            AtomicCacheStore? cache)
         {
             KeyProvider = keyProvider ?? throw new ArgumentNullException(nameof(keyProvider));
+            _http = http ?? new HttpPipeline(HttpClientLifetime.Shared, maxConcurrency: 8);
+            _clock = clock ?? SystemClock.Instance;
+            _cache = cache ?? new AtomicCacheStore(clock: _clock);
         }
 
         /// <inheritdoc />
@@ -38,8 +55,26 @@ namespace URSUS.DataSources
         /// <param name="parser">서울 열린데이터 API 파서</param>
         /// <param name="cacheDir">캐시 디렉토리 (null 가능)</param>
         /// <returns>행정동 코드 → 값 딕셔너리</returns>
-        protected abstract Dictionary<string, double> FetchRawData(
-            DataSeoulApiParser parser, string? cacheDir);
+        protected virtual Dictionary<string, double> FetchRawData(
+            DataSeoulApiParser parser, string? cacheDir)
+            => throw new NotSupportedException("Async source 구현이 필요합니다.");
+
+        protected virtual Task<SeoulAggregate> FetchRawDataAsync(
+            DataSeoulApiParser parser,
+            DataQuery query,
+            CancellationToken cancellationToken)
+        {
+            var legacy = FetchRawData(parser, query.CacheDirectory);
+            return Task.FromResult(new SeoulAggregate(
+                legacy,
+                new ObservationWindow("legacy", false, legacy.Count,
+                    SeoulExpectedDistricts.Ids.Count),
+                legacy.Count,
+                false,
+                new[] { "legacy synchronous source path" }));
+        }
+
+        protected virtual MetricSemantics MetricSemantics => MetricSemantics.Mean;
 
         /// <summary>
         /// 결과 값의 단위 문자열.
@@ -55,7 +90,7 @@ namespace URSUS.DataSources
             {
                 return DataSourceError.ApiKeyMissing(
                     "SeoulKey (서울 열린데이터 광장)",
-                    "URS201");
+                    ErrorCodes.SeoulKeyMissing);
             }
             return null;
         }
@@ -66,6 +101,18 @@ namespace URSUS.DataSources
             CancellationToken cancellationToken = default)
         {
             var sw = Stopwatch.StartNew();
+            cancellationToken.ThrowIfCancellationRequested();
+
+            if (query.DistrictCodes != null &&
+                !SeoulCoveragePolicy.Supports(query.DistrictCodes))
+            {
+                return DataResult<DistrictDataSet>.Failure(
+                    new DataSourceError(
+                        ErrorCodes.UnsupportedCoverage,
+                        $"{Metadata.DisplayName}은(는) 서울특별시 법정동만 지원합니다.",
+                        ErrorSeverity.Warning),
+                    sw.Elapsed);
+            }
 
             // 사전 조건 검증
             var configError = ValidateConfiguration();
@@ -76,25 +123,47 @@ namespace URSUS.DataSources
 
             try
             {
-                // 동기 파서를 Task.Run으로 래핑하여 비동기 인터페이스 충족
-                var parser = new DataSeoulApiParser(apiKey);
-
-                var rawData = await Task.Run(
-                    () => FetchRawData(parser, query.CacheDirectory),
-                    cancellationToken);
+                var parser = new DataSeoulApiParser(apiKey, _http, _clock);
+                var cacheParameters = new Dictionary<string, string>(StringComparer.Ordinal)
+                {
+                    ["transport.allowInsecureSeoulHttp"] =
+                        query.TransportPolicy.AllowInsecureSeoulHttp ? "true" : "false",
+                    ["explicitPeriod"] = query.ExplicitPeriod ?? string.Empty,
+                    ["expectedSet"] = SeoulExpectedDistricts.Version,
+                };
+                if (query.Parameters != null)
+                    foreach (var pair in query.Parameters) cacheParameters[pair.Key] = pair.Value;
+                var cacheKey = PersistentCacheKey.Create(Metadata.Id, 2, query.QueryIntent,
+                    cacheParameters, query.DistrictCodes, CoordinateReferenceSystem.Epsg5179);
+                var cached = await _cache.GetOrFetchAsync(
+                    cacheKey,
+                    query.ForceRefresh,
+                    TimeSpan.FromDays(Metadata.CacheTtlDays),
+                    token => FetchRawDataAsync(parser, query, token),
+                    cancellationToken).ConfigureAwait(false);
+                var raw = cached.Value;
+                var rawData = raw.Values.ToDictionary(pair => pair.Key, pair => pair.Value,
+                    StringComparer.Ordinal);
 
                 if (rawData.Count == 0)
                 {
                     return DataResult<DistrictDataSet>.Failure(
-                        DataSourceError.NoData(Metadata.DisplayName, $"URS{Metadata.Id.GetHashCode() % 900 + 200:D3}"),
+                        DataSourceError.NoData(Metadata.DisplayName, GetNoDataErrorCode(Metadata.Id)),
                         sw.Elapsed);
                 }
 
                 // 행정동 → 법정동 매핑
                 var adstrdToLegald = MappingLoader.Load();
-                var legaldData = MapToLegalDistrict(adstrdToLegald, rawData);
+                var declaredMapping = adstrdToLegald.ToDictionary(
+                    pair => pair.Key,
+                    pair => (IReadOnlyList<string>)pair.Value,
+                    StringComparer.Ordinal);
+                var mapped = DistrictMetricMapper.MapAdministrativeToLegal(
+                    declaredMapping, rawData, MetricSemantics);
+                var legaldData = mapped.Values.ToDictionary(pair => pair.Key, pair => pair.Value,
+                    StringComparer.Ordinal);
 
-                var origin = sw.Elapsed.TotalSeconds < 1
+                var origin = cached.DeliveryOrigin == DeliveryOrigin.Cache
                     ? DataOrigin.Cache
                     : DataOrigin.Api;
 
@@ -102,31 +171,34 @@ namespace URSUS.DataSources
                 dataSet = new DistrictDataSet(dataSet.Records)
                 {
                     RawRecordCount = rawData.Count,
-                    UnmappedCount  = rawData.Count - CountMappedKeys(adstrdToLegald, rawData)
+                    UnmappedCount  = rawData.Count - CountMappedKeys(adstrdToLegald, rawData),
+                    Observation    = raw.Observation,
+                    MappingQuality = mapped.Quality,
+                    Warnings       = raw.Warnings,
                 };
 
                 sw.Stop();
-                return DataResult<DistrictDataSet>.Success(dataSet, origin, sw.Elapsed);
+                return DataResult<DistrictDataSet>.Success(dataSet, origin, sw.Elapsed,
+                    cached.RetrievedAt, cached.AcquisitionOrigin,
+                    cached.DeliveryOrigin, cached.CacheAge);
             }
-            catch (OperationCanceledException)
-            {
-                return DataResult<DistrictDataSet>.Failure(
-                    new DataSourceError("URS210",
-                        $"{Metadata.DisplayName} 데이터 수집이 취소되었습니다.",
-                        ErrorSeverity.Warning),
-                    sw.Elapsed);
-            }
+            catch (OperationCanceledException) { throw; }
             catch (Exception ex)
             {
+                string safeMessage = SecretRedactor.Redact(ex.Message);
                 return DataResult<DistrictDataSet>.Failure(
-                    new DataSourceError("URS211",
-                        $"{Metadata.DisplayName} 데이터 수집 실패: {ex.Message}\n" +
+                    new DataSourceError(ErrorCodes.DataSourceFailed,
+                        $"{Metadata.DisplayName} 데이터 수집 실패: {safeMessage}\n" +
                         "→ API 키와 네트워크 연결을 확인해주세요.\n" +
                         "→ 발급: https://data.seoul.go.kr/",
-                        ErrorSeverity.Error, ex),
+                        ErrorSeverity.Error,
+                        new InvalidOperationException(safeMessage)),
                     sw.Elapsed);
             }
         }
+
+        internal static string GetNoDataErrorCode(string sourceId)
+            => ErrorCodes.SeoulNoData;
 
         // ─────────────────────────────────────────────────────────────────
         //  행정동 → 법정동 매핑 (URSUSSolver.MapToLegald 로직 이전)

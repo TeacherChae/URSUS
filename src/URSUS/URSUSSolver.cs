@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Rhino.Geometry;
+using URSUS.Analysis;
 using URSUS.Config;
 using URSUS.DataSources;
 using URSUS.GeoOps;
@@ -101,28 +102,25 @@ namespace URSUS
         {
             _keyProvider = keyProvider ?? throw new ArgumentNullException(nameof(keyProvider));
 
-            var missing = _keyProvider.GetMissingKeys(
-                ApiKeyProvider.KEY_VWORLD, ApiKeyProvider.KEY_SEOUL);
+            var missing = _keyProvider.GetMissingKeys(ApiKeyProvider.KEY_VWORLD);
             if (missing.Count > 0)
             {
-                string errorCode = missing.Contains(ApiKeyProvider.KEY_VWORLD)
-                    ? ErrorCodes.VWorldKeyMissing
-                    : ErrorCodes.SeoulKeyMissing;
+                string errorCode = ErrorCodes.VWorldKeyMissing;
                 throw new InvalidOperationException(
                     ErrorGuideMap.FormatMessageWithGuide(
                         errorCode,
                         _keyProvider.GetDiagnosticMessage(
-                            ApiKeyProvider.KEY_VWORLD, ApiKeyProvider.KEY_SEOUL)));
+                            ApiKeyProvider.KEY_VWORLD)));
             }
 
             _vworldKey = _keyProvider.VWorldKey!;
 
-            string dllDir = System.IO.Path.GetDirectoryName(
-                typeof(URSUSSolver).Assembly.Location)!;
-            _cacheDir = dllDir;
+            _cacheDir = System.IO.Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "URSUS", "cache");
 
-            // Registry 초기화: 외부 주입이 없으면 싱글턴 + 부트스트랩
-            _registry = registry ?? DataSourceRegistryProvider.Instance;
+            // 신규 solver는 key-bound source 오염을 막기 위해 독립 registry를 소유한다.
+            _registry = registry ?? new DataSourceRegistry();
             if (_registry.Count == 0)
             {
                 DefaultDataSourceBootstrapper.RegisterAll(_registry, _keyProvider);
@@ -146,16 +144,13 @@ namespace URSUS
 
             _keyProvider = new ApiKeyProvider(overrides);
 
-            string dllDir = System.IO.Path.GetDirectoryName(
-                typeof(URSUSSolver).Assembly.Location)!;
-            _cacheDir = dllDir;
+            _cacheDir = System.IO.Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "URSUS", "cache");
 
-            // Registry 초기화 + 부트스트랩
-            _registry = DataSourceRegistryProvider.Instance;
-            if (_registry.Count == 0)
-            {
-                DefaultDataSourceBootstrapper.RegisterAll(_registry, _keyProvider);
-            }
+            // 신규 solver는 key-bound source 오염을 막기 위해 독립 registry를 소유한다.
+            _registry = new DataSourceRegistry();
+            DefaultDataSourceBootstrapper.RegisterAll(_registry, _keyProvider);
         }
 
         /// <summary>키가 어디서 로드됐는지 출처 정보 (디버깅/로그용)</summary>
@@ -195,9 +190,33 @@ namespace URSUS
             string? address1 = null,
             string? address2 = null,
             double? radiusKm = null)
+            => Run(dataSet, weights, address1, address2, radiusKm,
+                TransportPolicy.FromEnvironment());
+
+        public SolverResult Run(
+            List<string> dataSet,
+            List<double>? weights,
+            string? address1,
+            string? address2,
+            double? radiusKm,
+            TransportPolicy? transportPolicy)
+            => RunAsync(new AnalysisRequest(dataSet, weights, address1, address2, radiusKm,
+                transportPolicy)).GetAwaiter().GetResult();
+
+        public async Task<SolverResult> RunAsync(
+            AnalysisRequest request,
+            CancellationToken cancellationToken = default,
+            IProgress<AnalysisProgress>? progress = null)
         {
+            ArgumentNullException.ThrowIfNull(request);
+            var dataSet = request.DataSets.ToList();
+            var weights = request.Weights?.ToList();
+            string? address1 = request.Address1;
+            string? address2 = request.Address2;
+            double? radiusKm = request.RadiusKm;
             // ── 0. 주소 기본값 적용 + 가중치 검증 ────────────────────────
             string addr1 = string.IsNullOrWhiteSpace(address1) ? DEFAULT_ADDRESS : address1!;
+            var effectiveTransportPolicy = request.TransportPolicy;
 
             if (weights != null && weights.Count != dataSet.Count)
                 throw new ArgumentException(
@@ -207,7 +226,10 @@ namespace URSUS
             //    Registry에 등록된 IBoundaryDataSource를 통해 경계 데이터를 수집한다.
             //    DataQuery.Parameters로 주소/반경/BBOX 모드를 전달.
             //    → 직접 VworldApiParser를 호출하지 않으므로, 향후 다른 경계 소스로 교체 가능.
-            var districts = FetchBoundariesViaRegistry(addr1, address2, radiusKm);
+            progress?.Report(new AnalysisProgress(0.05, "boundaries"));
+            var boundaryFetch = await FetchBoundariesViaRegistryAsync(
+                addr1, address2, radiusKm, request, cancellationToken).ConfigureAwait(false);
+            var districts = boundaryFetch.Records;
 
             Console.WriteLine(ErrorMessages.Solver.DistrictsCollected(districts.Count));
 
@@ -215,17 +237,36 @@ namespace URSUS
             //    각 dataSet 표시이름 → SourceId로 변환하여 Registry에서 조회.
             //    FetchAsync는 내부에서 행정동→법정동 매핑까지 처리하므로
             //    호출부에서 별도 매핑이 불필요하다.
-            var districtCodes = districts.Select(d => d.DistrictCode).ToList();
-            var legaldLayers = new List<(string name, Dictionary<string, double> data)>();
+            var districtCodes = districts
+                .Select(d => DistrictCode.CanonicalizeLegal(d.DistrictCode))
+                .ToList();
+            var candidateLayers = new List<(string name, Dictionary<string, double> data)>();
+            var fetchedLayers = new Dictionary<string, FetchedLayer>(StringComparer.Ordinal);
 
             foreach (string ds in dataSet)
             {
-                var layerData = FetchViaRegistry(ds, districtCodes);
-                if (layerData != null)
-                {
-                    legaldLayers.Add((ds, layerData));
-                }
+                cancellationToken.ThrowIfCancellationRequested();
+                var fetched = await FetchViaRegistryAsync(ds, districtCodes,
+                    request, cancellationToken).ConfigureAwait(false);
+                if (fetched != null) fetchedLayers[ds] = fetched;
+                candidateLayers.Add((ds, fetched?.Data ?? new Dictionary<string, double>()));
+                progress?.Report(new AnalysisProgress(
+                    0.1 + 0.55 * candidateLayers.Count / Math.Max(1, dataSet.Count), "sources", ds));
             }
+
+            // 요청 경계에 실제 finite 값이 하나도 없는 레이어는 성공 응답처럼
+            // 취급하지 않는다. 특히 서울 외 지역에서 서울 평균을 대치하는 오류를 막는다.
+            var coverageProbe = OverlayCalculator.Compute(
+                districtCodes,
+                candidateLayers.Select(layer => new OverlayLayer(layer.name, 1.0, layer.data)).ToList(),
+                cancellationToken);
+            var availableNames = coverageProbe.Layers
+                .Where(layer => layer.Availability != LayerAvailability.Unavailable)
+                .Select(layer => layer.Name)
+                .ToHashSet(StringComparer.Ordinal);
+            var legaldLayers = candidateLayers
+                .Where(layer => availableNames.Contains(layer.name))
+                .ToList();
 
             // ── 5. 결과 조립 ──────────────────────────────────────────────
             var codes      = new List<string>();
@@ -236,7 +277,8 @@ namespace URSUS
 
             foreach (var d in districts)
             {
-                codes.Add(d.DistrictCode);
+                cancellationToken.ThrowIfCancellationRequested();
+                codes.Add(DistrictCode.CanonicalizeLegal(d.DistrictCode));
                 names.Add(d.Name);
                 geometries.Add(d.Geometry);
                 centroids.Add(d.Centroid);
@@ -247,12 +289,38 @@ namespace URSUS
             //    각 데이터셋을 min-max 정규화 후 가중 평균 (기본: 균등 가중치)
             //    weights가 실제 수집된 레이어 수에 맞게 슬라이싱
             var effectiveWeights = BuildEffectiveWeights(dataSet, weights, legaldLayers);
-            var values = BuildOverlayValues(codes, legaldLayers, effectiveWeights);
+            var overlay = OverlayCalculator.Compute(
+                codes,
+                legaldLayers.Select((layer, index) =>
+                    new OverlayLayer(layer.name, effectiveWeights[index], layer.data)).ToList(),
+                cancellationToken);
+            var values = overlay.Values.ToList();
             Console.WriteLine(ErrorMessages.Solver.OverlayComplete(legaldLayers.Count));
+            progress?.Report(new AnalysisProgress(0.85, "overlay"));
 
             // ── 6b. WeightConfig 조립 (결과 추적용) ─────────────────────
             WeightConfig? effectiveConfig = null;
-            var activeLayers = legaldLayers.Select(l => l.name).ToList();
+            var activeLayers = overlay.Layers
+                .Where(layer => layer.Availability != LayerAvailability.Unavailable)
+                .Select(layer => layer.Name)
+                .ToList();
+            var missingLayers = OverlayCalculator
+                .FindMissingLayers(dataSet, coverageProbe.Layers, cancellationToken)
+                .ToList();
+            var warnings = coverageProbe.Layers
+                .Where(layer => layer.Availability == LayerAvailability.Partial)
+                .Select(layer => $"{layer.Name}: coverage {layer.Coverage:P1} (결측값 대치 안 함)")
+                .Concat(missingLayers.Where(name =>
+                        !fetchedLayers.TryGetValue(name, out var layer) ||
+                        layer.CategoricalHistograms.Count == 0)
+                    .Select(name => $"{name}: 요청 지역에서 사용 가능한 데이터 없음"))
+                .Concat(fetchedLayers.Values.SelectMany(layer => layer.Warnings))
+                .Concat(boundaryFetch.Warnings)
+                .ToList();
+            bool insecureSeoulUsed = effectiveTransportPolicy.AllowInsecureSeoulHttp &&
+                dataSet.Any(ds => ds == DS_AVG_INCOME || ds == DS_RESIDENT_POP || ds == DS_TRANSIT);
+            if (insecureSeoulUsed)
+                warnings.Add("높은 위험: 서울 열린데이터 요청이 평문 HTTP로 전송되었습니다.");
             if (legaldLayers.Count > 0 && effectiveWeights.Count == legaldLayers.Count)
             {
                 var weightDict = new Dictionary<string, double>();
@@ -264,8 +332,10 @@ namespace URSUS
             }
 
             // ── 7. Boolean Union → 전체 외곽선 ────────────────────────────
-            PolylineCurve? unionBoundary = Union.Compute(geometries, SNAP_TOL);
+            PolylineCurve? unionBoundary = Union.Compute(geometries, SNAP_TOL, cancellationToken);
             Console.WriteLine(ErrorMessages.Solver.UnionResult(unionBoundary != null));
+            cancellationToken.ThrowIfCancellationRequested();
+            progress?.Report(new AnalysisProgress(0.95, "snapshot"));
 
             return new SolverResult(
                 LegalCodes:    codes,
@@ -278,6 +348,46 @@ namespace URSUS
             {
                 EffectiveWeights = effectiveConfig,
                 ActiveLayers     = activeLayers,
+                LayerCoverage    = coverageProbe.Layers,
+                MissingLayers    = missingLayers,
+                Warnings         = warnings,
+                Snapshot         = new AnalysisSnapshot(
+                    codes,
+                    fetchedLayers.Where(pair => pair.Value.Failure == null)
+                        .Select(pair => new SnapshotLayer(
+                            pair.Key,
+                            pair.Value.Unit,
+                            pair.Value.Data,
+                            pair.Value.Observation,
+                            pair.Value.RetrievedAt,
+                            pair.Value.AcquisitionOrigin,
+                            pair.Value.DeliveryOrigin,
+                            coverageProbe.Layers.First(item => item.Name == pair.Key).Coverage,
+                            pair.Value.CacheAge,
+                            pair.Value.MappingQuality,
+                            pair.Value.CategoricalHistograms)),
+                    districts.Where(district => district.Topology != null)
+                        .ToDictionary(
+                            district => DistrictCode.CanonicalizeLegal(district.DistrictCode),
+                            district => district.Topology!,
+                            StringComparer.Ordinal),
+                    warnings: warnings.Select(message => new SnapshotWarning(
+                        message.StartsWith("높은 위험", StringComparison.Ordinal)
+                            ? SnapshotWarningSeverity.High
+                            : SnapshotWarningSeverity.Warning,
+                        message.StartsWith("높은 위험", StringComparison.Ordinal)
+                            ? "INSECURE_TRANSPORT"
+                            : message.StartsWith("BOUNDARY_TOPOLOGY_", StringComparison.Ordinal)
+                                ? "BOUNDARY_TOPOLOGY_PART_DROPPED"
+                                : "PARTIAL_DATA",
+                        message)),
+                    failures: fetchedLayers.Values.Where(layer => layer.Failure != null)
+                        .Select(layer => layer.Failure!)
+                        .Concat(missingLayers.Where(name =>
+                                !fetchedLayers.TryGetValue(name, out var layer) ||
+                                (layer.Failure == null && layer.CategoricalHistograms.Count == 0))
+                            .Select(name => new SnapshotFailure(
+                                name, "SOURCE_UNAVAILABLE", "요청 지역에서 사용 가능한 데이터 없음")))),
             };
         }
 
@@ -294,13 +404,23 @@ namespace URSUS
             string? address1 = null,
             string? address2 = null,
             double? radiusKm = null)
+            => Run(dataSet, weightConfig, address1, address2, radiusKm,
+                TransportPolicy.FromEnvironment());
+
+        public SolverResult Run(
+            List<string> dataSet,
+            WeightConfig weightConfig,
+            string? address1,
+            string? address2,
+            double? radiusKm,
+            TransportPolicy? transportPolicy)
         {
             // WeightConfig → dataSet 순서의 List<double>로 변환
             var weights = dataSet
                 .Select(ds => weightConfig.Weights.TryGetValue(ds, out double w) ? w : 0.0)
                 .ToList();
 
-            return Run(dataSet, weights, address1, address2, radiusKm);
+            return Run(dataSet, weights, address1, address2, radiusKm, transportPolicy);
         }
 
         // ─────────────────────────────────────────────────────────────────
@@ -316,14 +436,15 @@ namespace URSUS
         ///
         /// 실패 시 null을 반환하고 콘솔에 에러 메시지를 출력한다 (레이어 스킵).
         /// </summary>
-        private Dictionary<string, double>? FetchViaRegistry(
-            string displayName, List<string> districtCodes)
+        private async Task<FetchedLayer?> FetchViaRegistryAsync(
+            string displayName, List<string> districtCodes, AnalysisRequest request,
+            CancellationToken cancellationToken)
         {
             // 표시이름 → SourceId 매핑
             if (!DisplayNameToSourceId.TryGetValue(displayName, out string? sourceId))
             {
                 Console.WriteLine($"[Solver] 알 수 없는 데이터셋: {displayName} — 스킵");
-                return null;
+                return FetchedLayer.Failed(displayName, "UNKNOWN_DATASET", "알 수 없는 데이터셋");
             }
 
             // Registry에서 소스 조회
@@ -331,7 +452,7 @@ namespace URSUS
             if (source == null)
             {
                 Console.WriteLine($"[Solver] 데이터 소스 미등록: {sourceId} ({displayName}) — 스킵");
-                return null;
+                return FetchedLayer.Failed(displayName, "SOURCE_NOT_REGISTERED", sourceId);
             }
 
             // 사전 조건 검증 (API 키 등)
@@ -339,7 +460,7 @@ namespace URSUS
             if (configError != null)
             {
                 Console.WriteLine($"[Solver] {displayName}: {configError.Message}");
-                return null;
+                return FetchedLayer.Failed(displayName, configError.Code, configError.Message);
             }
 
             // FetchAsync 호출 (동기 대기 — Grasshopper 메인 스레드 호환)
@@ -349,36 +470,80 @@ namespace URSUS
                 {
                     CacheDirectory = _cacheDir,
                     DistrictCodes  = districtCodes,
+                    TransportPolicy = request.TransportPolicy,
+                    ForceRefresh = request.ForceRefresh,
+                    QueryIntent = request.QueryIntent,
+                    ExplicitPeriod = request.ExplicitPeriod,
+                    TypedBounds = request.Bounds,
                 };
 
-                var result = source.FetchAsync(query).GetAwaiter().GetResult();
+                var result = await source.FetchAsync(query, cancellationToken).ConfigureAwait(false);
 
                 if (!result.IsSuccess)
                 {
                     Console.WriteLine($"[Solver] {displayName} 수집 실패: {result.Error?.Message}");
-                    return null;
+                    return FetchedLayer.Failed(displayName,
+                        result.Error?.Code ?? "SOURCE_FAILED",
+                        result.Error?.Message ?? "source failure");
                 }
 
                 var data = result.Data!.ToDictionary();
 
-                if (data.Count == 0)
+                if (data.Count == 0 && result.Data.CategoricalHistograms.Count == 0)
                 {
                     Console.WriteLine($"[Solver] {displayName} 데이터 0건 — 오버레이에서 제외");
-                    return null;
+                    return FetchedLayer.Failed(displayName, "NO_DATA", "데이터 0건");
                 }
 
                 string originLabel = result.Origin == DataOrigin.Cache ? "캐시" : "API";
-                Console.WriteLine(
-                    $"[Solver] {displayName} {data.Count}건 수집 완료 ({originLabel}, {result.Elapsed.TotalSeconds:F1}s)");
+                Console.WriteLine(data.Count > 0
+                    ? $"[Solver] {displayName} {data.Count}건 수집 완료 ({originLabel}, {result.Elapsed.TotalSeconds:F1}s)"
+                    : $"[Solver] {displayName} 범주 histogram " +
+                      $"{result.Data.CategoricalHistograms.Count}건 수집 완료; numeric overlay 비활성 ({originLabel})");
 
-                return data;
+                string? unit = result.Data.Records.Values.FirstOrDefault()?.Unit;
+                return new FetchedLayer(
+                    data,
+                    unit,
+                    result.Data.Observation,
+                    result.RetrievedAt ?? DateTimeOffset.UtcNow,
+                    result.AcquisitionOrigin ?? Caching.AcquisitionOrigin.Network,
+                    result.DeliveryOrigin ?? (result.Origin == DataOrigin.Cache
+                        ? Caching.DeliveryOrigin.Cache
+                        : Caching.DeliveryOrigin.Network),
+                    result.CacheAge,
+                    result.Data.MappingQuality,
+                    result.Data.CategoricalHistograms,
+                    result.Data.Warnings,
+                    null);
             }
+            catch (OperationCanceledException) { throw; }
             catch (Exception ex)
             {
                 Console.WriteLine(
                     $"[Solver] {displayName} 수집 실패 (오버레이에서 제외): {ex.Message}");
-                return null;
+                return FetchedLayer.Failed(displayName, "SOURCE_EXCEPTION", ex.Message);
             }
+        }
+
+        private sealed record FetchedLayer(
+            Dictionary<string, double> Data,
+            string? Unit,
+            ObservationWindow? Observation,
+            DateTimeOffset RetrievedAt,
+            Caching.AcquisitionOrigin AcquisitionOrigin,
+            Caching.DeliveryOrigin DeliveryOrigin,
+            TimeSpan? CacheAge,
+            MappingQuality? MappingQuality,
+            IReadOnlyDictionary<string, ZoningCategoryHistogram> CategoricalHistograms,
+            IReadOnlyList<string> Warnings,
+            SnapshotFailure? Failure)
+        {
+            public static FetchedLayer Failed(string sourceId, string code, string message)
+                => new(new Dictionary<string, double>(), null, null, DateTimeOffset.UtcNow,
+                    Caching.AcquisitionOrigin.Network, Caching.DeliveryOrigin.Network,
+                    null, null, new Dictionary<string, ZoningCategoryHistogram>(),
+                    Array.Empty<string>(), new SnapshotFailure(sourceId, code, message));
         }
 
         /// <summary>
@@ -388,70 +553,57 @@ namespace URSUS
         /// 정상 경로: Registry → IBoundaryDataSource.FetchBoundariesAsync → BoundaryRecord 리스트
         /// 폴백 경로: VworldApiParser → LegalDistrictRecord → BoundaryRecord 변환
         /// </summary>
-        private List<BoundaryRecord> FetchBoundariesViaRegistry(
-            string address1, string? address2, double? radiusKm)
+        private async Task<BoundaryFetch> FetchBoundariesViaRegistryAsync(
+            string address1, string? address2, double? radiusKm,
+            AnalysisRequest request, CancellationToken cancellationToken)
         {
             var boundarySource = _registry.GetBoundarySource();
 
-            if (boundarySource != null)
+            if (boundarySource == null)
+                throw new InvalidOperationException("경계 데이터 소스가 등록되지 않았습니다.");
+
+            var configError = boundarySource.ValidateConfiguration();
+            if (configError != null)
+                throw new InvalidOperationException($"경계 소스 설정 오류: {configError.Message}");
+
+            var parameters = new Dictionary<string, string>
             {
-                // 사전 조건 검증
-                var configError = boundarySource.ValidateConfiguration();
-                if (configError != null)
-                {
-                    Console.WriteLine($"[Solver] 경계 소스 설정 오류: {configError.Message}");
-                    Console.WriteLine("[Solver] 레거시 VworldApiParser로 폴백합니다.");
-                    return FetchBoundariesLegacy(address1, address2, radiusKm);
-                }
+                { VWorldBoundaryDataSource.PARAM_ADDRESS, address1 }
+            };
 
-                try
-                {
-                    // DataQuery 조립: 주소/반경을 Parameters로 전달
-                    var parameters = new Dictionary<string, string>
-                    {
-                        { VWorldBoundaryDataSource.PARAM_ADDRESS, address1 }
-                    };
-
-                    if (!string.IsNullOrWhiteSpace(address2))
-                    {
-                        parameters[VWorldBoundaryDataSource.PARAM_ADDRESS2] = address2!;
-                    }
-                    else
-                    {
-                        double radius = radiusKm ?? DEFAULT_RADIUS_KM;
-                        parameters[VWorldBoundaryDataSource.PARAM_RADIUS_KM] =
-                            radius.ToString(System.Globalization.CultureInfo.InvariantCulture);
-                    }
-
-                    var query = new DataQuery
-                    {
-                        CacheDirectory = _cacheDir,
-                        Parameters     = parameters
-                    };
-
-                    var result = boundarySource.FetchBoundariesAsync(query).GetAwaiter().GetResult();
-
-                    if (result.IsSuccess && result.Data != null && result.Data.Records.Count > 0)
-                    {
-                        return result.Data.Records.ToList();
-                    }
-
-                    Console.WriteLine(
-                        $"[Solver] 경계 수집 실패: {result.Error?.Message ?? "데이터 0건"} — 폴백");
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine(
-                        $"[Solver] 경계 소스 예외: {ex.Message} — 레거시 폴백");
-                }
-            }
+            if (!string.IsNullOrWhiteSpace(address2))
+                parameters[VWorldBoundaryDataSource.PARAM_ADDRESS2] = address2!;
             else
-            {
-                Console.WriteLine("[Solver] 경계 소스 미등록 — 레거시 VworldApiParser 사용");
-            }
+                parameters[VWorldBoundaryDataSource.PARAM_RADIUS_KM] =
+                    (radiusKm ?? DEFAULT_RADIUS_KM).ToString(
+                        System.Globalization.CultureInfo.InvariantCulture);
 
-            return FetchBoundariesLegacy(address1, address2, radiusKm);
+            var query = new DataQuery
+            {
+                CacheDirectory = _cacheDir,
+                Parameters = parameters,
+                ForceRefresh = request.ForceRefresh,
+                QueryIntent = request.QueryIntent,
+                ExplicitPeriod = request.ExplicitPeriod,
+                TypedBounds = request.Bounds,
+                TransportPolicy = request.TransportPolicy,
+            };
+
+            var result = await boundarySource.FetchBoundariesAsync(query, cancellationToken)
+                .ConfigureAwait(false);
+
+            if (result.IsSuccess && result.Data != null && result.Data.Records.Count > 0)
+                return new BoundaryFetch(
+                    result.Data.Records.Where(record => record.Area > MIN_AREA).ToList(),
+                    result.Data.Warnings);
+
+            throw new InvalidOperationException(
+                $"경계 수집 실패: {result.Error?.Message ?? "데이터 0건"}");
         }
+
+        private sealed record BoundaryFetch(
+            List<BoundaryRecord> Records,
+            IReadOnlyList<string> Warnings);
 
         /// <summary>
         /// [레거시 폴백] VworldApiParser를 직접 호출하여 경계를 수집한다.
@@ -487,7 +639,8 @@ namespace URSUS
                 Name         = d.Name,
                 Geometry     = d.Geometry,
                 Area         = d.Area,
-                Centroid     = d.Centroid
+                Centroid     = d.Centroid,
+                Topology     = d.Topology,
             }).ToList();
         }
 
@@ -549,60 +702,6 @@ namespace URSUS
             return effective.Select(w => w / sum).ToList();
         }
 
-        // ─────────────────────────────────────────────────────────────────
-        //  Weighted overlay: min-max 정규화 후 가중 평균
-        // ─────────────────────────────────────────────────────────────────
-
-        /// <summary>
-        /// 각 데이터 레이어를 min-max 정규화 후, 주어진 가중치로 가중 평균한다.
-        /// </summary>
-        /// <param name="legaldCds">법정동 코드 목록</param>
-        /// <param name="layers">순서가 보장된 (이름, 데이터) 레이어 목록</param>
-        /// <param name="weights">layers와 같은 순서의 정규화된 가중치 (합 = 1)</param>
-        private static List<double> BuildOverlayValues(
-            List<string> legaldCds,
-            List<(string name, Dictionary<string, double> data)> layers,
-            List<double> weights)
-        {
-            int n = legaldCds.Count;
-
-            if (layers.Count == 0)
-                return Enumerable.Repeat(0.0, n).ToList();
-
-            var normalizedLayers = new List<double[]>();
-
-            foreach (var (_, data) in layers)
-            {
-                // 전체 값 기준 fallback = 데이터셋 평균
-                double fallback = data.Count > 0 ? data.Values.Average() : 0.0;
-
-                var raw = legaldCds
-                    .Select(cd => data.TryGetValue(cd, out double v) ? v : fallback)
-                    .ToArray();
-
-                double min   = raw.Min();
-                double max   = raw.Max();
-                double range = max - min;
-
-                var normalized = range < 1e-9
-                    ? raw.Select(_ => 0.5).ToArray()
-                    : raw.Select(v => (v - min) / range).ToArray();
-
-                normalizedLayers.Add(normalized);
-            }
-
-            // 가중 평균
-            var result = new double[n];
-            for (int layerIdx = 0; layerIdx < normalizedLayers.Count; layerIdx++)
-            {
-                double w = weights[layerIdx];
-                var layer = normalizedLayers[layerIdx];
-                for (int i = 0; i < n; i++)
-                    result[i] += layer[i] * w;
-            }
-
-            return result.ToList();
-        }
     }
 
     // ─────────────────────────────────────────────────────────────────────
@@ -631,5 +730,21 @@ namespace URSUS
         /// </summary>
         public IReadOnlyList<string> ActiveLayers { get; init; }
             = Array.Empty<string>();
+
+        /// <summary>요청 경계 대비 레이어별 유효 데이터 coverage.</summary>
+        public IReadOnlyList<LayerCoverage> LayerCoverage { get; init; }
+            = Array.Empty<LayerCoverage>();
+
+        /// <summary>요청했지만 0% coverage이거나 수집에 실패한 레이어.</summary>
+        public IReadOnlyList<string> MissingLayers { get; init; }
+            = Array.Empty<string>();
+
+        /// <summary>partial/missing 데이터 품질 경고.</summary>
+        public IReadOnlyList<string> Warnings { get; init; }
+            = Array.Empty<string>();
+
+        /// <summary>Phase 2 derived 재계산과 provenance 표시용 immutable snapshot.</summary>
+        public AnalysisSnapshot? Snapshot { get; init; }
+            = null;
     }
 }

@@ -1,0 +1,6 @@
+<Project>
+  <PropertyGroup>
+    <!-- Rhino/Grasshopper compile-time contracts must stay on the same host build. -->
+    <RhinoSdkVersion>8.17.25066.7001</RhinoSdkVersion>
+  </PropertyGroup>
+</Project>

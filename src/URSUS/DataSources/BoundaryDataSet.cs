@@ -1,4 +1,5 @@
 using Rhino.Geometry;
+using URSUS.Geometry;
 
 namespace URSUS.DataSources
 {
@@ -32,9 +33,12 @@ namespace URSUS.DataSources
         /// </summary>
         public int FilteredOutCount { get; init; }
 
+        /// <summary>유효 feature는 유지했지만 제거된 invalid part/hole 진단.</summary>
+        public IReadOnlyList<string> Warnings { get; init; } = Array.Empty<string>();
+
         public BoundaryDataSet(IReadOnlyList<BoundaryRecord> records)
         {
-            Records = records;
+            Records = Array.AsReadOnly(records.ToArray());
         }
     }
 
@@ -46,7 +50,7 @@ namespace URSUS.DataSources
     /// </summary>
     public record BoundaryRecord
     {
-        /// <summary>법정동 코드 (10자리)</summary>
+        /// <summary>법정동 canonical ID (VWorld emd_cd와 동일한 8자리)</summary>
         public required string DistrictCode { get; init; }
 
         /// <summary>법정동 전체 이름 (예: "서울특별시 종로구 청운동")</summary>
@@ -60,5 +64,8 @@ namespace URSUS.DataSources
 
         /// <summary>중심점 (UTM 좌표)</summary>
         public required Point3d Centroid { get; init; }
+
+        /// <summary>MultiPolygon/hole을 보존하는 분석용 topology.</summary>
+        public BoundaryTopology? Topology { get; init; }
     }
 }

@@ -4,6 +4,11 @@ using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Text.Json;
+using System.Security.Cryptography;
+using System.Text;
+using URSUS.DataSources;
+using URSUS.Net;
+using URSUS.Caching;
 
 namespace URSUS.Parsers
 {
@@ -11,7 +16,7 @@ namespace URSUS.Parsers
     /// 공공데이터포털(data.go.kr) 표준지공시지가 API → 법정동별 평균 공시지가.
     ///
     /// - 시군구 단위(5자리)로 일괄 조회하여 API 호출 횟수를 최소화
-    /// - 법정동코드(10자리) 기준으로 평균 집계
+    /// - 응답의 법정동코드(10자리/PNU)를 canonical 8자리 ID로 변환해 평균 집계
     /// - 캐시 적용 (TTL 30일)
     ///
     /// API 발급: https://www.data.go.kr/data/15058747/openapi.do (무료, 즉시 발급)
@@ -20,7 +25,7 @@ namespace URSUS.Parsers
     {
         private const int    CACHE_TTL_DAYS = 30;
         private const string BASE_URL =
-            "http://apis.data.go.kr/1611000/nsdi/ReferLandPriceService/attr/getReferLandPriceAttr";
+            "https://apis.data.go.kr/1611000/nsdi/ReferLandPriceService/attr/getReferLandPriceAttr";
 
         /// <summary>공시지가 값 필드명 (원/㎡)</summary>
         private const string PRICE_FIELD = "pblntfPclnd";
@@ -29,12 +34,17 @@ namespace URSUS.Parsers
         private const string LD_CODE_FIELD = "ldCode";
 
         private readonly string     _apiKey;
-        private readonly HttpClient _http;
+        private readonly HttpPipeline _http;
+        private readonly IClock _clock;
 
         public LandPriceApiParser(string apiKey)
+            : this(apiKey, null, null) { }
+
+        public LandPriceApiParser(string apiKey, HttpPipeline? http, IClock? clock = null)
         {
             _apiKey = apiKey ?? throw new ArgumentNullException(nameof(apiKey));
-            _http   = new HttpClient { Timeout = TimeSpan.FromSeconds(30) };
+            _http   = http ?? new HttpPipeline(HttpClientLifetime.Shared, maxConcurrency: 8);
+            _clock = clock ?? SystemClock.Instance;
         }
 
         // ─────────────────────────────────────────────────────────────────
@@ -43,12 +53,18 @@ namespace URSUS.Parsers
 
         /// <summary>
         /// 법정동 코드 목록에 대한 평균 공시지가를 반환한다 (캐시 적용).
-        /// key = 법정동코드(10자리), value = 평균 공시지가 (원/㎡)
+        /// key = canonical 법정동 ID(8자리), value = 평균 공시지가 (원/㎡)
         /// </summary>
         /// <param name="legalDistrictCodes">법정동 코드 목록 (VWorld에서 수집한 emd_cd)</param>
         /// <param name="cacheDir">캐시 디렉터리 경로 (null이면 캐시 비활성)</param>
         public Dictionary<string, double> GetLandPriceByLegalDistrict(
             List<string> legalDistrictCodes, string? cacheDir = null)
+            => GetLandPriceByLegalDistrictAsync(legalDistrictCodes, cacheDir)
+                .GetAwaiter().GetResult();
+
+        public async Task<Dictionary<string, double>> GetLandPriceByLegalDistrictAsync(
+            List<string> legalDistrictCodes, string? cacheDir = null,
+            CancellationToken cancellationToken = default, int? standardYear = null)
         {
             string? cachePath = cacheDir != null
                 ? Path.Combine(cacheDir, "land_price.json")
@@ -64,7 +80,9 @@ namespace URSUS.Parsers
             }
 
             Console.WriteLine("[CACHE] land_price API 호출 중...");
-            var result = FetchLandPrices(legalDistrictCodes);
+            var result = await FetchLandPricesAsync(
+                    legalDistrictCodes, standardYear, cancellationToken)
+                .ConfigureAwait(false);
 
             if (cachePath != null && result.Count > 0)
                 SaveCache(result, cachePath);
@@ -76,11 +94,12 @@ namespace URSUS.Parsers
         //  Fetch — 시군구 단위 일괄 조회
         // ─────────────────────────────────────────────────────────────────
 
-        private Dictionary<string, double> FetchLandPrices(List<string> codes)
+        private async Task<Dictionary<string, double>> FetchLandPricesAsync(
+            List<string> codes, int? standardYear, CancellationToken cancellationToken)
         {
             // 기준연도: 공시지가는 매년 1월 1일 기준으로 공시 → 전년도 사용
-            int currentYear = DateTime.Now.Year;
-            string stdrYear = (currentYear - 1).ToString();
+            string stdrYear = (standardYear ?? (_clock.UtcNow.Year - 1)).ToString(
+                System.Globalization.CultureInfo.InvariantCulture);
 
             // 시군구(5자리) 단위로 그룹핑하여 API 호출 횟수 최소화
             var sigCodes = codes
@@ -95,34 +114,27 @@ namespace URSUS.Parsers
             int completed = 0;
             foreach (string sigCode in sigCodes)
             {
-                try
+                var records = await FetchForSigAsync(sigCode, stdrYear, cancellationToken)
+                    .ConfigureAwait(false);
+                foreach (var (ldCode, price) in records)
                 {
-                    var records = FetchForSig(sigCode, stdrYear);
-                    foreach (var (ldCode, price) in records)
-                    {
-                        // ldCode → 법정동코드 10자리로 정규화
-                        string key = NormalizeLdCode(ldCode);
-                        if (string.IsNullOrEmpty(key)) continue;
+                    string key = DistrictCode.CanonicalizeLegal(ldCode);
+                    if (string.IsNullOrEmpty(key)) continue;
 
-                        if (acc.TryGetValue(key, out var prev))
-                            acc[key] = (prev.sum + price, prev.count + 1);
-                        else
-                            acc[key] = (price, 1);
-                    }
-                    completed++;
-                    Console.WriteLine(
-                        $"[INFO] 공시지가 시군구 {completed}/{sigCodes.Count} 완료 ({sigCode})");
+                    if (acc.TryGetValue(key, out var prev))
+                        acc[key] = (prev.sum + price, prev.count + 1);
+                    else
+                        acc[key] = (price, 1);
                 }
-                catch (Exception ex)
-                {
-                    completed++;
-                    Console.WriteLine(
-                        $"[WARN] 공시지가 조회 실패 (시군구 {sigCode}): {ex.Message}");
-                }
+                completed++;
+                Console.WriteLine(
+                    $"[INFO] 공시지가 시군구 {completed}/{sigCodes.Count} 완료 ({sigCode})");
             }
 
             // 평균 계산 + 요청된 코드만 필터
-            var codesSet = new HashSet<string>(codes);
+            var codesSet = new HashSet<string>(
+                codes.Select(DistrictCode.CanonicalizeLegal)
+                    .Where(code => !string.IsNullOrEmpty(code)));
             var result = new Dictionary<string, double>();
             foreach (var (key, (sum, cnt)) in acc)
             {
@@ -138,25 +150,29 @@ namespace URSUS.Parsers
         /// <summary>
         /// 시군구 코드(5자리) 기준으로 표준지공시지가 전체를 페이지네이션하여 수집.
         /// </summary>
-        private List<(string ldCode, double price)> FetchForSig(
-            string sigCode, string stdrYear)
+        private async Task<List<(string ldCode, double price)>> FetchForSigAsync(
+            string sigCode, string stdrYear, CancellationToken cancellationToken)
         {
             var results = new List<(string, double)>();
             int pageNo = 1;
             const int numOfRows = 1000;
             const int maxPages  = 50; // 안전 제한
+            int? expectedTotal = null;
+            int received = 0;
+            var identities = new HashSet<string>(StringComparer.Ordinal);
 
             while (pageNo <= maxPages)
             {
                 string url = BuildUrl(sigCode, stdrYear, pageNo, numOfRows);
-                string body = _http.GetStringAsync(url).GetAwaiter().GetResult();
+                string body = await _http.GetStringAsync(new Uri(url), cancellationToken)
+                    .ConfigureAwait(false);
 
                 using var doc = JsonDocument.Parse(body);
                 var root = doc.RootElement;
 
                 // 응답 구조: { "referLandPrices": { "referLandPrice": [...] } }
                 if (!root.TryGetProperty("referLandPrices", out var container))
-                    break;
+                    throw new InvalidOperationException("공시지가 API 응답에 referLandPrices가 없습니다.");
 
                 // 에러 코드 확인
                 if (container.TryGetProperty("resultCode", out var codeElem))
@@ -172,13 +188,22 @@ namespace URSUS.Parsers
                     }
                 }
 
-                // referLandPrice 배열이 없으면 데이터 없음
+                int pageTotal = ReadRequiredTotal(container, "공시지가");
+                if (expectedTotal is null) expectedTotal = pageTotal;
+                else if (expectedTotal.Value != pageTotal)
+                    throw new InvalidOperationException("공시지가 API totalCount가 페이지 사이에 변경되었습니다.");
+
                 if (!container.TryGetProperty("referLandPrice", out var items))
-                    break;
+                {
+                    if (pageTotal == 0) break;
+                    throw new InvalidOperationException("공시지가 API 행이 totalCount보다 먼저 종료되었습니다.");
+                }
 
                 int count = 0;
                 foreach (var item in items.EnumerateArray())
                 {
+                    if (!identities.Add(HashIdentity(item.GetRawText())))
+                        throw new InvalidOperationException("공시지가 pagination duplicate row가 감지되었습니다.");
                     string ldCode = GetStringProp(item, LD_CODE_FIELD);
                     string priceStr = GetStringProp(item, PRICE_FIELD);
 
@@ -190,14 +215,34 @@ namespace URSUS.Parsers
                     }
                     count++;
                 }
+                received += count;
+                if (received > pageTotal)
+                    throw new InvalidOperationException("공시지가 수신 행 수가 totalCount를 초과했습니다.");
 
-                // 다음 페이지 여부 확인
-                if (count < numOfRows) break;
+                if (received == pageTotal) break;
+                if (count < numOfRows)
+                    throw new InvalidOperationException(
+                        $"공시지가 pagination이 조기 종료되었습니다 ({received}/{pageTotal}).");
                 pageNo++;
             }
 
+            if (expectedTotal is null || received != expectedTotal.Value)
+                throw new InvalidOperationException(
+                    $"공시지가 pagination이 완결되지 않았습니다 ({received}/{expectedTotal?.ToString() ?? "?"}).");
+
             return results;
         }
+
+        private static int ReadRequiredTotal(JsonElement container, string source)
+        {
+            if (!container.TryGetProperty("totalCount", out var total) ||
+                !int.TryParse(total.ToString(), out int value) || value < 0)
+                throw new InvalidOperationException($"{source} API totalCount가 없거나 유효하지 않습니다.");
+            return value;
+        }
+
+        private static string HashIdentity(string value)
+            => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(value)));
 
         private string BuildUrl(string ldCode, string stdrYear, int pageNo, int numOfRows)
         {
@@ -215,18 +260,8 @@ namespace URSUS.Parsers
         // ─────────────────────────────────────────────────────────────────
 
         /// <summary>
-        /// 법정동코드를 10자리로 정규화.
-        /// API 응답의 ldCode는 PNU(19자리)일 수 있으므로 앞 10자리만 사용.
+        /// 법정동코드를 VWorld와 동일한 8자리 식별자로 정규화.
         /// </summary>
-        private static string NormalizeLdCode(string ldCode)
-        {
-            if (string.IsNullOrEmpty(ldCode)) return "";
-            // 10자리 이상이면 앞 10자리 = 법정동코드
-            if (ldCode.Length >= 10) return ldCode.Substring(0, 10);
-            // 10자리 미만이면 오른쪽 0 패딩
-            return ldCode.PadRight(10, '0');
-        }
-
         private static string GetStringProp(JsonElement elem, string propName)
         {
             if (elem.TryGetProperty(propName, out var prop))
@@ -242,10 +277,15 @@ namespace URSUS.Parsers
         private static Dictionary<string, double> FilterByRequestedCodes(
             Dictionary<string, double> cached, List<string> codes)
         {
-            var codesSet = new HashSet<string>(codes);
+            var codesSet = new HashSet<string>(
+                codes.Select(DistrictCode.CanonicalizeLegal)
+                    .Where(code => !string.IsNullOrEmpty(code)));
             return cached
-                .Where(kv => codesSet.Contains(kv.Key))
-                .ToDictionary(kv => kv.Key, kv => kv.Value);
+                .Select(kv => new KeyValuePair<string, double>(
+                    DistrictCode.CanonicalizeLegal(kv.Key), kv.Value))
+                .Where(kv => !string.IsNullOrEmpty(kv.Key) && codesSet.Contains(kv.Key))
+                .GroupBy(kv => kv.Key)
+                .ToDictionary(group => group.Key, group => group.Average(item => item.Value));
         }
 
         // ─────────────────────────────────────────────────────────────────

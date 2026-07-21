@@ -1,6 +1,9 @@
 using System.Collections.Generic;
 using URSUS.Config;
 using URSUS.Parsers;
+using URSUS.Analysis;
+using URSUS.Caching;
+using URSUS.Net;
 
 namespace URSUS.DataSources
 {
@@ -13,7 +16,13 @@ namespace URSUS.DataSources
     public class SeoulTransitDataSource : SeoulOpenDataSourceBase
     {
         public SeoulTransitDataSource(ApiKeyProvider keyProvider)
-            : base(keyProvider) { }
+            : this(keyProvider, null, null, null) { }
+
+        public SeoulTransitDataSource(ApiKeyProvider keyProvider, HttpPipeline? http, IClock? clock = null,
+            AtomicCacheStore? cache = null)
+            : base(keyProvider, http, clock, cache) { }
+
+        protected override MetricSemantics MetricSemantics => MetricSemantics.Sum;
 
         public override DataSourceMetadata Metadata { get; } = new DataSourceMetadata
         {
@@ -30,8 +39,8 @@ namespace URSUS.DataSources
 
         protected override string ValueUnit => "명/일";
 
-        protected override Dictionary<string, double> FetchRawData(
-            DataSeoulApiParser parser, string? cacheDir)
-            => parser.GetTransitBoardingByAdstrd(cacheDir);
+        protected override Task<SeoulAggregate> FetchRawDataAsync(
+            DataSeoulApiParser parser, DataQuery query, CancellationToken cancellationToken)
+            => parser.GetTransitBoardingByAdstrdAsync(query, cancellationToken);
     }
 }
