@@ -745,7 +745,7 @@ internal static class Phase1Tests
             var source = new ZoningDataSource(
                 new URSUS.Config.ApiKeyProvider(new Dictionary<string, string>
                 {
-                    [URSUS.Config.ApiKeyProvider.KEY_DATA_GO_KR] = "secret",
+                    [URSUS.Config.ApiKeyProvider.LegacyDataGoKrKeyName] = "secret",
                 }),
                 new HttpPipeline(new HttpClient(handler), maxRetries: 0),
                 new AtomicCacheStore(directory));
@@ -832,7 +832,7 @@ internal static class Phase1Tests
             var source = new LandPriceDataSource(
                 new URSUS.Config.ApiKeyProvider(new Dictionary<string, string>
                 {
-                    [URSUS.Config.ApiKeyProvider.KEY_DATA_GO_KR] = "secret",
+                    [URSUS.Config.ApiKeyProvider.LegacyDataGoKrKeyName] = "secret",
                 }), pipeline,
                 new FrozenClock(new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero)),
                 new AtomicCacheStore(directory));
@@ -862,7 +862,7 @@ internal static class Phase1Tests
             var source = new LandPriceDataSource(
                 new URSUS.Config.ApiKeyProvider(new Dictionary<string, string>
                 {
-                    [URSUS.Config.ApiKeyProvider.KEY_DATA_GO_KR] = "secret",
+                    [URSUS.Config.ApiKeyProvider.LegacyDataGoKrKeyName] = "secret",
                 }),
                 new HttpPipeline(new HttpClient(handler), maxRetries: 0),
                 new FrozenClock(new DateTimeOffset(2026, 7, 1, 0, 0, 0, TimeSpan.Zero)),

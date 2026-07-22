@@ -8,4 +8,4 @@
 
 기본 흐름은 `URSUS Solver → Visualizer → CSV Export`입니다. Solver의 `LegalCodes`, `Centroids`, `Values`를 같은 실행 결과에서 Visualizer/Exporter에 연결하십시오. 서로 다른 실행의 리스트를 섞거나 길이가 다른 리스트를 연결하지 마십시오.
 
-서울 통계는 서울 행정동 데이터이므로 서울 밖 요청에서는 사용할 수 없는 레이어로 보고됩니다. 공시지가와 경계 데이터는 별도 제공자 키가 필요합니다.
+서울 통계는 서울 행정동 데이터이므로 서울 밖 요청에서는 사용할 수 없는 레이어로 보고됩니다. 경계 데이터는 VWorld 키를 사용합니다. 기존 data.go.kr 공시지가·용도지역 adapter는 deprecated legacy이며 기본 flow에서 키를 요구하지 않습니다.

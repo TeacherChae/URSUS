@@ -3,7 +3,7 @@
 키는 아래 우선순위(위가 우선)로 읽습니다.
 
 1. Grasshopper 와이어 등 명시적 입력
-2. 환경 변수 (`URSUS_VWORLD_KEY`, `URSUS_SEOUL_KEY`, `URSUS_DATA_GO_KR_KEY`)
+2. 환경 변수 (`URSUS_VWORLD_KEY`, `URSUS_SEOUL_KEY`)
 3. 플러그인 DLL 인접 `.env`
 4. `%APPDATA%\URSUS\.env`
 5. 플러그인 DLL 인접 `appsettings.json`
@@ -37,4 +37,8 @@
 
 명시적 HTTP 허용이 켜져 있는지 확인한 뒤 포털의 키 상태와 서비스 권한을 확인합니다. 키를 오류 보고에 복사하지 마십시오.
 
-공시지가를 사용할 경우 data.go.kr의 표준지공시지가 API 키를 `DataGoKrKey`로 추가합니다. data.go.kr 호출은 HTTPS만 허용됩니다.
+## DataGoKrKey — deprecated legacy
+
+`DataGoKrKey` / `URSUS_DATA_GO_KR_KEY`는 현재 기본 설정·실행 flow에서 요구하지 않습니다. Setup과 Grasshopper 키 설정 대화상자도 이 키를 새로 입력받지 않습니다.
+
+기존 자동화와 명시적 `land_price` / `zoning` legacy adapter의 하위 호환을 위해 loader는 기존 `DataGoKrKey`를 읽을 수는 있습니다. 신규 구현은 이 credential에 의존하지 않아야 하며, VWorld 대체 source는 endpoint·의미·coverage·fixture가 별도로 검증된 후에만 연결합니다.

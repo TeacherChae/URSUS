@@ -200,7 +200,7 @@ internal static class LandPriceProvenanceTests
 
     private static ApiKeyProvider Keys() => new(new Dictionary<string, string>
     {
-        [ApiKeyProvider.KEY_DATA_GO_KR] = "secret",
+        [ApiKeyProvider.LegacyDataGoKrKeyName] = "secret",
     });
 
     private static void WithTemporaryDirectory(Action<string> action)

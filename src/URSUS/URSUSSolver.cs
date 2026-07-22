@@ -129,7 +129,7 @@ namespace URSUS
 
         /// <param name="vworldKey">VWorld API 키</param>
         /// <param name="seoulKey">서울 열린데이터 API 키</param>
-        /// <param name="dataGoKrKey">공공데이터포털 API 키 (선택 — 공시지가용)</param>
+        /// <param name="dataGoKrKey">Deprecated legacy 공공데이터포털 키. 명시적 공시지가/용도지역 adapter 호출에만 사용.</param>
         public URSUSSolver(string vworldKey, string seoulKey, string? dataGoKrKey = null)
         {
             _vworldKey = vworldKey;
@@ -140,7 +140,7 @@ namespace URSUS
                 { ApiKeyProvider.KEY_SEOUL,  seoulKey  },
             };
             if (!string.IsNullOrWhiteSpace(dataGoKrKey))
-                overrides[ApiKeyProvider.KEY_DATA_GO_KR] = dataGoKrKey!;
+                overrides[ApiKeyProvider.LegacyDataGoKrKeyName] = dataGoKrKey!;
 
             _keyProvider = new ApiKeyProvider(overrides);
 

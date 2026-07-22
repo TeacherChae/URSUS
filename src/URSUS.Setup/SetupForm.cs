@@ -46,20 +46,16 @@ namespace URSUS.Setup
         // Step 2: API 키 입력
         private readonly TextBox    _txtVWorldKey    = new();
         private readonly TextBox    _txtSeoulKey     = new();
-        private readonly TextBox    _txtDataGoKrKey  = new();
         private readonly Button     _btnValidateVW   = new();
         private readonly Button     _btnValidateSK   = new();
-        private readonly Button     _btnValidateDG   = new();
         private readonly Button     _btnValidateAll  = new();
         private readonly Label      _lblVWStatus     = new();
         private readonly Label      _lblSKStatus     = new();
-        private readonly Label      _lblDGStatus     = new();
         private readonly CheckBox   _chkSkipKeys     = new();
         private readonly CheckBox   _chkShowKeys     = new();
         private readonly CheckBox   _chkAllowInsecureSeoulHttp = new();
         private readonly LinkLabel  _lnkVWorld       = new();
         private readonly LinkLabel  _lnkSeoul        = new();
-        private readonly LinkLabel  _lnkDataGoKr     = new();
 
         // Step 3: 설치 경로
         private readonly TextBox    _txtInstallPath  = new();
@@ -75,14 +71,12 @@ namespace URSUS.Setup
         private int _currentStep = 1;
         private bool _vwKeyValid;
         private bool _skKeyValid;
-        private bool _dgKeyValid;
         private readonly ApiKeyValidator _validator = new();
         private CancellationTokenSource? _cts;
 
         // ── 기존 키 로드 ────────────────────────────────────────────────
         private string? _existingVWKey;
         private string? _existingSKKey;
-        private string? _existingDGKey;
 
         // ── 설치 결과 (Step 3 → Step 4 전달) ────────────────────────────
         private PostInstallVerifier.VerificationReport? _lastVerificationReport;
@@ -191,7 +185,6 @@ namespace URSUS.Setup
                 var provider = new ApiKeyProvider();
                 _existingVWKey = provider.VWorldKey;
                 _existingSKKey = provider.SeoulKey;
-                _existingDGKey = provider.DataGoKrKey;
             }
             catch
             {
@@ -356,15 +349,7 @@ namespace URSUS.Setup
                 async () => await ValidateSeoulAsync(),
                 ref y);
 
-            // ── DataGoKr ──
-            BuildKeyRow(
-                "공공데이터포털 API 키 (선택)", "키가 없다면? → data.go.kr 에서 무료 발급",
-                "https://www.data.go.kr/data/15058747/openapi.do",
-                _lnkDataGoKr, _txtDataGoKrKey, _btnValidateDG, _lblDGStatus,
-                _existingDGKey, "공공데이터포털 API 키를 붙여넣으세요",
-                () => { _dgKeyValid = false; UpdateKeyStatus(_lblDGStatus, "", Color.Black); },
-                async () => await ValidateDataGoKrAsync(),
-                ref y);
+            // DataGoKrKey is deprecated; preserve legacy config without presenting it in setup.
 
             // ── 서울 API 평문 전송 명시적 허용 ──
             y += 4;
@@ -396,7 +381,6 @@ namespace URSUS.Setup
                 char passChar = _chkShowKeys.Checked ? '\0' : '●';
                 _txtVWorldKey.PasswordChar   = passChar;
                 _txtSeoulKey.PasswordChar    = passChar;
-                _txtDataGoKrKey.PasswordChar = passChar;
             };
             _contentPanel.Controls.Add(_chkShowKeys);
 
@@ -424,15 +408,12 @@ namespace URSUS.Setup
             // 키 기본 마스킹 적용
             _txtVWorldKey.PasswordChar   = '●';
             _txtSeoulKey.PasswordChar    = '●';
-            _txtDataGoKrKey.PasswordChar = '●';
 
             // 기존 키가 있으면 상태 표시
             if (!string.IsNullOrWhiteSpace(_existingVWKey))
                 UpdateKeyStatus(_lblVWStatus, "기존 설정에서 키를 불러왔습니다.", MUTED_COLOR);
             if (!string.IsNullOrWhiteSpace(_existingSKKey))
                 UpdateKeyStatus(_lblSKStatus, "기존 설정에서 키를 불러왔습니다.", MUTED_COLOR);
-            if (!string.IsNullOrWhiteSpace(_existingDGKey))
-                UpdateKeyStatus(_lblDGStatus, "기존 설정에서 키를 불러왔습니다.", MUTED_COLOR);
         }
 
         /// <summary>
@@ -503,14 +484,6 @@ namespace URSUS.Setup
                 valid => _skKeyValid = valid);
         }
 
-        private async Task ValidateDataGoKrAsync()
-        {
-            await ValidateSingleKeyAsync(
-                _txtDataGoKrKey, _btnValidateDG, _lblDGStatus,
-                key => _validator.ValidateDataGoKrKeyAsync(key, GetOrCreateCts()),
-                valid => _dgKeyValid = valid);
-        }
-
         /// <summary>
         /// 단일 키 검증 공통 로직: 빈 값 체크 → 버튼 비활성화 → 검증 → 결과 표시.
         /// </summary>
@@ -557,13 +530,11 @@ namespace URSUS.Setup
             var keys = new Dictionary<string, string>();
             string vw = _txtVWorldKey.Text.Trim();
             string sk = _txtSeoulKey.Text.Trim();
-            string dg = _txtDataGoKrKey.Text.Trim();
 
             bool anyKey = false;
 
             if (!string.IsNullOrEmpty(vw)) { keys[ApiKeyProvider.KEY_VWORLD] = vw; anyKey = true; }
             if (!string.IsNullOrEmpty(sk)) { keys[ApiKeyProvider.KEY_SEOUL] = sk;  anyKey = true; }
-            if (!string.IsNullOrEmpty(dg)) { keys[ApiKeyProvider.KEY_DATA_GO_KR] = dg; anyKey = true; }
 
             if (!anyKey)
             {
@@ -578,8 +549,6 @@ namespace URSUS.Setup
                 UpdateKeyStatus(_lblVWStatus, "검증 중...", MUTED_COLOR);
             if (keys.ContainsKey(ApiKeyProvider.KEY_SEOUL))
                 UpdateKeyStatus(_lblSKStatus, "검증 중...", MUTED_COLOR);
-            if (keys.ContainsKey(ApiKeyProvider.KEY_DATA_GO_KR))
-                UpdateKeyStatus(_lblDGStatus, "검증 중...", MUTED_COLOR);
 
             _cts?.Cancel();
             _cts = new CancellationTokenSource();
@@ -603,10 +572,6 @@ namespace URSUS.Setup
                         case ApiKeyProvider.KEY_SEOUL:
                             _skKeyValid = entry.Result.IsValid;
                             UpdateKeyStatus(_lblSKStatus, prefix + entry.Result.Message, color);
-                            break;
-                        case ApiKeyProvider.KEY_DATA_GO_KR:
-                            _dgKeyValid = entry.Result.IsValid;
-                            UpdateKeyStatus(_lblDGStatus, prefix + entry.Result.Message, color);
                             break;
                     }
                 }
@@ -677,11 +642,9 @@ namespace URSUS.Setup
             var keys = new Dictionary<string, string>();
             string vw = _txtVWorldKey.Text.Trim();
             string sk = _txtSeoulKey.Text.Trim();
-            string dg = _txtDataGoKrKey.Text.Trim();
 
             if (!string.IsNullOrEmpty(vw)) keys[ApiKeyProvider.KEY_VWORLD]     = vw;
             if (!string.IsNullOrEmpty(sk)) keys[ApiKeyProvider.KEY_SEOUL]      = sk;
-            if (!string.IsNullOrEmpty(dg)) keys[ApiKeyProvider.KEY_DATA_GO_KR] = dg;
             return keys;
         }
 
@@ -726,7 +689,6 @@ namespace URSUS.Setup
             y += 5;
             AddKeyStatusSummary("VWorld", _txtVWorldKey.Text, _vwKeyValid, ref y);
             AddKeyStatusSummary("서울 열린데이터", _txtSeoulKey.Text, _skKeyValid, ref y);
-            AddKeyStatusSummary("공공데이터포털", _txtDataGoKrKey.Text, _dgKeyValid, ref y);
 
             y += 25;
 

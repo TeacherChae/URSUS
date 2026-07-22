@@ -1,0 +1,134 @@
+{
+  "fixtureVersion": "resolution-identity/1.0-draft",
+  "contractVersion": "site-brief/1.0-draft",
+  "encoding": "UTF-8 without BOM",
+  "queryNormalizer": {
+    "version": "query-normalizer/1",
+    "steps": [
+      "Normalize Unicode to Form C.",
+      "Trim leading and trailing .NET char.IsWhiteSpace characters.",
+      "Collapse each internal run of .NET char.IsWhiteSpace characters to one U+0020."
+    ],
+    "cases": [
+      {
+        "caseId": "road-canonical",
+        "input": "서울특별시 중구 세종대로 110",
+        "expected": "서울특별시 중구 세종대로 110"
+      },
+      {
+        "caseId": "road-whitespace",
+        "input": "\t서울특별시  중구　세종대로 110\n",
+        "expected": "서울특별시 중구 세종대로 110"
+      },
+      {
+        "caseId": "road-nfd",
+        "input": "서울특별시 중구 세종대로 110",
+        "expected": "서울특별시 중구 세종대로 110"
+      },
+      {
+        "caseId": "parcel-canonical",
+        "input": "서울특별시 중구 태평로1가 31",
+        "expected": "서울특별시 중구 태평로1가 31"
+      },
+      {
+        "caseId": "parcel-whitespace",
+        "input": " 서울특별시\t중구  태평로1가 31 ",
+        "expected": "서울특별시 중구 태평로1가 31"
+      },
+      {
+        "caseId": "parcel-nfd",
+        "input": "서울특별시 중구 태평로1가 31",
+        "expected": "서울특별시 중구 태평로1가 31"
+      }
+    ]
+  },
+  "singleResolutionIds": [
+    {
+      "kind": "Road",
+      "preimage": "resolver-contract/1|Road|서울특별시 중구 세종대로 110 (태평로1가)|126.97834678005411,37.56670100709671|11140103|702f1e6f788434921910ab4ce1ec479cd18c096a1d20a22acb1402194cbcb13f",
+      "sha256": "b2d94baf2d69fa85d9ff33503bdb29f19a9ba7f1beb92ed539a8274ea3e24c86"
+    },
+    {
+      "kind": "Parcel",
+      "preimage": "resolver-contract/1|Parcel|서울특별시 중구 태평로1가 31|126.9782290751147,37.56657117348658|11140103|2fa7acf1d6d8079fcbd98d7213d9c6cbcb01113ce5a95fb19965ecd9eb4af6e3",
+      "sha256": "91380e9550fedeedf497763f2c1357c98628fb1cc1ab22a71cdd70d34146b7bf"
+    }
+  ],
+  "dualEquivalentResolutionId": {
+    "ordering": "Road then Parcel",
+    "roadPreimageUtf8ByteCount": 191,
+    "parcelPreimageUtf8ByteCount": 176,
+    "preimage": "resolver-contract/1|DualEquivalent|191:resolver-contract/1|Road|서울특별시 중구 세종대로 110 (태평로1가)|126.97834678005411,37.56670100709671|11140103|702f1e6f788434921910ab4ce1ec479cd18c096a1d20a22acb1402194cbcb13f|176:resolver-contract/1|Parcel|서울특별시 중구 태평로1가 31|126.9782290751147,37.56657117348658|11140103|2fa7acf1d6d8079fcbd98d7213d9c6cbcb01113ce5a95fb19965ecd9eb4af6e3",
+    "sha256": "c125bc7c506ef8049432fec17dc43d8a2c3d887f9ecc03c9511202aa816fca17"
+  },
+  "requestCacheIds": [
+    {
+      "mode": "Road",
+      "normalizedQuery": "서울특별시 중구 세종대로 110",
+      "preimage": "resolver-request-cache/1|Road|39:서울특별시 중구 세종대로 110",
+      "sha256": "a695286bce728a878a5771ef280ec3ff7551a425d8226bdb198b42281b7d1f9b"
+    },
+    {
+      "mode": "Parcel",
+      "normalizedQuery": "서울특별시 중구 세종대로 110",
+      "preimage": "resolver-request-cache/1|Parcel|39:서울특별시 중구 세종대로 110",
+      "sha256": "dfc2cfa303acc64701b9f035c47becdf50d3b5751c5a51aa8df4e7f1bb2cc68c"
+    },
+    {
+      "mode": "Road",
+      "normalizedQuery": "서울특별시 중구 태평로1가 31",
+      "preimage": "resolver-request-cache/1|Road|39:서울특별시 중구 태평로1가 31",
+      "sha256": "47fe0b2e583ea5ee7fb31e2f0a89f92537f6d461aa14691fd908e69ff83dd68d"
+    },
+    {
+      "mode": "Parcel",
+      "normalizedQuery": "서울특별시 중구 태평로1가 31",
+      "preimage": "resolver-request-cache/1|Parcel|39:서울특별시 중구 태평로1가 31",
+      "sha256": "85e31e1b69f8272bd19a881665e9213591861ee617c0a031ed23518b4fd79755"
+    }
+  ],
+  "requestCacheVariantAssertions": [
+    {
+      "caseId": "road-whitespace-and-nfd-share-road-mode-cache",
+      "mode": "Road",
+      "inputs": [
+        "서울특별시 중구 세종대로 110",
+        "\t서울특별시  중구　세종대로 110\n",
+        "서울특별시 중구 세종대로 110"
+      ],
+      "expectedSha256": "a695286bce728a878a5771ef280ec3ff7551a425d8226bdb198b42281b7d1f9b"
+    },
+    {
+      "caseId": "same-query-different-mode-does-not-share-cache",
+      "input": "서울특별시 중구 세종대로 110",
+      "roadSha256": "a695286bce728a878a5771ef280ec3ff7551a425d8226bdb198b42281b7d1f9b",
+      "parcelSha256": "dfc2cfa303acc64701b9f035c47becdf50d3b5751c5a51aa8df4e7f1bb2cc68c",
+      "mustDiffer": true
+    }
+  ],
+  "responseFingerprintCanonicalization": {
+    "removalJsonPointer": "/service/time",
+    "input": {
+      "status": "OK",
+      "service": {
+        "version": "2.0",
+        "time": "2026-07-22T06:12:01Z",
+        "name": "address"
+      },
+      "result": {
+        "time": "preserve-this-field",
+        "point": {
+          "y": "37.0",
+          "x": "127.0"
+        }
+      }
+    },
+    "canonicalJson": "{\"result\":{\"point\":{\"x\":\"127.0\",\"y\":\"37.0\"},\"time\":\"preserve-this-field\"},\"service\":{\"name\":\"address\",\"version\":\"2.0\"},\"status\":\"OK\"}",
+    "sha256": "71cab8630c94b69ff20bb36a6612b44ee7f3a6bcc7ee64bb12be3b3d40c3fb7b",
+    "assertions": [
+      "service.time is absent.",
+      "result.time is preserved.",
+      "Object properties use ordinal name order; arrays retain input order."
+    ]
+  }
+}

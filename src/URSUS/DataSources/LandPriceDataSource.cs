@@ -13,11 +13,11 @@ using URSUS.Caching;
 namespace URSUS.DataSources
 {
     /// <summary>
-    /// 공공데이터포털(data.go.kr) 표준지공시지가 데이터 소스.
+    /// 공공데이터포털(data.go.kr) 표준지공시지가 legacy 데이터 소스.
     ///
-    /// - IDataSource 인터페이스 구현 → Registry에 등록하면 자동으로 파이프라인에 포함
+    /// - 기본 dataset에는 포함되지 않으며 호출자가 명시적으로 선택할 때만 사용
     /// - 법정동코드 기반 직접 조회 (행정동→법정동 매핑 불필요)
-    /// - DataGoKrKey가 없으면 ValidateConfiguration에서 안내 메시지 반환
+    /// - deprecated DataGoKrKey가 없으면 ValidateConfiguration에서 안내 메시지 반환
     ///
     /// API 발급: https://www.data.go.kr/data/15058747/openapi.do
     /// </summary>
@@ -46,18 +46,18 @@ namespace URSUS.DataSources
         {
             Id              = "land_price",
             DisplayName     = "공시지가",
-            Description     = "표준지 공시지가 (원/㎡) — 법정동별 평균 토지 가격 (공공데이터포털)",
+            Description     = "[Legacy] 표준지 공시지가 (원/㎡) — 법정동별 평균 토지 가격 (공공데이터포털)",
             Category        = DataCategory.LandUse,
             Provider        = "공공데이터포털 (data.go.kr)",
             UpdateFrequency = "연 1회 (매년 1월 1일 기준)",
             CoverageArea    = "전국",
-            RequiredApiKeys = new[] { ApiKeyProvider.KEY_DATA_GO_KR },
+            RequiredApiKeys = new[] { ApiKeyProvider.LegacyDataGoKrKeyName },
             CacheTtlDays    = 30
         };
 
         public DataSourceError? ValidateConfiguration()
         {
-            string? key = _keyProvider.DataGoKrKey;
+            string? key = _keyProvider.LegacyDataGoKrKey;
             if (string.IsNullOrWhiteSpace(key))
             {
                 return DataSourceError.ApiKeyMissing(
@@ -79,7 +79,7 @@ namespace URSUS.DataSources
             if (configError != null)
                 return DataResult<DistrictDataSet>.Failure(configError, sw.Elapsed);
 
-            string apiKey = _keyProvider.DataGoKrKey!;
+            string apiKey = _keyProvider.LegacyDataGoKrKey!;
 
             // 법정동 코드 목록이 없으면 에러
             if (query.DistrictCodes == null || query.DistrictCodes.Count == 0)

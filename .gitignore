@@ -18,3 +18,6 @@ dist/
 # Source data (too large / not redistributable)
 *.xlsx
 .omc/
+
+# OMX machine-local runtime state
+.omx/state/

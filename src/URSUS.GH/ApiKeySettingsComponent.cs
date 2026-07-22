@@ -50,7 +50,7 @@ namespace URSUS.GH
             pManager.AddTextParameter("Seoul Key", "SK",
                 "현재 로드된 서울 열린데이터 API 키 상태", GH_ParamAccess.item);
             pManager.AddTextParameter("DataGoKr Key", "DK",
-                "현재 로드된 공공데이터포털 API 키 상태", GH_ParamAccess.item);
+                "[Deprecated] Legacy DataGoKr credential status", GH_ParamAccess.item);
             pManager.AddTextParameter("Diagnostic", "D",
                 "전체 키 로드 진단 메시지", GH_ParamAccess.item);
         }
@@ -88,16 +88,15 @@ namespace URSUS.GH
                 provider.KeySources, ApiKeyProvider.KEY_VWORLD);
             string skStatus = FormatKeyStatus("서울 열린데이터", provider.SeoulKey,
                 provider.KeySources, ApiKeyProvider.KEY_SEOUL);
-            string dgStatus = FormatKeyStatus("공공데이터포털", provider.DataGoKrKey,
-                provider.KeySources, ApiKeyProvider.KEY_DATA_GO_KR);
+            const string dgStatus =
+                "Deprecated: 현재 기본 흐름에서는 DataGoKrKey를 요구하지 않습니다.";
 
             DA.SetData(0, vwStatus);
             DA.SetData(1, skStatus);
             DA.SetData(2, dgStatus);
             DA.SetData(3, provider.GetDiagnosticMessage(
                 ApiKeyProvider.KEY_VWORLD,
-                ApiKeyProvider.KEY_SEOUL,
-                ApiKeyProvider.KEY_DATA_GO_KR));
+                ApiKeyProvider.KEY_SEOUL));
 
             // 런타임 메시지로 요약 표시
             var missing = provider.GetMissingKeys(
@@ -152,10 +151,8 @@ namespace URSUS.GH
 
         private readonly TextBox _txtVW = new();
         private readonly TextBox _txtSK = new();
-        private readonly TextBox _txtDG = new();
         private readonly Label   _lblVW = new();
         private readonly Label   _lblSK = new();
-        private readonly Label   _lblDG = new();
         private readonly CheckBox _chkShow = new();
 
         public bool KeysUpdated { get; private set; }
@@ -209,10 +206,6 @@ namespace URSUS.GH
             AddKeyField("서울 열린데이터 API 키 (필수)", _txtSK, _lblSK,
                 "서울 열린데이터 API 키", ref y);
 
-            // DataGoKr
-            AddKeyField("공공데이터포털 API 키 (선택)", _txtDG, _lblDG,
-                "공공데이터포털 API 키", ref y);
-
             // Show/hide toggle
             _chkShow.Text     = "키 표시";
             _chkShow.Font     = STS_FONT;
@@ -223,7 +216,6 @@ namespace URSUS.GH
                 char c = _chkShow.Checked ? '\0' : '●';
                 _txtVW.PasswordChar = c;
                 _txtSK.PasswordChar = c;
-                _txtDG.PasswordChar = c;
             };
             Controls.Add(_chkShow);
             y += 30;
@@ -231,7 +223,6 @@ namespace URSUS.GH
             // 기본 마스킹
             _txtVW.PasswordChar = '●';
             _txtSK.PasswordChar = '●';
-            _txtDG.PasswordChar = '●';
 
             // 버튼 패널
             y += 10;
@@ -310,11 +301,6 @@ namespace URSUS.GH
                     _txtSK.Text = provider.SeoulKey;
                     SetStatus(_lblSK, ErrorMessages.ApiKeySettings.LoadedFromExisting, MUTED);
                 }
-                if (!string.IsNullOrWhiteSpace(provider.DataGoKrKey))
-                {
-                    _txtDG.Text = provider.DataGoKrKey;
-                    SetStatus(_lblDG, ErrorMessages.ApiKeySettings.LoadedFromExisting, MUTED);
-                }
             }
             catch { }
         }
@@ -324,11 +310,9 @@ namespace URSUS.GH
             var keys = new Dictionary<string, string>();
             string vw = _txtVW.Text.Trim();
             string sk = _txtSK.Text.Trim();
-            string dg = _txtDG.Text.Trim();
 
             if (!string.IsNullOrEmpty(vw)) keys[ApiKeyProvider.KEY_VWORLD]     = vw;
             if (!string.IsNullOrEmpty(sk)) keys[ApiKeyProvider.KEY_SEOUL]      = sk;
-            if (!string.IsNullOrEmpty(dg)) keys[ApiKeyProvider.KEY_DATA_GO_KR] = dg;
 
             if (keys.Count == 0)
             {
@@ -348,9 +332,6 @@ namespace URSUS.GH
                     SetStatus(_lblVW, "✓ 저장 완료", SUCCESS);
                 if (keys.ContainsKey(ApiKeyProvider.KEY_SEOUL))
                     SetStatus(_lblSK, "✓ 저장 완료", SUCCESS);
-                if (keys.ContainsKey(ApiKeyProvider.KEY_DATA_GO_KR))
-                    SetStatus(_lblDG, "✓ 저장 완료", SUCCESS);
-
                 MessageBox.Show(
                     ErrorMessages.ApiKeySettings.SaveComplete(keys.Count),
                     "저장 완료", MessageBoxButtons.OK, MessageBoxIcon.Information);

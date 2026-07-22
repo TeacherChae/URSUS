@@ -1,0 +1,50 @@
+{
+  "fixtureVersion": "vworld-address-error-capture/1",
+  "capturedAtUtc": "2026-07-22T06:12:01Z",
+  "captures": [
+    {
+      "case": "missing-key",
+      "request": {
+        "service": "address",
+        "request": "getcoord",
+        "crs": "EPSG:4326",
+        "address": "서울특별시 중구 세종대로 110",
+        "format": "json",
+        "type": "road",
+        "key": "<omitted>"
+      },
+      "response": {
+        "service": {"name": "address", "version": "2.0", "operation": "getcoord"},
+        "status": "ERROR",
+        "error": {
+          "level": "1",
+          "code": "PARAM_REQUIRED",
+          "text": "필수 파라미터인 key가 없어서 요청을 처리할수 없습니다."
+        }
+      },
+      "expectedStatus": "ProviderFailure"
+    },
+    {
+      "case": "invalid-key",
+      "request": {
+        "service": "address",
+        "request": "getcoord",
+        "crs": "EPSG:4326",
+        "address": "서울특별시 중구 세종대로 110",
+        "format": "json",
+        "type": "road",
+        "key": "<redacted-invalid>"
+      },
+      "response": {
+        "service": {"name": "address", "version": "2.0", "operation": "getcoord"},
+        "status": "ERROR",
+        "error": {
+          "level": "2",
+          "code": "INVALID_KEY",
+          "text": "등록되지 않은 인증키입니다."
+        }
+      },
+      "expectedStatus": "ProviderFailure"
+    }
+  ]
+}

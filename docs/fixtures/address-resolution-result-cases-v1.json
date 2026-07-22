@@ -1,0 +1,843 @@
+{
+  "fixtureVersion": "address-resolution-result-cases/1.0-draft",
+  "contractVersion": "site-brief/1.0-draft",
+  "fixtureDataNature": "synthetic_mapped_results_not_provider_truth",
+  "providerTruthFixtures": [
+    "vworld-address-road-sejongdaero-110.json",
+    "vworld-address-parcel-taepyeongno-31.json",
+    "vworld-address-error-captures.json",
+    "vworld-legal-district-boundaries-city-hall.json"
+  ],
+  "invariants": [
+    "Every case obeys the closed reason/status/payload cardinality matrix in docs/site-brief-contract.md.",
+    "All collection payloads are non-null; constructors defensively copy them and expose read-only values.",
+    "Resolved uses the same ordered immutable candidates value in the result and ResolvedSite.",
+    "Every non-Resolved case has null resolvedSite and null referenceCohort.",
+    "RepresentativeLocation exists only for DistrictEdge, MultipleDistrictContainment, and OutsideBoundaryCoverage.",
+    "NotFound and InvalidInput carry no candidate, location, district alternative, or provider failure payload.",
+    "No non-Resolved case creates an AnalysisSnapshot or SiteBrief."
+  ],
+  "cases": [
+    {
+      "caseId": "resolved-road-golden",
+      "inputNature": "The captured Road mode resolves, Parcel is NOT_FOUND, and one strict WFS district matches.",
+      "expected": {
+        "status": "Resolved",
+        "reasonCode": "None",
+        "resolvedSite": {
+          "status": "Resolved",
+          "inputAddress": "서울특별시 중구 세종대로 110",
+          "normalizedAddress": "서울특별시 중구 세종대로 110 (태평로1가)",
+          "addressKind": "Road",
+          "candidates": [
+            {
+              "kind": "Road",
+              "refinedText": "서울특별시 중구 세종대로 110 (태평로1가)",
+              "wgs84": {
+                "crs": "EPSG:4326",
+                "longitude": 126.97834678005411,
+                "latitude": 37.56670100709671
+              },
+              "responseContract": "VWorld address/2.0",
+              "responseFingerprint": "702f1e6f788434921910ab4ce1ec479cd18c096a1d20a22acb1402194cbcb13f",
+              "inputAddress": "서울특별시 중구 세종대로 110",
+              "refinedStructure": {
+                "level0": "대한민국",
+                "level1": "서울특별시",
+                "level2": "중구",
+                "level3": "태평로1가",
+                "level4L": "세종대로",
+                "level4LC": "",
+                "level4A": "명동",
+                "level4AC": "1114055000",
+                "level5": "110",
+                "detail": "서울특별시 청사 신관"
+              }
+            }
+          ],
+          "wgs84": {
+            "crs": "EPSG:4326",
+            "longitude": 126.97834678005411,
+            "latitude": 37.56670100709671
+          },
+          "projectedCoordinate": {
+            "crs": "EPSG:5179",
+            "x": 953931.914144946,
+            "y": 1952054.2116652473,
+            "transformVersion": "URSUS.Epsg5179/1"
+          },
+          "legalDistrict": {
+            "canonicalCode": "11140103",
+            "providerCode": "11140103",
+            "fullName": "서울특별시 중구 태평로1가",
+            "displayName": "태평로1가",
+            "selectionMethod": "WFS topology point-in-polygon"
+          },
+          "resolutionWarnings": [],
+          "resolutionCanonicalInput": "resolver-contract/1|Road|서울특별시 중구 세종대로 110 (태평로1가)|126.97834678005411,37.56670100709671|11140103|702f1e6f788434921910ab4ce1ec479cd18c096a1d20a22acb1402194cbcb13f",
+          "resolutionId": "b2d94baf2d69fa85d9ff33503bdb29f19a9ba7f1beb92ed539a8274ea3e24c86",
+          "resolvedAt": "2026-07-22T06:12:01Z",
+          "resolverSources": [
+            {
+              "provider": "VWorld",
+              "service": "address",
+              "version": "2.0",
+              "capturedAtUtc": "2026-07-22T06:12:01Z"
+            },
+            {
+              "provider": "VWorld",
+              "service": "WFS",
+              "typeName": "lt_c_ademd_info",
+              "version": "2.0.0",
+              "capturedAtUtc": "2026-07-22T06:12:01Z"
+            }
+          ]
+        },
+        "referenceCohort": {
+          "policyVersion": "same-sigungu-legal-districts/1",
+          "queryKind": "SameSigunguLegalDistricts",
+          "spatialUnit": "LegalDistrict",
+          "sigunguCode": "11140",
+          "sigunguName": "서울특별시 중구",
+          "membershipSourceVersion": "embedded-adstrd-legald-v1",
+          "districtIds": [
+            "11140101",
+            "11140102",
+            "11140103",
+            "11140104",
+            "11140105",
+            "11140106",
+            "11140107",
+            "11140108",
+            "11140109",
+            "11140110",
+            "11140111",
+            "11140112",
+            "11140113",
+            "11140114",
+            "11140115",
+            "11140116",
+            "11140117",
+            "11140118",
+            "11140119",
+            "11140120",
+            "11140121",
+            "11140122",
+            "11140123",
+            "11140124",
+            "11140125",
+            "11140126",
+            "11140127",
+            "11140128",
+            "11140129",
+            "11140130",
+            "11140131",
+            "11140132",
+            "11140133",
+            "11140134",
+            "11140135",
+            "11140136",
+            "11140137",
+            "11140138",
+            "11140139",
+            "11140140",
+            "11140141",
+            "11140142",
+            "11140143",
+            "11140144",
+            "11140145",
+            "11140146",
+            "11140147",
+            "11140148",
+            "11140149",
+            "11140150",
+            "11140151",
+            "11140152",
+            "11140153",
+            "11140154",
+            "11140155",
+            "11140156",
+            "11140157",
+            "11140158",
+            "11140159",
+            "11140160",
+            "11140161",
+            "11140162",
+            "11140163",
+            "11140164",
+            "11140165",
+            "11140166",
+            "11140167",
+            "11140168",
+            "11140169",
+            "11140170",
+            "11140171",
+            "11140172",
+            "11140173",
+            "11140174"
+          ],
+          "fingerprintInput": "same-sigungu-legal-districts/1|SameSigunguLegalDistricts|11140|embedded-adstrd-legald-v1|11140101,11140102,11140103,11140104,11140105,11140106,11140107,11140108,11140109,11140110,11140111,11140112,11140113,11140114,11140115,11140116,11140117,11140118,11140119,11140120,11140121,11140122,11140123,11140124,11140125,11140126,11140127,11140128,11140129,11140130,11140131,11140132,11140133,11140134,11140135,11140136,11140137,11140138,11140139,11140140,11140141,11140142,11140143,11140144,11140145,11140146,11140147,11140148,11140149,11140150,11140151,11140152,11140153,11140154,11140155,11140156,11140157,11140158,11140159,11140160,11140161,11140162,11140163,11140164,11140165,11140166,11140167,11140168,11140169,11140170,11140171,11140172,11140173,11140174",
+          "sha256": "0a6144d5067f73cc9c4f510b76a11d08058015bd49101b60260bf091004f2fa8"
+        },
+        "candidates": [
+          {
+            "kind": "Road",
+            "refinedText": "서울특별시 중구 세종대로 110 (태평로1가)",
+            "wgs84": {
+              "crs": "EPSG:4326",
+              "longitude": 126.97834678005411,
+              "latitude": 37.56670100709671
+            },
+            "responseContract": "VWorld address/2.0",
+            "responseFingerprint": "702f1e6f788434921910ab4ce1ec479cd18c096a1d20a22acb1402194cbcb13f",
+            "inputAddress": "서울특별시 중구 세종대로 110",
+            "refinedStructure": {
+              "level0": "대한민국",
+              "level1": "서울특별시",
+              "level2": "중구",
+              "level3": "태평로1가",
+              "level4L": "세종대로",
+              "level4LC": "",
+              "level4A": "명동",
+              "level4AC": "1114055000",
+              "level5": "110",
+              "detail": "서울특별시 청사 신관"
+            }
+          }
+        ],
+        "representativeLocation": null,
+        "legalDistrictAlternatives": [],
+        "providerFailures": []
+      },
+      "identityAssertions": [
+        "expected.candidates and expected.resolvedSite.candidates are ordinal-deep-equal in JSON.",
+        "The in-memory constructor must give both properties the same ordered immutable value.",
+        "The resolved legal district is contained in referenceCohort.districtIds."
+      ]
+    },
+    {
+      "caseId": "cohort-boundary-incomplete",
+      "inputNature": "Address and target legal district resolved, but the membership-driven WFS acquisition returned 73 of 74 required Jung-gu boundaries.",
+      "expected": {
+        "status": "ProviderFailure",
+        "reasonCode": "CohortBoundaryIncomplete",
+        "resolvedSite": null,
+        "referenceCohort": null,
+        "candidates": [
+          {
+            "kind": "Road",
+            "refinedText": "서울특별시 중구 세종대로 110 (태평로1가)",
+            "wgs84": {
+              "crs": "EPSG:4326",
+              "longitude": 126.97834678005411,
+              "latitude": 37.56670100709671
+            },
+            "responseContract": "VWorld address/2.0",
+            "responseFingerprint": "702f1e6f788434921910ab4ce1ec479cd18c096a1d20a22acb1402194cbcb13f",
+            "inputAddress": "서울특별시 중구 세종대로 110",
+            "refinedStructure": {
+              "level0": "대한민국",
+              "level1": "서울특별시",
+              "level2": "중구",
+              "level3": "태평로1가",
+              "level4L": "세종대로",
+              "level4LC": "",
+              "level4A": "명동",
+              "level4AC": "1114055000",
+              "level5": "110",
+              "detail": "서울특별시 청사 신관"
+            }
+          }
+        ],
+        "representativeLocation": null,
+        "legalDistrictAlternatives": [],
+        "providerFailures": [
+          {
+            "mode": "Boundary",
+            "canonicalCode": "COHORT_BOUNDARY_INCOMPLETE",
+            "providerCode": "MEMBERSHIP_MISMATCH",
+            "providerLevel": null,
+            "safeMessage": "Boundary provider returned 73 of 74 required legal districts."
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "both-modes-not-found",
+      "inputNature": "Road and Parcel provider envelopes both map to NOT_FOUND with record.total=0.",
+      "expected": {
+        "status": "NotFound",
+        "reasonCode": "BothModesNotFound",
+        "resolvedSite": null,
+        "referenceCohort": null,
+        "candidates": [],
+        "representativeLocation": null,
+        "legalDistrictAlternatives": [],
+        "providerFailures": []
+      }
+    },
+    {
+      "caseId": "provider-missing-key",
+      "inputNature": "Captured VWorld ERROR envelope with code PARAM_REQUIRED and level 1.",
+      "expected": {
+        "status": "ProviderFailure",
+        "reasonCode": "ProviderReportedError",
+        "resolvedSite": null,
+        "referenceCohort": null,
+        "candidates": [],
+        "representativeLocation": null,
+        "legalDistrictAlternatives": [],
+        "providerFailures": [
+          {
+            "mode": "Road",
+            "canonicalCode": "PROVIDER_REPORTED_ERROR",
+            "providerCode": "PARAM_REQUIRED",
+            "providerLevel": "1",
+            "safeMessage": "Address provider rejected the request because a required parameter was missing."
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "provider-invalid-key-after-parcel-success",
+      "inputNature": "Parcel candidate succeeded, but the Road request returned the captured INVALID_KEY error.",
+      "expected": {
+        "status": "ProviderFailure",
+        "reasonCode": "ProviderReportedError",
+        "resolvedSite": null,
+        "referenceCohort": null,
+        "candidates": [
+          {
+            "kind": "Parcel",
+            "inputAddress": "합성 입력 주소",
+            "refinedText": "합성 정규화 지번 주소",
+            "refinedStructure": {
+              "level0": "대한민국",
+              "level1": "서울특별시",
+              "level2": "중구",
+              "level3": "",
+              "level4L": "합성법정동",
+              "level4A": "합성행정동",
+              "level5": "1"
+            },
+            "wgs84": {
+              "crs": "EPSG:4326",
+              "longitude": 126.9782,
+              "latitude": 37.5665
+            },
+            "responseContract": "VWorld address/2.0",
+            "responseFingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          }
+        ],
+        "representativeLocation": null,
+        "legalDistrictAlternatives": [],
+        "providerFailures": [
+          {
+            "mode": "Road",
+            "canonicalCode": "PROVIDER_REPORTED_ERROR",
+            "providerCode": "INVALID_KEY",
+            "providerLevel": "2",
+            "safeMessage": "Address provider authentication failed."
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "provider-schema-invalid",
+      "inputNature": "Provider reported OK but omitted a finite point or required refined address field.",
+      "expected": {
+        "status": "ProviderFailure",
+        "reasonCode": "ProviderSchemaInvalid",
+        "resolvedSite": null,
+        "referenceCohort": null,
+        "candidates": [],
+        "representativeLocation": null,
+        "legalDistrictAlternatives": [],
+        "providerFailures": [
+          {
+            "mode": "Parcel",
+            "canonicalCode": "PROVIDER_SCHEMA_INVALID",
+            "providerCode": null,
+            "providerLevel": null,
+            "safeMessage": "Address provider response did not satisfy contract VWorld address/2.0."
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "provider-transport-timeout",
+      "inputNature": "The Road request exceeded the bounded transport timeout.",
+      "expected": {
+        "status": "ProviderFailure",
+        "reasonCode": "ProviderTransportFailure",
+        "resolvedSite": null,
+        "referenceCohort": null,
+        "candidates": [],
+        "representativeLocation": null,
+        "legalDistrictAlternatives": [],
+        "providerFailures": [
+          {
+            "mode": "Road",
+            "canonicalCode": "PROVIDER_TRANSPORT_FAILURE",
+            "providerCode": null,
+            "providerLevel": null,
+            "safeMessage": "Address provider request timed out."
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "district-edge",
+      "inputNature": "One resolved point is within the 0.01 meter edge tolerance of two legal-district boundaries.",
+      "expected": {
+        "status": "NeedsSelection",
+        "reasonCode": "DistrictEdge",
+        "resolvedSite": null,
+        "referenceCohort": null,
+        "candidates": [
+          {
+            "kind": "Road",
+            "inputAddress": "합성 경계 주소",
+            "refinedText": "합성 경계 도로명 주소",
+            "refinedStructure": {
+              "level0": "대한민국",
+              "level1": "서울특별시",
+              "level2": "중구",
+              "level3": "합성법정동가",
+              "level4L": "합성로",
+              "level4A": "합성행정동",
+              "level5": "10"
+            },
+            "wgs84": {
+              "crs": "EPSG:4326",
+              "longitude": 126.9783,
+              "latitude": 37.5666
+            },
+            "responseContract": "VWorld address/2.0",
+            "responseFingerprint": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          }
+        ],
+        "representativeLocation": {
+          "wgs84": {
+            "crs": "EPSG:4326",
+            "longitude": 126.9783,
+            "latitude": 37.5666
+          },
+          "projectedCoordinate": {
+            "crs": "EPSG:5179",
+            "x": 953927.7206768437,
+            "y": 1952043.0283577868,
+            "transformVersion": "URSUS.Epsg5179/1"
+          },
+          "selectionBasis": "Only successful address candidate; legal district is unresolved."
+        },
+        "legalDistrictAlternatives": [
+          {
+            "candidateKind": "Road",
+            "providerCode": "11140103",
+            "canonicalCode": "11140103",
+            "fullName": "서울특별시 중구 합성법정동가",
+            "displayName": "합성법정동가",
+            "matchKind": "Edge",
+            "distanceMeters": 0.004
+          },
+          {
+            "candidateKind": "Road",
+            "providerCode": "11140104",
+            "canonicalCode": "11140104",
+            "fullName": "서울특별시 중구 합성법정동나",
+            "displayName": "합성법정동나",
+            "matchKind": "Edge",
+            "distanceMeters": 0.004
+          }
+        ],
+        "providerFailures": []
+      }
+    },
+    {
+      "caseId": "multiple-strict-containment",
+      "inputNature": "Malformed or overlapping WFS topology strictly contains one point in two districts.",
+      "expected": {
+        "status": "NeedsSelection",
+        "reasonCode": "MultipleDistrictContainment",
+        "resolvedSite": null,
+        "referenceCohort": null,
+        "candidates": [
+          {
+            "kind": "Parcel",
+            "inputAddress": "합성 중첩 주소",
+            "refinedText": "합성 중첩 지번 주소",
+            "refinedStructure": {
+              "level0": "대한민국",
+              "level1": "서울특별시",
+              "level2": "중구",
+              "level3": "",
+              "level4L": "합성법정동가",
+              "level4A": "합성행정동",
+              "level5": "20"
+            },
+            "wgs84": {
+              "crs": "EPSG:4326",
+              "longitude": 126.9784,
+              "latitude": 37.5667
+            },
+            "responseContract": "VWorld address/2.0",
+            "responseFingerprint": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+          }
+        ],
+        "representativeLocation": {
+          "wgs84": {
+            "crs": "EPSG:4326",
+            "longitude": 126.9784,
+            "latitude": 37.5667
+          },
+          "projectedCoordinate": {
+            "crs": "EPSG:5179",
+            "x": 953936.6135026537,
+            "y": 1952054.0738442433,
+            "transformVersion": "URSUS.Epsg5179/1"
+          },
+          "selectionBasis": "Only successful address candidate; WFS topology overlaps."
+        },
+        "legalDistrictAlternatives": [
+          {
+            "candidateKind": "Parcel",
+            "providerCode": "11140103",
+            "canonicalCode": "11140103",
+            "fullName": "서울특별시 중구 합성법정동가",
+            "displayName": "합성법정동가",
+            "matchKind": "Strict",
+            "distanceMeters": 12.0
+          },
+          {
+            "candidateKind": "Parcel",
+            "providerCode": "11140104",
+            "canonicalCode": "11140104",
+            "fullName": "서울특별시 중구 합성법정동나",
+            "displayName": "합성법정동나",
+            "matchKind": "Strict",
+            "distanceMeters": 8.0
+          }
+        ],
+        "providerFailures": []
+      }
+    },
+    {
+      "caseId": "dual-mode-district-disagreement",
+      "inputNature": "Road and Parcel points are within 150 meters but strictly match different canonical legal districts.",
+      "expected": {
+        "status": "NeedsSelection",
+        "reasonCode": "DistrictDisagreement",
+        "resolvedSite": null,
+        "referenceCohort": null,
+        "candidates": [
+          {
+            "kind": "Road",
+            "inputAddress": "합성 이중 주소",
+            "refinedText": "합성 도로명 주소",
+            "refinedStructure": {
+              "level0": "대한민국",
+              "level1": "서울특별시",
+              "level2": "중구",
+              "level3": "합성법정동가",
+              "level4L": "합성로",
+              "level4A": "합성행정동",
+              "level5": "30"
+            },
+            "wgs84": {
+              "crs": "EPSG:4326",
+              "longitude": 126.9785,
+              "latitude": 37.5668
+            },
+            "responseContract": "VWorld address/2.0",
+            "responseFingerprint": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+          },
+          {
+            "kind": "Parcel",
+            "inputAddress": "합성 이중 주소",
+            "refinedText": "합성 지번 주소",
+            "refinedStructure": {
+              "level0": "대한민국",
+              "level1": "서울특별시",
+              "level2": "중구",
+              "level3": "",
+              "level4L": "합성법정동나",
+              "level4A": "합성행정동",
+              "level5": "31"
+            },
+            "wgs84": {
+              "crs": "EPSG:4326",
+              "longitude": 126.9786,
+              "latitude": 37.5669
+            },
+            "responseContract": "VWorld address/2.0",
+            "responseFingerprint": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+          }
+        ],
+        "representativeLocation": null,
+        "legalDistrictAlternatives": [
+          {
+            "candidateKind": "Road",
+            "providerCode": "11140103",
+            "canonicalCode": "11140103",
+            "fullName": "서울특별시 중구 합성법정동가",
+            "displayName": "합성법정동가",
+            "matchKind": "Strict",
+            "distanceMeters": 20.0
+          },
+          {
+            "candidateKind": "Parcel",
+            "providerCode": "11140104",
+            "canonicalCode": "11140104",
+            "fullName": "서울특별시 중구 합성법정동나",
+            "displayName": "합성법정동나",
+            "matchKind": "Strict",
+            "distanceMeters": 18.0
+          }
+        ],
+        "providerFailures": []
+      }
+    },
+    {
+      "caseId": "dual-mode-distance-exceeded",
+      "inputNature": "Road and Parcel candidates are both valid but their points are more than 150 meters apart.",
+      "expected": {
+        "status": "NeedsSelection",
+        "reasonCode": "DualModeDistanceExceeded",
+        "resolvedSite": null,
+        "referenceCohort": null,
+        "candidates": [
+          {
+            "kind": "Road",
+            "inputAddress": "합성 거리 불일치 주소",
+            "refinedText": "합성 원거리 도로명 주소",
+            "refinedStructure": {
+              "level0": "대한민국",
+              "level1": "서울특별시",
+              "level2": "중구",
+              "level3": "합성법정동가",
+              "level4L": "합성로",
+              "level4A": "합성행정동",
+              "level5": "40"
+            },
+            "wgs84": {
+              "crs": "EPSG:4326",
+              "longitude": 126.978,
+              "latitude": 37.566
+            },
+            "responseContract": "VWorld address/2.0",
+            "responseFingerprint": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+          },
+          {
+            "kind": "Parcel",
+            "inputAddress": "합성 거리 불일치 주소",
+            "refinedText": "합성 원거리 지번 주소",
+            "refinedStructure": {
+              "level0": "대한민국",
+              "level1": "서울특별시",
+              "level2": "중구",
+              "level3": "",
+              "level4L": "합성법정동가",
+              "level4A": "합성행정동",
+              "level5": "41"
+            },
+            "wgs84": {
+              "crs": "EPSG:4326",
+              "longitude": 126.981,
+              "latitude": 37.569
+            },
+            "responseContract": "VWorld address/2.0",
+            "responseFingerprint": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+          }
+        ],
+        "representativeLocation": null,
+        "legalDistrictAlternatives": [],
+        "providerFailures": []
+      }
+    },
+    {
+      "caseId": "outside-boundary-coverage",
+      "inputNature": "An address candidate resolves, but its point has no strict or edge match in the requested WFS coverage.",
+      "expected": {
+        "status": "OutOfCoverage",
+        "reasonCode": "OutsideBoundaryCoverage",
+        "resolvedSite": null,
+        "referenceCohort": null,
+        "candidates": [
+          {
+            "kind": "Road",
+            "inputAddress": "합성 범위 밖 주소",
+            "refinedText": "합성 범위 밖 도로명 주소",
+            "refinedStructure": {
+              "level0": "대한민국",
+              "level1": "서울특별시",
+              "level2": "중구",
+              "level3": "합성법정동가",
+              "level4L": "합성로",
+              "level4A": "합성행정동",
+              "level5": "50"
+            },
+            "wgs84": {
+              "crs": "EPSG:4326",
+              "longitude": 126.99,
+              "latitude": 37.58
+            },
+            "responseContract": "VWorld address/2.0",
+            "responseFingerprint": "1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
+          }
+        ],
+        "representativeLocation": {
+          "wgs84": {
+            "crs": "EPSG:4326",
+            "longitude": 126.99,
+            "latitude": 37.58
+          },
+          "projectedCoordinate": {
+            "crs": "EPSG:5179",
+            "x": 954969.045612605,
+            "y": 1953524.0216645044,
+            "transformVersion": "URSUS.Epsg5179/1"
+          },
+          "selectionBasis": "Only successful address candidate; no legal-district topology matched."
+        },
+        "legalDistrictAlternatives": [],
+        "providerFailures": []
+      }
+    },
+    {
+      "caseId": "legal-name-mismatch",
+      "inputNature": "The mode-specific provider legal-district name disagrees with the unique WFS topology match.",
+      "expected": {
+        "status": "ProviderFailure",
+        "reasonCode": "LegalNameMismatch",
+        "resolvedSite": null,
+        "referenceCohort": null,
+        "candidates": [
+          {
+            "kind": "Road",
+            "inputAddress": "합성 명칭 불일치 주소",
+            "refinedText": "합성 명칭 불일치 도로명 주소",
+            "refinedStructure": {
+              "level0": "대한민국",
+              "level1": "서울특별시",
+              "level2": "중구",
+              "level3": "합성법정동가",
+              "level4L": "합성로",
+              "level4A": "합성행정동",
+              "level5": "60"
+            },
+            "wgs84": {
+              "crs": "EPSG:4326",
+              "longitude": 126.9787,
+              "latitude": 37.567
+            },
+            "responseContract": "VWorld address/2.0",
+            "responseFingerprint": "234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1"
+          }
+        ],
+        "representativeLocation": null,
+        "legalDistrictAlternatives": [],
+        "providerFailures": [
+          {
+            "mode": "Boundary",
+            "canonicalCode": "LEGAL_NAME_MISMATCH",
+            "providerCode": null,
+            "providerLevel": null,
+            "safeMessage": "Address and boundary providers disagree on the legal-district name."
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "empty-address",
+      "inputNature": "The canonical async or Grasshopper flow receives null, empty, or whitespace-only input.",
+      "expected": {
+        "status": "InvalidInput",
+        "reasonCode": "EmptyAddress",
+        "resolvedSite": null,
+        "referenceCohort": null,
+        "candidates": [],
+        "representativeLocation": null,
+        "legalDistrictAlternatives": [],
+        "providerFailures": []
+      }
+    }
+  ],
+  "constructorRejectionCases": [
+    {
+      "caseId": "null-candidates-collection",
+      "mutation": "Set candidates to null for any status.",
+      "expectedException": "ArgumentException"
+    },
+    {
+      "caseId": "resolved-missing-site",
+      "mutation": "Use Status=Resolved and Reason=None with resolvedSite=null.",
+      "expectedException": "ArgumentException"
+    },
+    {
+      "caseId": "resolved-has-representative",
+      "mutation": "Add RepresentativeLocation to resolved-road-golden.",
+      "expectedException": "ArgumentException"
+    },
+    {
+      "caseId": "resolved-candidates-diverge",
+      "mutation": "Reorder or alter expected.candidates so it is not ordinal-deep-equal to resolvedSite.candidates.",
+      "expectedException": "ArgumentException"
+    },
+    {
+      "caseId": "status-reason-mismatch",
+      "mutation": "Use Status=NotFound and ReasonCode=EmptyAddress.",
+      "expectedException": "ArgumentException"
+    },
+    {
+      "caseId": "distance-exceeded-one-candidate",
+      "mutation": "Remove one candidate from dual-mode-distance-exceeded.",
+      "expectedException": "ArgumentException"
+    },
+    {
+      "caseId": "edge-without-representative",
+      "mutation": "Set district-edge representativeLocation to null.",
+      "expectedException": "ArgumentException"
+    },
+    {
+      "caseId": "edge-with-strict-alternative",
+      "mutation": "Set one district-edge alternative matchKind to Strict.",
+      "expectedException": "ArgumentException"
+    },
+    {
+      "caseId": "multiple-with-one-alternative",
+      "mutation": "Keep only one alternative in multiple-strict-containment.",
+      "expectedException": "ArgumentException"
+    },
+    {
+      "caseId": "disagreement-without-kind-pair",
+      "mutation": "Remove the Parcel alternative from dual-mode-district-disagreement.",
+      "expectedException": "ArgumentException"
+    },
+    {
+      "caseId": "out-of-coverage-with-alternative",
+      "mutation": "Add a legalDistrictAlternative to outside-boundary-coverage.",
+      "expectedException": "ArgumentException"
+    },
+    {
+      "caseId": "provider-failure-with-representative",
+      "mutation": "Add RepresentativeLocation to provider-schema-invalid.",
+      "expectedException": "ArgumentException"
+    },
+    {
+      "caseId": "not-found-with-candidate",
+      "mutation": "Add a candidate to both-modes-not-found.",
+      "expectedException": "ArgumentException"
+    },
+    {
+      "caseId": "empty-input-with-failure",
+      "mutation": "Add a providerFailure to empty-address.",
+      "expectedException": "ArgumentException"
+    },
+    {
+      "caseId": "cohort-incomplete-wrong-failure-mode",
+      "mutation": "Change cohort-boundary-incomplete provider failure mode from Boundary to Road, or remove its only failure.",
+      "expectedException": "ArgumentException"
+    }
+  ]
+}

@@ -400,7 +400,7 @@ namespace URSUS.GH
                 ds == URSUSSolver.DS_LAND_PRICE || ds == URSUSSolver.DS_ZONING);
             var requiredKeys = new List<string> { ApiKeyProvider.KEY_VWORLD };
             if (needsSeoul) requiredKeys.Add(ApiKeyProvider.KEY_SEOUL);
-            if (needsDataGoKr) requiredKeys.Add(ApiKeyProvider.KEY_DATA_GO_KR);
+            if (needsDataGoKr) requiredKeys.Add(nameof(UrsusSettings.DataGoKrKey));
             var missing = keyProvider.GetMissingKeys(requiredKeys.ToArray());
             if (missing.Count > 0)
             {

@@ -18,6 +18,9 @@ namespace URSUS.Config
     ///   5. DLL 인접 appsettings.json
     ///   6. 사용자 프로필 %APPDATA%/URSUS/appsettings.json
     ///
+    /// 현재 제품 경로가 요구하는 키는 VWorldKey와 SeoulKey뿐이다.
+    /// DataGoKrKey는 명시적 legacy 공시지가/용도지역 adapter 호환용으로만 읽는다.
+    ///
     /// 새 API 키를 추가하려면:
     ///   1. ApiKeyName 상수 추가
     ///   2. UrsusSettings에 프로퍼티 추가
@@ -28,14 +31,16 @@ namespace URSUS.Config
         // ── API 키 이름 상수 ─────────────────────────────────────────────
         public const string KEY_VWORLD     = "VWorldKey";
         public const string KEY_SEOUL      = "SeoulKey";
-        public const string KEY_DATA_GO_KR = "DataGoKrKey";
+        internal const string LegacyDataGoKrKeyName = "DataGoKrKey";
+        [Obsolete("DataGoKrKey is deprecated and retained only for legacy explicit land-price/zoning adapters.")]
+        public const string KEY_DATA_GO_KR = LegacyDataGoKrKeyName;
 
         // ── 환경변수 이름 매핑 ───────────────────────────────────────────
         private static readonly Dictionary<string, string> ENV_MAP = new()
         {
             { KEY_VWORLD,     "URSUS_VWORLD_KEY"     },
             { KEY_SEOUL,      "URSUS_SEOUL_KEY"      },
-            { KEY_DATA_GO_KR, "URSUS_DATA_GO_KR_KEY" },
+            { LegacyDataGoKrKeyName, "URSUS_DATA_GO_KR_KEY" },
         };
 
         private const string SETTINGS_FILENAME = "appsettings.json";
@@ -100,8 +105,11 @@ namespace URSUS.Config
         /// <summary>서울 열린데이터 API 키</summary>
         public string? SeoulKey => GetKey(KEY_SEOUL);
 
-        /// <summary>공공데이터포털(data.go.kr) API 키 — 공시지가 등 부동산 데이터용 (선택)</summary>
-        public string? DataGoKrKey => GetKey(KEY_DATA_GO_KR);
+        /// <summary>Legacy 공공데이터포털 키. 현재 기본 UX에서는 수집하거나 요구하지 않는다.</summary>
+        internal string? LegacyDataGoKrKey => GetKey(LegacyDataGoKrKeyName);
+
+        [Obsolete("DataGoKrKey is deprecated and retained only for legacy explicit land-price/zoning adapters.")]
+        public string? DataGoKrKey => LegacyDataGoKrKey;
 
         /// <summary>
         /// 필수 키가 모두 설정되었는지 확인하고, 누락된 키 목록을 반환한다.
@@ -158,7 +166,7 @@ namespace URSUS.Config
                     msg.Add("  VWorld: https://www.vworld.kr/dev/v4dv_2ddataguide2_s001.do (무료 회원가입 후 발급)");
                 else if (key == KEY_SEOUL)
                     msg.Add("  서울 열린데이터: https://data.seoul.go.kr/ (무료 회원가입 후 발급)");
-                else if (key == KEY_DATA_GO_KR)
+                else if (key == LegacyDataGoKrKeyName)
                     msg.Add("  공공데이터포털: https://www.data.go.kr/data/15058747/openapi.do (무료, 공시지가 조회용)");
             }
 
@@ -287,8 +295,8 @@ namespace URSUS.Config
                 }
                 if (!string.IsNullOrWhiteSpace(settings.DataGoKrKey))
                 {
-                    _resolvedKeys[KEY_DATA_GO_KR] = settings.DataGoKrKey!.Trim();
-                    _keySources[KEY_DATA_GO_KR]   = source;
+                    _resolvedKeys[LegacyDataGoKrKeyName] = settings.DataGoKrKey!.Trim();
+                    _keySources[LegacyDataGoKrKeyName]   = source;
                 }
             }
             catch
@@ -369,7 +377,7 @@ namespace URSUS.Config
                 {
                     case KEY_VWORLD:     settings.VWorldKey   = value; break;
                     case KEY_SEOUL:      settings.SeoulKey    = value; break;
-                    case KEY_DATA_GO_KR: settings.DataGoKrKey = value; break;
+                    case LegacyDataGoKrKeyName: settings.DataGoKrKey = value; break;
                 }
             }
 

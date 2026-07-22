@@ -104,7 +104,7 @@ namespace URSUS.Setup
             if (keys.TryGetValue(ApiKeyProvider.KEY_SEOUL, out var sk) && !string.IsNullOrEmpty(sk))
                 settings.SeoulKey = sk;
 
-            if (keys.TryGetValue(ApiKeyProvider.KEY_DATA_GO_KR, out var dg) && !string.IsNullOrEmpty(dg))
+            if (keys.TryGetValue(nameof(UrsusSettings.DataGoKrKey), out var dg) && !string.IsNullOrEmpty(dg))
                 settings.DataGoKrKey = dg;
 
             // 저장

@@ -15,7 +15,7 @@ namespace URSUS.Setup
     /// 지원 키:
     ///   - VWorld (필수): WFS GetFeature 1건 조회
     ///   - 서울 열린데이터 (필수): tbGiGanByAdongW 1건 조회
-    ///   - 공공데이터포털 data.go.kr (선택): 공시지가 1건 조회
+    ///   - [deprecated legacy] 공공데이터포털: 기존 설정 호환용 검증기만 유지
     /// </summary>
     public sealed class ApiKeyValidator : IDisposable
     {
@@ -383,10 +383,10 @@ namespace URSUS.Setup
                     ValidateSeoulKeyAsync(sk, transportPolicy, ct)));
             }
 
-            if (keys.TryGetValue(ApiKeyProvider.KEY_DATA_GO_KR, out string? dg) &&
+            if (keys.TryGetValue(nameof(UrsusSettings.DataGoKrKey), out string? dg) &&
                 !string.IsNullOrWhiteSpace(dg))
             {
-                tasks.Add((ApiKeyProvider.KEY_DATA_GO_KR, "공공데이터포털",
+                tasks.Add((nameof(UrsusSettings.DataGoKrKey), "공공데이터포털",
                     ValidateDataGoKrKeyAsync(dg, ct)));
             }
 

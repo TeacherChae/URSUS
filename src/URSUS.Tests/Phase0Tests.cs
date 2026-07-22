@@ -263,6 +263,139 @@ internal static class Phase0Tests
                 $"{group.Key}=[{string.Join("/", group.Select(item => item.Name))}]")));
     }
 
+    [Test]
+    internal static void DataGoKrCredential_IsDeprecatedButLegacyContractRemainsReadable()
+    {
+        var keyField = typeof(ApiKeyProvider).GetField(
+            "KEY_DATA_GO_KR", BindingFlags.Public | BindingFlags.Static);
+        var keyProperty = typeof(ApiKeyProvider).GetProperty(
+            "DataGoKrKey", BindingFlags.Public | BindingFlags.Instance);
+
+        AssertEx.True(keyField != null);
+        AssertEx.True(keyProperty != null);
+        AssertEx.True(keyField!.GetCustomAttribute<ObsoleteAttribute>() != null);
+        AssertEx.True(keyProperty!.GetCustomAttribute<ObsoleteAttribute>() != null);
+
+        var provider = new ApiKeyProvider(new Dictionary<string, string>
+        {
+            ["DataGoKrKey"] = "legacy-test-key",
+        });
+        AssertEx.Equal("legacy-test-key", (string?)keyProperty!.GetValue(provider));
+        AssertEx.False(URSUSSolver.DefaultDataSets.Contains(URSUSSolver.DS_LAND_PRICE));
+        AssertEx.False(URSUSSolver.DefaultDataSets.Contains(URSUSSolver.DS_ZONING));
+    }
+
+    [Test]
+    internal static void CurrentKeyUx_DoesNotRequestDataGoKrCredential()
+    {
+        string ghSource = File.ReadAllText(FindRepositoryFile(
+            "src", "URSUS.GH", "ApiKeySettingsComponent.cs"));
+        string setupSource = File.ReadAllText(FindRepositoryFile(
+            "src", "URSUS.Setup", "SetupForm.cs"));
+
+        AssertEx.True(ghSource.Contains(
+            "[Deprecated] Legacy DataGoKr credential status",
+            StringComparison.Ordinal));
+        AssertEx.False(ghSource.Contains(
+            "AddKeyField(\"공공데이터포털 API 키",
+            StringComparison.Ordinal));
+        AssertEx.False(setupSource.Contains(
+            "BuildKeyRow(\n                \"공공데이터포털 API 키",
+            StringComparison.Ordinal));
+        AssertEx.True(setupSource.Contains(
+            "DataGoKrKey is deprecated; preserve legacy config without presenting it in setup.",
+            StringComparison.Ordinal));
+    }
+
+    [Test]
+    internal static void Stage1LiveAcquisitionFixture_ProvesCompletePaginationAndJungGuCohort()
+    {
+        string serialized = File.ReadAllText(FindRepositoryFile(
+            "docs", "fixtures", "vworld-seoul-boundary-live-v1.json"));
+        using var document = JsonDocument.Parse(serialized);
+        JsonElement root = document.RootElement;
+        JsonElement request = root.GetProperty("requestContract");
+        JsonElement pagination = root.GetProperty("pagination");
+        JsonElement cohort = root.GetProperty("cohortFilter");
+
+        AssertEx.Equal("vworld-seoul-boundary-live/1",
+            root.GetProperty("fixtureVersion").GetString());
+        AssertEx.False(request.GetProperty("fullRequestUrlStored").GetBoolean());
+        AssertEx.False(request.GetProperty("geometryStored").GetBoolean());
+        AssertEx.False(request.GetProperty("localPathStored").GetBoolean());
+        AssertEx.Equal("<redacted>",
+            request.GetProperty("parameters").GetProperty("KEY").GetString());
+        AssertEx.False(serialized.Contains("api.vworld.kr/req/wfs?", StringComparison.OrdinalIgnoreCase));
+        AssertEx.False(serialized.Contains("\"geometry\":", StringComparison.OrdinalIgnoreCase));
+        AssertEx.False(serialized.Contains("\"coordinates\":", StringComparison.OrdinalIgnoreCase));
+        AssertEx.False(serialized.Contains("\"features\":", StringComparison.OrdinalIgnoreCase));
+        AssertEx.False(serialized.Contains("서울특별시 중구 세종대로 110", StringComparison.Ordinal));
+        AssertEx.False(serialized.Contains("서울특별시 중구 태평로1가 31", StringComparison.Ordinal));
+        AssertEx.False(serialized.Contains("/home/", StringComparison.OrdinalIgnoreCase));
+        AssertEx.False(serialized.Contains("\\Users\\", StringComparison.OrdinalIgnoreCase));
+
+        AssertEx.True(pagination.GetProperty("complete").GetBoolean());
+        int expected = pagination.GetProperty("expectedTotal").GetInt32();
+        int received = pagination.GetProperty("receivedTotal").GetInt32();
+        AssertEx.Equal(1, pagination.GetProperty("pageCount").GetInt32());
+        AssertEx.Equal(1, pagination.GetProperty("pages").GetArrayLength());
+        AssertEx.Equal(758, expected);
+        AssertEx.Equal(758, received);
+        AssertEx.Equal(expected, received);
+        AssertEx.Equal(received, pagination.GetProperty("pages").EnumerateArray()
+            .Sum(page => page.GetProperty("numberReturned").GetInt32()));
+        AssertEx.Equal(0, pagination.GetProperty("duplicateFeatureIdentityCount").GetInt32());
+        AssertEx.Equal(0, pagination.GetProperty("duplicateCanonicalIdCount").GetInt32());
+
+        JsonElement page = pagination.GetProperty("pages")[0];
+        AssertEx.Equal(0, page.GetProperty("startIndex").GetInt32());
+        AssertEx.Equal(758, page.GetProperty("numberMatched").GetInt32());
+        AssertEx.Equal(758, page.GetProperty("numberReturned").GetInt32());
+        AssertEx.Equal(758, page.GetProperty("featureCount").GetInt32());
+        string responseSha = page.GetProperty("responseSha256").GetString()!;
+        AssertEx.Equal(64, responseSha.Length);
+        AssertEx.True(responseSha.All(Uri.IsHexDigit));
+
+        string[] providerIds = root.GetProperty("providerCanonicalSummary")
+            .GetProperty("canonicalIds").EnumerateArray()
+            .Select(item => item.GetString()!).ToArray();
+        AssertEx.Equal(expected, providerIds.Length);
+        AssertEx.Equal(expected, providerIds.Distinct(StringComparer.Ordinal).Count());
+        AssertEx.True(providerIds.All(id => id.Length == 8 && id.All(char.IsDigit)));
+        AssertEx.True(providerIds.SequenceEqual(
+            providerIds.OrderBy(id => id, StringComparer.Ordinal)));
+        string[] pageIds = page.GetProperty("canonicalIds").EnumerateArray()
+            .Select(item => item.GetString()!).ToArray();
+        AssertEx.True(pageIds.SequenceEqual(providerIds));
+
+        string[] seoulCatalog = MappingLoader.Load().Values.SelectMany(ids => ids)
+            .Select(DistrictCode.CanonicalizeLegal)
+            .Where(id => id.Length == 8 && id.StartsWith("11", StringComparison.Ordinal) &&
+                !id.EndsWith("000", StringComparison.Ordinal))
+            .Distinct(StringComparer.Ordinal)
+            .OrderBy(id => id, StringComparer.Ordinal)
+            .ToArray();
+        string[] jungGuCatalog = seoulCatalog
+            .Where(id => id.StartsWith("11140", StringComparison.Ordinal))
+            .ToArray();
+        AssertEx.Equal(467, seoulCatalog.Length);
+        AssertEx.Equal(74, jungGuCatalog.Length);
+
+        AssertEx.True(cohort.GetProperty("complete").GetBoolean());
+        AssertEx.Equal(74, cohort.GetProperty("requiredCount").GetInt32());
+        AssertEx.Equal(74, cohort.GetProperty("matchedCount").GetInt32());
+        AssertEx.Equal(0, cohort.GetProperty("missingDistrictIds").GetArrayLength());
+        string[] requiredIds = cohort.GetProperty("requiredDistrictIds").EnumerateArray()
+            .Select(item => item.GetString()!).ToArray();
+        string[] matchedIds = cohort.GetProperty("matchedDistrictIds").EnumerateArray()
+            .Select(item => item.GetString()!).ToArray();
+        AssertEx.True(requiredIds.SequenceEqual(jungGuCatalog));
+        AssertEx.True(matchedIds.SequenceEqual(jungGuCatalog));
+        AssertEx.True(matchedIds.Contains("11140103", StringComparer.Ordinal));
+        AssertEx.Equal(684, cohort.GetProperty("providerExtraCount").GetInt32());
+        AssertEx.Equal(684, providerIds.Except(requiredIds, StringComparer.Ordinal).Count());
+    }
+
     private static void WithTemporaryDirectory(Action<string> action)
     {
         string directory = Path.Combine(Path.GetTempPath(), $"ursus-tests-{Guid.NewGuid():N}");

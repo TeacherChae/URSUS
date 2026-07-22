@@ -14,12 +14,12 @@ using URSUS.Analysis;
 namespace URSUS.DataSources
 {
     /// <summary>
-    /// 공공데이터포털(data.go.kr) 토지이용규제정보 → 법정동별 용도지역 범주 histogram.
+    /// 공공데이터포털(data.go.kr) 토지이용규제정보 → 법정동별 용도지역 범주 legacy histogram.
     ///
-    /// - IDataSource 인터페이스 구현 → Registry에 등록하면 자동으로 파이프라인에 포함
+    /// - 기본 dataset에는 포함되지 않으며 호출자가 명시적으로 선택할 때만 사용
     /// - 기본 결과는 범주별 count를 보존하며 numeric overlay를 만들지 않음
     /// - enableOrdinalTransform=true 명시 opt-in에서만 versioned 1~5 점수를 파생
-    /// - DataGoKrKey가 없으면 ValidateConfiguration에서 안내 메시지 반환
+    /// - deprecated DataGoKrKey가 없으면 ValidateConfiguration에서 안내 메시지 반환
     ///
     /// opt-in 점수 해석:
     ///   5.0: 중심/일반상업지역 — 도심 핵심 상업 지역
@@ -53,18 +53,18 @@ namespace URSUS.DataSources
         {
             Id              = "zoning",
             DisplayName     = "용도지역",
-            Description     = "법정동별 용도지역 범주 histogram (명시 opt-in 시에만 ordinal overlay)",
+            Description     = "[Legacy] 법정동별 용도지역 범주 histogram (명시 opt-in 시에만 ordinal overlay)",
             Category        = DataCategory.LandUse,
             Provider        = "공공데이터포털 (data.go.kr)",
             UpdateFrequency = "비정기 (도시계획 변경 시)",
             CoverageArea    = "전국",
-            RequiredApiKeys = new[] { ApiKeyProvider.KEY_DATA_GO_KR },
+            RequiredApiKeys = new[] { ApiKeyProvider.LegacyDataGoKrKeyName },
             CacheTtlDays    = 30
         };
 
         public DataSourceError? ValidateConfiguration()
         {
-            string? key = _keyProvider.DataGoKrKey;
+            string? key = _keyProvider.LegacyDataGoKrKey;
             if (string.IsNullOrWhiteSpace(key))
             {
                 return DataSourceError.ApiKeyMissing(
@@ -86,7 +86,7 @@ namespace URSUS.DataSources
             if (configError != null)
                 return DataResult<DistrictDataSet>.Failure(configError, sw.Elapsed);
 
-            string apiKey = _keyProvider.DataGoKrKey!;
+            string apiKey = _keyProvider.LegacyDataGoKrKey!;
 
             // 법정동 코드 목록이 없으면 에러
             if (query.DistrictCodes == null || query.DistrictCodes.Count == 0)
