@@ -396,6 +396,20 @@ internal static class Phase0Tests
         AssertEx.Equal(684, providerIds.Except(requiredIds, StringComparer.Ordinal).Count());
     }
 
+    [Test]
+    internal static void InnoPascalCharacterLiteral_DoesNotStartAContinuationLine()
+    {
+        string[] lines = File.ReadAllLines(FindRepositoryFile("installer", "URSUS.iss"));
+        string[] invalid = lines.Where(line =>
+        {
+            string trimmed = line.TrimStart();
+            return trimmed.Length > 1 && trimmed[0] == '#' && char.IsDigit(trimmed[1]);
+        }).ToArray();
+
+        AssertEx.Equal(0, invalid.Length,
+            "Inno Setup treats a line-leading #13/#10 Pascal literal as a preprocessor directive.");
+    }
+
     private static void WithTemporaryDirectory(Action<string> action)
     {
         string directory = Path.Combine(Path.GetTempPath(), $"ursus-tests-{Guid.NewGuid():N}");

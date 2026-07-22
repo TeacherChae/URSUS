@@ -828,8 +828,8 @@ begin
   S2 := VerifyStep2_Config(InstallDir);
   S3 := VerifyStep3_ApiKeys(InstallDir);
 
-  Result := '── URSUS 설치 검증 결과 ──' + #13#10 +
-            #13#10 + S1 + #13#10 + S2 + #13#10 + S3;
+  Result := '── URSUS 설치 검증 결과 ──' + #13#10 + #13#10 +
+            S1 + #13#10 + S2 + #13#10 + S3;
 end;
 
 procedure CurStepChanged(CurStep: TSetupStep);
