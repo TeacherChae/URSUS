@@ -521,7 +521,7 @@ internal static class Phase2Tests
 
         AssertEx.Throws<ArgumentException>(() => new IDWVisualizer(points,
             new List<double> { double.NaN, double.NaN, double.NaN, double.NaN }));
-        if (!OperatingSystem.IsWindows()) return;
+        if (!RhinoNativeRuntimeAvailable()) return;
 
         var boundary = new Polyline(new[]
         {
@@ -713,6 +713,22 @@ internal static class Phase2Tests
             position += value.Length;
         }
         return count;
+    }
+
+    private static bool RhinoNativeRuntimeAvailable()
+    {
+        try
+        {
+            if (!System.Runtime.InteropServices.NativeLibrary.TryLoad(
+                    "rhcommon_c", out IntPtr handle))
+                return false;
+            System.Runtime.InteropServices.NativeLibrary.Free(handle);
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
     }
 
     private static string FindRepositoryFile(params string[] parts)
