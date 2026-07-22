@@ -591,7 +591,7 @@ namespace URSUS.Setup
             return _cts.Token;
         }
 
-        private TransportPolicy SeoulValidationPolicy()
+        private URSUS.DataSources.TransportPolicy SeoulValidationPolicy()
             => new(_chkAllowInsecureSeoulHttp.Checked);
 
         private static Color ValidationResultColor(ApiKeyValidator.ValidationResult result)
