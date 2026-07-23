@@ -2,7 +2,9 @@ using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
 using URSUS.Analysis;
+using URSUS.DataSources;
 using URSUS.Geometry;
+using URSUS.Preprocessing;
 
 namespace URSUS.Visualization;
 
@@ -46,6 +48,14 @@ public static class ChoroplethPlanner
             throw new ArgumentOutOfRangeException(nameof(heightScale));
 
         bool useOverlay = string.IsNullOrWhiteSpace(requestedLayerId);
+        if (!useOverlay &&
+            snapshot.SpatialLayers.TryGetValue(requestedLayerId!.Trim(),
+                out ExactSpatialLayerBinding? spatialLayer))
+            return CreateSpatial(spatialLayer, mode, heightScale);
+        if (useOverlay && snapshot.SpatialLayers.Count > 0)
+            throw new InvalidOperationException(
+                "native spatial layer는 global DistrictIndex overlay로 암묵적으로 합칠 수 없습니다.");
+
         string layerId;
         SnapshotLayer layer;
         if (useOverlay)
@@ -100,6 +110,79 @@ public static class ChoroplethPlanner
         return new ChoroplethPlan(layerId, layer.Unit, minimum, maximum, districts,
             missing.Distinct(StringComparer.Ordinal).OrderBy(code => code, StringComparer.Ordinal).ToArray(),
             ComputeSnapshotKey(snapshot, layer), useOverlay);
+    }
+
+    private static ChoroplethPlan CreateSpatial(
+        ExactSpatialLayerBinding layer,
+        VisualizationMode mode,
+        double heightScale)
+    {
+        if (layer.Crs != CoordinateReferenceSystem.Epsg5179)
+            throw new InvalidOperationException(
+                $"spatial layer '{layer.LayerId}'는 EPSG:5179 Geometry로 투영된 뒤 시각화해야 합니다.");
+        if (layer.Features.Count == 0)
+            throw new InvalidOperationException(
+                $"spatial layer '{layer.LayerId}'에 feature가 없습니다.");
+
+        double minimum = layer.Features.Min(feature => feature.Value);
+        double maximum = layer.Features.Max(feature => feature.Value);
+        var districts = layer.Features
+            .OrderBy(feature => feature.UnitId.Value, StringComparer.Ordinal)
+            .Select(feature =>
+            {
+                double normalized = LegendContract.Normalize(feature.Value, minimum, maximum);
+                return new ChoroplethDistrict(
+                    feature.UnitId.Value,
+                    feature.Geometry,
+                    feature.Value,
+                    normalized,
+                    false,
+                    mode == VisualizationMode.Extrusion ? normalized * heightScale : 0);
+            })
+            .ToArray();
+        return new ChoroplethPlan(
+            layer.LayerId,
+            layer.Unit,
+            minimum,
+            maximum,
+            districts,
+            Array.Empty<string>(),
+            ComputeSpatialLayerKey(layer),
+            false);
+    }
+
+    private static string ComputeSpatialLayerKey(ExactSpatialLayerBinding layer)
+    {
+        var canonical = new StringBuilder("spatial-layer-v1|")
+            .Append(layer.LayerId).Append('|')
+            .Append(layer.Unit).Append('|')
+            .Append(layer.Schema.Identity).Append('|')
+            .Append(layer.Crs).Append('|')
+            .Append(layer.StatisticSource.ProviderId).Append('/')
+            .Append(layer.StatisticSource.DatasetId).Append('/')
+            .Append(layer.StatisticSource.SchemaVersion).Append('/')
+            .Append(layer.StatisticSource.EvidenceReference).Append('|')
+            .Append(layer.GeometrySource.ProviderId).Append('/')
+            .Append(layer.GeometrySource.DatasetId).Append('/')
+            .Append(layer.GeometrySource.SchemaVersion).Append('/')
+            .Append(layer.GeometrySource.EvidenceReference).Append('|')
+            .Append(layer.StatisticProjection.ProjectionId).Append('/')
+            .Append(layer.StatisticProjection.EvidenceReference).Append('|')
+            .Append(layer.GeometryProjection.ProjectionId).Append('/')
+            .Append(layer.GeometryProjection.EvidenceReference);
+        foreach (ExactSpatialFeature feature in layer.Features
+                     .OrderBy(item => item.UnitId.Value, StringComparer.Ordinal))
+        {
+            canonical.Append("|u:").Append(feature.UnitId.Value)
+                .Append("|v:").Append(feature.Value.ToString("R", CultureInfo.InvariantCulture));
+            foreach (BoundaryPart part in feature.Geometry.Parts)
+            {
+                AppendRing(canonical, 'o', part.Outer);
+                foreach (BoundaryRing hole in part.Holes) AppendRing(canonical, 'h', hole);
+            }
+        }
+        return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(canonical.ToString())))
+            .ToLowerInvariant();
     }
 
     private static string ComputeSnapshotKey(AnalysisSnapshot snapshot, SnapshotLayer layer)

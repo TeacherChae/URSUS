@@ -2,7 +2,7 @@
 
 상태: `Active Goal Plan`
 결정 기준: `docs/product-journal.md`의 2026-07-22 Site Briefing 및 Address-to-Urban-Context 결정
-목표: 사용자의 주소를 위치·법정동·비교권역으로 해석하고, 현재 검증된 데이터로 다섯 도시 맥락과 신뢰도를 설명하는 Site Brief pipeline을 완성한다.
+목표: 사용자의 주소를 위치·법정동·비교권역으로 해석하고, 각 통계의 native 공간 단위와 exact-matched 공식 Geometry를 사용해 다섯 도시 맥락과 신뢰도를 설명하는 Site Brief pipeline을 완성한다.
 
 ## 1. 제품 약속과 완료 상태
 
@@ -91,7 +91,7 @@ SiteBrief
 - Program → Site screening과 UAM recipe 실행
 - 종합 적합도 점수와 암묵적 균등 가중 overlay
 - 전체 AnalysisRecipe/Scenario 비교와 LLM
-- 신규 provider·데이터셋 및 전국 coverage 확대
+- acquisition gate를 통과하지 않은 신규 provider·데이터셋 및 전국 coverage 확대
 - 지형·환경·도시형태·생활서비스·시계열을 현재 데이터로 추정
 - parcel 수준 건축 규제·buildability와 사업성 판정
 - cloud, 계정, telemetry와 collaboration
@@ -100,10 +100,22 @@ SiteBrief
 
 ### Credential 경계
 
-- 현재 Setup/GH UX와 기본 pipeline은 `VWorldKey`와 `SeoulKey`만 요구한다.
+- 현재 구현된 Setup/GH UX와 기본 pipeline은 `VWorldKey`와 `SeoulKey`만 요구한다.
 - `DataGoKrKey`는 deprecated이며 신규 UX에서 제거한다. 기존 설정 loader와 명시적 data.go.kr 공시지가·용도지역 adapter 호환 surface만 유지한다.
-- VWorld에 유사 layer가 있다는 사실만으로 기존 adapter를 교체하지 않는다. endpoint/service ID, 의미, coverage, pagination, rate/cache와 fixture contract를 별도 검증한다.
+- VWorld에 유사 layer가 있다는 사실만으로 기존 adapter를 교체하지 않는다. 반대로 VWorld에 없다는 이유로 capability 탐색을 종료하지 않는다. 공간 단위별로 SGIS, 국토지리정보원, 서울시 등 후보를 registry에서 탐색하고 endpoint/service ID, 공간 schema, ID namespace/version, 의미, coverage, pagination, rate/cache와 fixture contract를 별도 검증한다.
 - 검증 전에는 `LandValueContext`와 `PlanningContext`를 `Unavailable`로 표시하며, DataGoKr credential 부재를 pipeline 실패로 취급하지 않는다.
+
+### Spatial preprocessing prerequisite
+
+2026-07-23 provider-neutral 기반 구현을 완료했다. 상세 계약은 [Spatial Data Preprocessing Plan](spatial-preprocessing-pipeline.md)을 따른다.
+
+- 각 통계 layer는 원래 집계 단위와 같은 canonical spatial schema의 Geometry만 사용한다.
+- source 컬럼 이름이나 겉보기 해상도가 아니라 authority, namespace, version, level/resolution과 canonical ID를 검증한다.
+- cross-provider pair는 shared namespace 또는 evidence-backed official 1:1 crosswalk가 있을 때만 결합한다.
+- exact ID set이 아니면 Site Brief의 성공 evidence layer가 될 수 없다.
+- `AnalysisSnapshot.SpatialLayers`는 layer별 Geometry를 보존하며 global 법정동 topology는 legacy projection에만 사용한다.
+- 주소의 canonical 법정동은 Site Identity와 법정동 source 연결 키이지 모든 통계의 강제 출력 단위가 아니다.
+- live SGIS/NGII/서울 250m adapter는 dataset별 acquisition fixture와 license/배포 결정을 통과해야 한다.
 
 ## 4. 사업 검증 가설
 
@@ -269,8 +281,9 @@ SiteBrief
 
 **작업**
 
-- resolved legal district를 snapshot district index에 연결한다.
-- layer별 target raw value와 unit, cohort rank/percentile/min/median/max를 계산한다.
+- resolved site point를 각 layer의 exact spatial binding에 point-in-polygon으로 연결하고 canonical unit ID를 결정한다. 법정동 layer만 resolved legal district code를 직접 사용한다.
+- layer별 native spatial schema 안에서 target raw value와 unit, cohort rank/percentile/min/median/max를 계산한다.
+- statistic/Geometry schema와 canonical ID exact-set이 아닌 layer는 `Unavailable`로 처리하고 추정 projection으로 승격하지 않는다.
 - missing과 partial을 0으로 대치하지 않는다.
 - observation, coverage, sample, origins, cache age와 mapping quality를 section에 연결한다.
 - zoning histogram은 composition으로 유지하고 ordinal score를 기본 생성하지 않는다.
@@ -282,6 +295,8 @@ SiteBrief
 
 - network/source dependency 0
 - district order/culture에 무관한 동일 결과
+- layer별 spatial schema/version과 target unit identity 보존
+- 같은 250m·다른 namespace/version, missing Geometry/statistic의 fail-closed 처리
 - rank/percentile tie, small/empty cohort와 NaN/Infinity
 - categorical composition/unknown 보존
 - partial/stale/cache/mapping warning 손실 없음

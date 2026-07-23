@@ -1,6 +1,7 @@
 using URSUS.Caching;
 using URSUS.DataSources;
 using URSUS.Geometry;
+using URSUS.Preprocessing;
 using System.Collections.ObjectModel;
 
 namespace URSUS.Analysis;
@@ -29,6 +30,7 @@ public sealed class AnalysisSnapshot
     public IReadOnlyList<string> DistrictIndex { get; }
     public IReadOnlyDictionary<string, SnapshotLayer> Layers { get; }
     public IReadOnlyDictionary<string, BoundaryTopology> Topologies { get; }
+    public IReadOnlyDictionary<string, ExactSpatialLayerBinding> SpatialLayers { get; }
     public IReadOnlyList<SnapshotWarning> Warnings { get; }
     public IReadOnlyList<SnapshotFailure> Failures { get; }
     public IReadOnlyDictionary<string, NormalizationStatistics> Normalization { get; }
@@ -40,7 +42,8 @@ public sealed class AnalysisSnapshot
         IReadOnlyDictionary<string, BoundaryTopology>? topologies = null,
         IEnumerable<SnapshotWarning>? warnings = null,
         IEnumerable<SnapshotFailure>? failures = null,
-        CoordinateReferenceSystem crs = CoordinateReferenceSystem.Epsg5179)
+        CoordinateReferenceSystem crs = CoordinateReferenceSystem.Epsg5179,
+        IEnumerable<ExactSpatialLayerBinding>? spatialLayers = null)
     {
         ProjectionOrder = Array.AsReadOnly(districtIndex.Select(DistrictCode.CanonicalizeLegal)
             .Where(code => code.Length > 0).Distinct(StringComparer.Ordinal).ToArray());
@@ -71,6 +74,22 @@ public sealed class AnalysisSnapshot
         Topologies = new ReadOnlyDictionary<string, BoundaryTopology>(
             new Dictionary<string, BoundaryTopology>(
                 topologies ?? new Dictionary<string, BoundaryTopology>(), StringComparer.Ordinal));
+        var spatialLayerCopy = spatialLayers?.ToArray() ??
+            Array.Empty<ExactSpatialLayerBinding>();
+        string[] duplicateSpatialLayerIds = spatialLayerCopy
+            .GroupBy(layer => layer.LayerId, StringComparer.Ordinal)
+            .Where(group => group.Count() > 1)
+            .Select(group => group.Key)
+            .ToArray();
+        if (duplicateSpatialLayerIds.Length > 0)
+            throw new ArgumentException(
+                $"spatial layer ID가 중복되었습니다: {string.Join(", ", duplicateSpatialLayerIds)}",
+                nameof(spatialLayers));
+        SpatialLayers = new ReadOnlyDictionary<string, ExactSpatialLayerBinding>(
+            spatialLayerCopy.ToDictionary(
+                layer => layer.LayerId,
+                layer => layer,
+                StringComparer.Ordinal));
         Warnings = Array.AsReadOnly(warnings?.ToArray() ?? Array.Empty<SnapshotWarning>());
         Failures = Array.AsReadOnly(failures?.ToArray() ?? Array.Empty<SnapshotFailure>());
         Normalization = new ReadOnlyDictionary<string, NormalizationStatistics>(
