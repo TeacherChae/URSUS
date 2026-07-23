@@ -170,3 +170,38 @@ Result: `APPROVE`
 - 129/129 tests passed.
 - Core Release 및 GH Release build 0 errors. 기존 RhinoCommon `NU1701`과 Linux의 Windows-only `CA1416` warning만 남았다.
 - `git diff --check` clean, key·정확한 주소의 exception/cache filename 유출 없음.
+
+## Gate 3 — Topology resolver feedback loop
+
+Date: 2026-07-23
+Result: `APPROVE`
+
+### Pre-implementation reviews
+
+- 최초 geometry 판정은 `REQUEST CHANGES` — HIGH 3, MEDIUM 2, LOW 1이었다.
+- cohort를 요구하는 provider와 topology 후에야 확정되는 법정동 사이의 bootstrap 순환, edge/strict 충돌, provider 실행 우선순위와 mixed failure 행렬을 발견했다.
+- API 재검토와 비교해 v1은 기존 Gate 2 cohort cache를 유지하고 `Level4AC` 앞 5자리를 오직 시군구 boundary bootstrap에만 쓰는 최소안을 선택했다. 전체 서울 467 cache 전환은 검증된 cache 계약을 다시 여는 대안이라 보류했다.
+- 후속 geometry 재리뷰는 malformed bootstrap과 dual scope disagreement의 public result가 닫히지 않았음을 HIGH로 지적했다.
+
+### Contract feedback incorporation
+
+- boundary가 필요한 branch에서만 서울/10자리 행정코드/non-empty 시군구명을 검증한다. malformed candidate는 해당 mode schema failure로 바꾸고, valid dual scope 불일치는 `CohortBootstrapDisagreement`로 두 candidate를 보존한다.
+- 행정코드는 법정동 선택에 사용하지 않는다. 선택은 EPSG:5179 topology만 사용하며 selected ID와 WFS full name은 bootstrap cohort에 다시 corroborate한다.
+- global edge-first, `0.01m` squared tolerance, zero-length segment, outer-minus-holes, multipart union과 canonical dedup을 고정했다.
+- address failure → not found → dual distance → bootstrap/boundary → edge/multiple/outside → name → district disagreement → success 순서를 고정했다.
+- Road/Parcel의 서로 다른 typed failure를 mode 순서로 모두 보존하고 첫 failure가 public reason을 결정한다.
+- mapped result fixture는 22개, constructor rejection은 24개로 확장했다.
+
+### Implementation reviews and fixes
+
+- geometry 구현 리뷰는 WFS `full_nm`의 시군구명 corroboration 공백 1 HIGH와 result-level topology/경계 테스트 공백 2 MEDIUM을 발견했다.
+- exact full name 비교, edge+strict/multiple/outside/name/district/cohort mismatch 결과, 150m 경계, reversed ring, vertex ray, cancellation과 Boundary failure 테스트를 추가했다.
+- API/privacy 리뷰는 public enum 중간 삽입에 따른 숫자 호환과 orchestration 검증 공백 2 MEDIUM을 발견했다.
+- 새 enum을 마지막에 append하고 address/boundary cancellation, non-cache, ForceRefresh, typed boundary failures, source time/order와 candidate ownership을 고정했다.
+
+### Final re-reviews and verification
+
+- geometry/API 판정: `APPROVE` — 전 severity 0.
+- API/privacy 판정: `APPROVE` — 전 severity 0, exact-address/secret leakage 0.
+- 142/142 tests passed, Core Release build 0 errors, `git diff --check` clean.
+- 기존 RhinoCommon `NU1701` warning만 남았다.

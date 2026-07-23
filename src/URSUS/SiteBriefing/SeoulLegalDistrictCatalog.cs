@@ -39,10 +39,16 @@ public static class SeoulLegalDistrictCatalog
             throw new ArgumentException("서울 canonical 법정동 코드가 필요합니다.",
                 nameof(targetLegalDistrictCode));
         string sigunguCode = target[..5];
-        IReadOnlyList<string> ids = ForSigungu(sigunguCode);
+        ReferenceCohort cohort = CreateCohortForSigungu(sigunguCode, sigunguName);
+        IReadOnlyList<string> ids = cohort.DistrictIds;
         if (!ids.Contains(target, StringComparer.Ordinal))
             throw new ArgumentException("대상 법정동이 versioned catalog에 없습니다.",
                 nameof(targetLegalDistrictCode));
-        return new ReferenceCohort(sigunguCode, sigunguName, SourceVersion, ids);
+        return cohort;
     }
+
+    public static ReferenceCohort CreateCohortForSigungu(
+        string sigunguCode,
+        string sigunguName)
+        => new(sigunguCode, sigunguName, SourceVersion, ForSigungu(sigunguCode));
 }

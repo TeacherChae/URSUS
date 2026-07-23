@@ -169,7 +169,7 @@ SiteBrief
 
 ### Stage 1 — Address → ResolvedSite provenance
 
-**진행 상태:** `Implementation active — Gates 1–2 approved, Gate 3 next` — 2026-07-22 서울 고정 envelope 758/758와 중구 cohort 74/74 acquisition gate를 통과했다. 2026-07-23 Gate 1의 순수 주소 계약·identity·catalog 구현이 20 mapped result/19 rejection, 118/118 tests와 독립 재리뷰 전 severity 0으로 승인됐다. Gate 2의 VWorld address/cohort projection, typed cache와 fail-closed topology 수집은 129/129 tests와 provider/security 재리뷰 전 severity 0으로 승인됐다.
+**진행 상태:** `Implementation active — Gates 1–3 approved, Gate 4 next` — 2026-07-22 서울 고정 envelope 758/758와 중구 cohort 74/74 acquisition gate를 통과했다. 2026-07-23 Gate 1의 순수 주소 계약·identity·catalog 구현이 20 mapped result/19 rejection, 118/118 tests와 독립 재리뷰 전 severity 0으로 승인됐다. Gate 2의 VWorld address/cohort projection, typed cache와 fail-closed topology 수집은 129/129 tests와 provider/security 재리뷰 전 severity 0으로 승인됐다. Gate 3의 dual-mode resolver, edge-first topology와 strict cohort bootstrap은 22 mapped result/24 rejection, 142/142 tests와 geometry/API/privacy 재리뷰 전 severity 0으로 승인됐다.
 
 **목적:** 사용자가 입력한 주소와 선택된 법정동·비교권역 사이를 재현 가능하게 만든다.
 
@@ -205,7 +205,7 @@ SiteBrief
    Exit: address/error/cohort fixture, cache TTL·ForceRefresh·corrupt/failure non-cache, 74/74 테스트 통과 및 provider/security 리뷰 major 이상 0.
 3. `Gate 3 — Topology resolver`
    Entry: Gate 2 승인.
-   Scope: EPSG:5179 distance, point-in-polygon/edge, legal-name corroboration, dual-mode decision matrix와 reason priority.
+   Scope: `Level4AC` 시군구-only bootstrap validation, EPSG:5179 distance, global edge-first point-in-polygon, legal-name corroboration, mixed typed provider failure 보존, dual-mode decision matrix와 reason priority. 법정동 자체를 행정코드로 선택하지 않으며 전체 서울 cache 재설계는 제외한다.
    Exit: golden Road/Parcel resolution, mixed-candidate ambiguity, hole/edge/overlap/outside, fail-closed 결과 테스트 통과 및 geometry/API 리뷰 major 이상 0.
 4. `Gate 4 — Application integration`
    Entry: Gate 3 승인.

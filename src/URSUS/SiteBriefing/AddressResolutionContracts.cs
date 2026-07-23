@@ -28,6 +28,7 @@ public enum AddressResolutionReason
     ProviderReportedError,
     ProviderSchemaInvalid,
     ProviderTransportFailure,
+    CohortBootstrapDisagreement,
 }
 
 public enum AddressKind { Road, Parcel, DualEquivalent }
@@ -448,6 +449,12 @@ public sealed class AddressResolutionResult
                     LegalDistrictAlternatives.Count == 0 && ProviderFailures.Count == 0,
                     "Dual distance payload가 계약과 일치하지 않습니다.");
                 return;
+            case AddressResolutionReason.CohortBootstrapDisagreement
+                when Status == AddressResolutionStatus.NeedsSelection:
+                Require(noSuccess && Candidates.Count == 2 && RepresentativeLocation == null &&
+                    LegalDistrictAlternatives.Count == 0 && ProviderFailures.Count == 0,
+                    "Cohort bootstrap disagreement payload가 계약과 일치하지 않습니다.");
+                return;
             case AddressResolutionReason.DistrictEdge
                 when Status == AddressResolutionStatus.NeedsSelection:
                 Require(noSuccess && Candidates.Count is 1 or 2 && RepresentativeLocation != null &&
@@ -505,17 +512,7 @@ public sealed class AddressResolutionResult
                  AddressResolutionReason.ProviderSchemaInvalid or
                  AddressResolutionReason.ProviderTransportFailure
                 when Status == AddressResolutionStatus.ProviderFailure:
-                string expectedCode = ReasonCode switch
-                {
-                    AddressResolutionReason.ProviderReportedError => "PROVIDER_REPORTED_ERROR",
-                    AddressResolutionReason.ProviderSchemaInvalid => "PROVIDER_SCHEMA_INVALID",
-                    _ => "PROVIDER_TRANSPORT_FAILURE",
-                };
-                RequireProviderFailure(noSuccess && Candidates.Count <= 2 &&
-                    ProviderFailures.Count is 1 or 2 &&
-                    ProviderFailures.All(failure => failure.CanonicalCode == expectedCode) &&
-                    (Candidates.Count < 2 ||
-                     ProviderFailures.All(failure => failure.Mode == ProviderFailureMode.Boundary)));
+                RequireProviderFailure(noSuccess && ValidateGenericProviderFailures());
                 return;
             case AddressResolutionReason.BothModesNotFound
                 when Status == AddressResolutionStatus.NotFound:
@@ -533,6 +530,41 @@ public sealed class AddressResolutionResult
     private void RequireProviderFailure(bool condition)
         => Require(condition && RepresentativeLocation == null &&
             LegalDistrictAlternatives.Count == 0, "Provider failure payload가 계약과 일치하지 않습니다.");
+
+    private bool ValidateGenericProviderFailures()
+    {
+        if (Candidates.Count > 2 || ProviderFailures.Count is < 1 or > 2)
+            return false;
+        ProviderFailureMode[] modes = ProviderFailures.Select(failure => failure.Mode).ToArray();
+        if (!modes.SequenceEqual(modes.OrderBy(mode => mode)) ||
+            modes.Distinct().Count() != modes.Length ||
+            ProviderFailures.Any(failure => GenericReason(failure.CanonicalCode) == null) ||
+            GenericReason(ProviderFailures[0].CanonicalCode) != ReasonCode)
+            return false;
+
+        bool hasBoundary = modes.Contains(ProviderFailureMode.Boundary);
+        if (hasBoundary)
+            return ProviderFailures.Count == 1 && Candidates.Count is 1 or 2;
+        if (Candidates.Count == 2) return false;
+        if (Candidates.Count == 1)
+        {
+            if (ProviderFailures.Count != 1) return false;
+            ProviderFailureMode expectedFailure = Candidates[0].Kind == AddressCandidateKind.Road
+                ? ProviderFailureMode.Parcel
+                : ProviderFailureMode.Road;
+            return ProviderFailures[0].Mode == expectedFailure;
+        }
+        return modes.All(mode => mode is ProviderFailureMode.Road or ProviderFailureMode.Parcel);
+    }
+
+    private static AddressResolutionReason? GenericReason(string canonicalCode)
+        => canonicalCode switch
+        {
+            "PROVIDER_REPORTED_ERROR" => AddressResolutionReason.ProviderReportedError,
+            "PROVIDER_SCHEMA_INVALID" => AddressResolutionReason.ProviderSchemaInvalid,
+            "PROVIDER_TRANSPORT_FAILURE" => AddressResolutionReason.ProviderTransportFailure,
+            _ => null,
+        };
 
     private void ValidateAmbiguityLinks()
     {

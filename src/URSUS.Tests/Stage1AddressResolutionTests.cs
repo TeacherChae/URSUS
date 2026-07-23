@@ -277,7 +277,7 @@ internal static class Stage1AddressResolutionTests
         using JsonDocument document = JsonDocument.Parse(File.ReadAllText(
             FindRepositoryFile("docs", "fixtures", "address-resolution-result-cases-v1.json")));
         JsonElement cases = document.RootElement.GetProperty("cases");
-        AssertEx.Equal(20, cases.GetArrayLength());
+        AssertEx.Equal(22, cases.GetArrayLength());
 
         foreach (JsonElement item in cases.EnumerateArray())
         {
@@ -351,6 +351,9 @@ internal static class Stage1AddressResolutionTests
         ProviderFailure incomplete = new(ProviderFailureMode.Boundary,
             "COHORT_BOUNDARY_INCOMPLETE", "MEMBERSHIP_MISMATCH", null,
             "Boundary provider returned 73 of 74 required legal districts.");
+        ProviderFailure transport = new(ProviderFailureMode.Parcel,
+            "PROVIDER_TRANSPORT_FAILURE", null, null,
+            "Address provider request timed out.");
 
         var actions = new Dictionary<string, Action>(StringComparer.Ordinal)
         {
@@ -417,13 +420,33 @@ internal static class Stage1AddressResolutionTests
                 AddressResolutionReason.ProviderSchemaInvalid, null, null,
                 new[] { road, ParcelCandidate() }, null, [],
                 new[] { schema with { Mode = ProviderFailureMode.Boundary } }),
+            ["mixed-provider-failures-wrong-primary-reason"] = () => New(
+                AddressResolutionStatus.ProviderFailure,
+                AddressResolutionReason.ProviderTransportFailure, null, null,
+                [], null, [], new[] { schema, transport }),
+            ["mixed-provider-failures-wrong-order"] = () => New(
+                AddressResolutionStatus.ProviderFailure,
+                AddressResolutionReason.ProviderTransportFailure, null, null,
+                [], null, [], new[] { transport, schema }),
+            ["generic-provider-duplicate-failure-mode"] = () => New(
+                AddressResolutionStatus.ProviderFailure,
+                AddressResolutionReason.ProviderSchemaInvalid, null, null,
+                [], null, [], new[] { schema, schema }),
+            ["generic-provider-address-boundary-mixed"] = () => New(
+                AddressResolutionStatus.ProviderFailure,
+                AddressResolutionReason.ProviderSchemaInvalid, null, null,
+                [], null, [], new[] { schema, transport with { Mode = ProviderFailureMode.Boundary } }),
+            ["generic-provider-unknown-canonical-code"] = () => New(
+                AddressResolutionStatus.ProviderFailure,
+                AddressResolutionReason.ProviderSchemaInvalid, null, null,
+                [], null, [], new[] { schema with { CanonicalCode = "UNKNOWN_FAILURE" } }),
         };
 
         using JsonDocument fixture = JsonDocument.Parse(File.ReadAllText(
             FindRepositoryFile("docs", "fixtures", "address-resolution-result-cases-v1.json")));
         string[] declared = fixture.RootElement.GetProperty("constructorRejectionCases")
             .EnumerateArray().Select(item => item.GetProperty("caseId").GetString()!).ToArray();
-        AssertEx.Equal(19, declared.Length);
+        AssertEx.Equal(24, declared.Length);
         AssertEx.True(declared.OrderBy(id => id, StringComparer.Ordinal).SequenceEqual(
             actions.Keys.OrderBy(id => id, StringComparer.Ordinal)));
         foreach (string caseId in declared)

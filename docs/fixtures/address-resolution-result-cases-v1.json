@@ -1246,6 +1246,93 @@
         "legalDistrictAlternatives": [],
         "providerFailures": []
       }
+    },
+    {
+      "caseId": "mixed-address-provider-failures",
+      "inputNature": "Road returned a reported provider error while Parcel timed out; both typed failures are preserved in deterministic mode order.",
+      "expected": {
+        "status": "ProviderFailure",
+        "reasonCode": "ProviderReportedError",
+        "resolvedSite": null,
+        "referenceCohort": null,
+        "candidates": [],
+        "representativeLocation": null,
+        "legalDistrictAlternatives": [],
+        "providerFailures": [
+          {
+            "mode": "Road",
+            "canonicalCode": "PROVIDER_REPORTED_ERROR",
+            "providerCode": "INVALID_KEY",
+            "providerLevel": "2",
+            "safeMessage": "Address provider authentication failed."
+          },
+          {
+            "mode": "Parcel",
+            "canonicalCode": "PROVIDER_TRANSPORT_FAILURE",
+            "providerCode": null,
+            "providerLevel": null,
+            "safeMessage": "Address provider request timed out."
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "cohort-bootstrap-disagreement",
+      "inputNature": "Road and Parcel are within 150 meters but individually valid provider structures identify different sigungu bootstrap scopes.",
+      "expected": {
+        "status": "NeedsSelection",
+        "reasonCode": "CohortBootstrapDisagreement",
+        "resolvedSite": null,
+        "referenceCohort": null,
+        "candidates": [
+          {
+            "kind": "Road",
+            "inputAddress": "합성 이중 주소",
+            "refinedText": "합성 도로명 주소",
+            "refinedStructure": {
+              "level0": "대한민국",
+              "level1": "서울특별시",
+              "level2": "중구",
+              "level3": "합성법정동가",
+              "level4L": "합성로",
+              "level4A": "합성행정동",
+              "level5": "30"
+            },
+            "wgs84": {
+              "crs": "EPSG:4326",
+              "longitude": 126.9785,
+              "latitude": 37.5668
+            },
+            "responseContract": "VWorld address/2.0",
+            "responseFingerprint": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+          },
+          {
+            "kind": "Parcel",
+            "inputAddress": "합성 이중 주소",
+            "refinedText": "합성 지번 주소",
+            "refinedStructure": {
+              "level0": "대한민국",
+              "level1": "서울특별시",
+              "level2": "종로구",
+              "level3": "",
+              "level4L": "합성법정동나",
+              "level4A": "합성행정동",
+              "level5": "31",
+              "level4AC": "1111051500"
+            },
+            "wgs84": {
+              "crs": "EPSG:4326",
+              "longitude": 126.9786,
+              "latitude": 37.5669
+            },
+            "responseContract": "VWorld address/2.0",
+            "responseFingerprint": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+          }
+        ],
+        "representativeLocation": null,
+        "legalDistrictAlternatives": [],
+        "providerFailures": []
+      }
     }
   ],
   "constructorRejectionCases": [
@@ -1342,6 +1429,31 @@
     {
       "caseId": "dual-candidates-different-input-provenance",
       "mutation": "Give Road and Parcel candidates different verbatim InputAddress values in one result.",
+      "expectedException": "ArgumentException"
+    },
+    {
+      "caseId": "mixed-provider-failures-wrong-primary-reason",
+      "mutation": "Mixed failures require the first ordered failure to define the public reason.",
+      "expectedException": "ArgumentException"
+    },
+    {
+      "caseId": "mixed-provider-failures-wrong-order",
+      "mutation": "Mixed failures must be ordered Road then Parcel.",
+      "expectedException": "ArgumentException"
+    },
+    {
+      "caseId": "generic-provider-duplicate-failure-mode",
+      "mutation": "Two generic provider failures repeat Road mode.",
+      "expectedException": "ArgumentException"
+    },
+    {
+      "caseId": "generic-provider-address-boundary-mixed",
+      "mutation": "Generic provider failures mix Road and Boundary branches.",
+      "expectedException": "ArgumentException"
+    },
+    {
+      "caseId": "generic-provider-unknown-canonical-code",
+      "mutation": "Generic provider failure uses an undeclared canonical code.",
       "expectedException": "ArgumentException"
     }
   ]
