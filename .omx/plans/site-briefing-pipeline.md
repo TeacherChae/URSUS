@@ -169,7 +169,7 @@ SiteBrief
 
 ### Stage 1 — Address → ResolvedSite provenance
 
-**진행 상태:** `Implementation active — Gate 1 approved, Gate 2 next` — 2026-07-22 서울 고정 envelope 758/758와 중구 cohort 74/74 acquisition gate를 통과했다. 2026-07-23 Gate 1의 순수 주소 계약·identity·catalog 구현이 20 mapped result/19 rejection, 118/118 tests와 독립 재리뷰 전 severity 0으로 승인됐다.
+**진행 상태:** `Implementation active — Gates 1–2 approved, Gate 3 next` — 2026-07-22 서울 고정 envelope 758/758와 중구 cohort 74/74 acquisition gate를 통과했다. 2026-07-23 Gate 1의 순수 주소 계약·identity·catalog 구현이 20 mapped result/19 rejection, 118/118 tests와 독립 재리뷰 전 severity 0으로 승인됐다. Gate 2의 VWorld address/cohort projection, typed cache와 fail-closed topology 수집은 129/129 tests와 provider/security 재리뷰 전 severity 0으로 승인됐다.
 
 **목적:** 사용자가 입력한 주소와 선택된 법정동·비교권역 사이를 재현 가능하게 만든다.
 

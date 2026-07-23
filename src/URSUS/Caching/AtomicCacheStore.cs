@@ -83,10 +83,20 @@ public sealed class AtomicCacheStore
         TimeSpan ttl,
         Func<CancellationToken, Task<T>> fetch,
         CancellationToken cancellationToken = default)
+        => await GetOrFetchAsync(key, forceRefresh, _ => ttl, fetch, cancellationToken)
+            .ConfigureAwait(false);
+
+    public async Task<CacheRead<T>> GetOrFetchAsync<T>(
+        PersistentCacheKey key,
+        bool forceRefresh,
+        Func<T, TimeSpan> ttlSelector,
+        Func<CancellationToken, Task<T>> fetch,
+        CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(ttlSelector);
         string inflightKey = $"{key.Value}|{forceRefresh}|{typeof(T).FullName}";
         var candidate = new InflightOperation(token => ExecuteOriginAsync(
-            key, forceRefresh, ttl, fetch, token).ContinueWith<object>(
+            key, forceRefresh, ttlSelector, fetch, token).ContinueWith<object>(
                 completed => completed.GetAwaiter().GetResult(),
                 CancellationToken.None,
                 TaskContinuationOptions.ExecuteSynchronously,
@@ -110,7 +120,7 @@ public sealed class AtomicCacheStore
     private async Task<CacheRead<T>> ExecuteOriginAsync<T>(
         PersistentCacheKey key,
         bool forceRefresh,
-        TimeSpan ttl,
+        Func<T, TimeSpan> ttlSelector,
         Func<CancellationToken, Task<T>> fetch,
         CancellationToken cancellationToken)
     {
@@ -121,7 +131,7 @@ public sealed class AtomicCacheStore
             string path = Path.Combine(_root, key.Value + ".json");
             if (!forceRefresh)
             {
-                var hit = await TryReadAsync<T>(path, ttl, cancellationToken).ConfigureAwait(false);
+                var hit = await TryReadAsync(path, ttlSelector, cancellationToken).ConfigureAwait(false);
                 if (hit != null) return hit;
             }
 
@@ -163,23 +173,50 @@ public sealed class AtomicCacheStore
     }
 
     private async Task<CacheRead<T>?> TryReadAsync<T>(
-        string path, TimeSpan ttl, CancellationToken cancellationToken)
+        string path, Func<T, TimeSpan> ttlSelector, CancellationToken cancellationToken)
     {
         if (!File.Exists(path)) return null;
         try
         {
-            await using var stream = new FileStream(path, FileMode.Open, FileAccess.Read,
-                FileShare.Read, 16 * 1024, FileOptions.Asynchronous | FileOptions.SequentialScan);
-            var envelope = await JsonSerializer.DeserializeAsync<PersistedCacheEnvelope<T>>(
-                stream, JsonOptions, cancellationToken).ConfigureAwait(false);
-            if (envelope == null || envelope.SchemaVersion != EnvelopeSchema) return null;
+            PersistedCacheEnvelope<T>? envelope;
+            await using (var stream = new FileStream(path, FileMode.Open, FileAccess.Read,
+                FileShare.Read, 16 * 1024, FileOptions.Asynchronous | FileOptions.SequentialScan))
+            {
+                envelope = await JsonSerializer.DeserializeAsync<PersistedCacheEnvelope<T>>(
+                    stream, JsonOptions, cancellationToken).ConfigureAwait(false);
+            }
+            if (envelope == null || envelope.SchemaVersion != EnvelopeSchema || envelope.Value is null)
+            {
+                TryDeleteCorrupt(path);
+                return null;
+            }
+            TimeSpan ttl;
+            try { ttl = ttlSelector(envelope.Value); }
+            catch (Exception ex) when (ex is ArgumentException or InvalidOperationException or
+                                       NullReferenceException)
+            {
+                TryDeleteCorrupt(path);
+                return null;
+            }
+            if (ttl <= TimeSpan.Zero)
+            {
+                TryDeleteCorrupt(path);
+                return null;
+            }
             TimeSpan age = _clock.UtcNow - envelope.RetrievedAt;
             if (age < TimeSpan.Zero || age > ttl) return null;
             return new CacheRead<T>(envelope.Value, envelope.RetrievedAt,
                 envelope.AcquisitionOrigin, DeliveryOrigin.Cache, age);
         }
-        catch (JsonException) { return null; }
+        catch (JsonException) { TryDeleteCorrupt(path); return null; }
         catch (IOException) { return null; }
+    }
+
+    private static void TryDeleteCorrupt(string path)
+    {
+        try { File.Delete(path); }
+        catch (IOException) { }
+        catch (UnauthorizedAccessException) { }
     }
 
     private static async Task WriteAtomicAsync<T>(

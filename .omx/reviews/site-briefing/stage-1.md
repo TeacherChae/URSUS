@@ -137,3 +137,36 @@ Result: `APPROVE`
 - 서울 법정동 catalog 467, 중구 74, cohort SHA-256, exact input/semantic fingerprint와 immutable ownership을 확인했다.
 - 검증: 118/118 tests, Release build 0 errors, `git diff --check` 통과.
 - 기존 RhinoCommon `NU1701` warning만 비차단 항목으로 남았다.
+
+## Gate 2 — Provider projection and cache feedback loop
+
+Date: 2026-07-23
+Result: `APPROVE`
+
+### Implementation review 1
+
+- 판정: `REQUEST CHANGES` — HIGH 1, MEDIUM 3.
+- 기존 GeoJSON parser가 invalid hole/part를 제거하고 open ring을 자동 폐합한 뒤 warning만 남겨, 손실된 법정동 topology가 30일 성공 cache에 들어갈 수 있었다.
+- Address OK의 service name/operation과 EPSG:4326 계약, malformed ERROR의 required code 검증이 부족했다.
+- 실제 parcel fixture, cohort oracle 직접 사용, boundary cache TTL/ForceRefresh/corrupt, caller cancellation, raw name round-trip과 strict malformed topology 검증 공백이 있었다.
+
+### Feedback incorporation
+
+- Polygon/MultiPolygon의 모든 part/ring/coordinate를 선검증하고 explicit closure를 요구했다. 기존 parser가 warning을 하나라도 반환하면 성공하지 않고 `ProviderSchemaInvalid`로 닫는다.
+- Address service name/version/operation, echoed input mode/query와 result CRS를 exact contract로 검증한다. ERROR code 누락은 schema failure이며 XML ExceptionReport만 명시적으로 no-code reported failure로 매핑한다.
+- 실제 parcel capture와 `vworld-cohort-boundary-cases-v1.json`을 oracle로 사용했다.
+- address Success 30일/NotFound 24시간, boundary 30일, ForceRefresh, logical corrupt repair, failure/cancellation non-cache와 `full_nm`/`emd_kor_nm` cache round-trip을 잠갔다.
+- open ring, malformed hole, partially invalid MultiPolygon을 모두 fail-closed하고 cache를 만들지 않는다.
+
+### Re-review and LOW closure
+
+- 재리뷰 판정: `APPROVE` — CRITICAL/HIGH/MEDIUM 0, LOW 1.
+- 남은 LOW는 WFS `features.OfType<JsonObject>()`가 비-object를 조용히 제거할 수 있다는 점이었다.
+- raw `features.Count == numberReturned`와 모든 node의 object shape를 먼저 검사하도록 바꾸고 string feature fixture가 `ProviderSchemaInvalid`와 non-cache가 됨을 고정했다.
+- 최종 판정: `APPROVE` — CRITICAL/HIGH/MEDIUM/LOW 모두 0.
+
+### Verification
+
+- 129/129 tests passed.
+- Core Release 및 GH Release build 0 errors. 기존 RhinoCommon `NU1701`과 Linux의 Windows-only `CA1416` warning만 남았다.
+- `git diff --check` clean, key·정확한 주소의 exception/cache filename 유출 없음.
