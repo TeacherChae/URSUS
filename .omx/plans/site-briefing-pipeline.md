@@ -169,7 +169,7 @@ SiteBrief
 
 ### Stage 1 — Address → ResolvedSite provenance
 
-**진행 상태:** `Acquisition gate passed; implementation pending` — 2026-07-22 독립 사전 리뷰와 재리뷰를 통과한 뒤 서울 고정 envelope를 실제 조회했다. pagination은 1 page, 758/758로 완결됐고 중구 cohort는 74/74였다. sanitized evidence는 `docs/fixtures/vworld-seoul-boundary-live-v1.json`에 있으며 production code는 아직 작성하지 않았다.
+**진행 상태:** `Implementation active — Gate 1 approved, Gate 2 next` — 2026-07-22 서울 고정 envelope 758/758와 중구 cohort 74/74 acquisition gate를 통과했다. 2026-07-23 Gate 1의 순수 주소 계약·identity·catalog 구현이 20 mapped result/19 rejection, 118/118 tests와 독립 재리뷰 전 severity 0으로 승인됐다.
 
 **목적:** 사용자가 입력한 주소와 선택된 법정동·비교권역 사이를 재현 가능하게 만든다.
 
@@ -192,6 +192,25 @@ SiteBrief
 - provider cache는 normalized input/mode/version, `ResolutionId`는 timing을 제외한 resolved fields로 생성하며 alias cache는 v1에서 합치지 않는다.
 - 진단·로그·cache filename에는 exact address를 쓰지 않는다. 사용자 실행 export는 전체 주소와 precise coordinate를 기본 포함하고, 명시적 `Anonymized` mode에서만 주소·precise coordinate를 제외한다.
 - legacy sync overload만 default address를 유지하고 obsolete warning을 남기며 canonical async/GH flow는 빈 주소를 거부한다.
+
+**구현 게이트와 의존성**
+
+1. `Gate 1 — Pure contracts`
+   Entry: Stage 0 계약·실데이터 acquisition gate 완료.
+   Scope: immutable result/site/candidate/failure/identity, `SeoulLegalDistrictCatalog`, `ReferenceCohort`, `AnalysisRequest.InputAddress1`. HTTP/cache/geometry/snapshot/Solver/GH는 제외한다.
+   Exit: identity fixture, 20 mapped result와 constructor rejection, 467/74 catalog, 주소 원문/semantic fingerprint 테스트 통과 및 독립 API 리뷰 major 이상 0.
+2. `Gate 2 — Provider projection and cache`
+   Entry: Gate 1 승인.
+   Scope: VWorld road/parcel typed DTO, raw WFS name+topology DTO, pagination, exact cohort filter, typed cache와 failure mapping.
+   Exit: address/error/cohort fixture, cache TTL·ForceRefresh·corrupt/failure non-cache, 74/74 테스트 통과 및 provider/security 리뷰 major 이상 0.
+3. `Gate 3 — Topology resolver`
+   Entry: Gate 2 승인.
+   Scope: EPSG:5179 distance, point-in-polygon/edge, legal-name corroboration, dual-mode decision matrix와 reason priority.
+   Exit: golden Road/Parcel resolution, mixed-candidate ambiguity, hole/edge/overlap/outside, fail-closed 결과 테스트 통과 및 geometry/API 리뷰 major 이상 0.
+4. `Gate 4 — Application integration`
+   Entry: Gate 3 승인.
+   Scope: optional `ResolvedSite`/`ReferenceCohort` snapshot tail, canonical async Solver/GH flow, stale/privacy/export/legacy compatibility.
+   Exit: 기존 constructor/GH document 호환, 빈 주소 거부, snapshot membership, redaction/export 테스트와 전체 build 통과 및 compatibility/security 리뷰 major 이상 0.
 
 **테스트 우선 계약**
 

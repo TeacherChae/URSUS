@@ -107,3 +107,33 @@ Date: 2026-07-22
 - 판정: `APPROVE` — blocker 0, major 0, medium 0.
 - reviewer의 non-blocking LOW 제안까지 반영해 `pages` 실제 배열 길이도 정확히 1로 고정했다.
 - 최종 자동 검증은 105/105 tests, Core/GH build, package contract와 secret scan이다.
+
+## Gate 1 — Pure contracts feedback loop
+
+Date: 2026-07-23
+Result: `APPROVE`
+
+### Pre-implementation review
+
+- 최초 판정은 `REQUEST CHANGES` — HIGH 1, MEDIUM 5, LOW 1이었다.
+- Road/Parcel 모두 성공한 뒤 Boundary가 실패할 때 두 candidate를 보존할 수 없던 결과 행렬 모순을 `0..2`와 Boundary-only 제약으로 수정했다.
+- Gate 1~4 의존성, 원인 candidate representative, WGS84/150m/name 비교, typed cache 정책, raw WFS name projection과 whitespace provenance 결정을 계약에 추가했다.
+
+### Implementation review 1
+
+- 판정: `REQUEST CHANGES` — HIGH 1, MEDIUM 2.
+- 두 candidate Road/Parcel order, alternative→candidate 연결, reason candidate representative와 전체 fixture oracle 검증을 추가했다.
+- Road/Parcel/DualEquivalent identity, mode별 legal-name field와 `VWorld address/2.0` 계약을 고정했다.
+
+### Implementation review 2
+
+- 판정: `REQUEST CHANGES` — HIGH 1, MEDIUM 4, LOW 1.
+- `RepresentativeLocation.CandidateKind`, 동일 verbatim input provenance, disagreement canonical code distinct와 leaf enum/string validation을 추가했다.
+- fixture를 20 mapped cases와 19 constructor rejection으로 확장하고 전체 public payload를 검증했다.
+
+### Final re-review
+
+- 판정: `APPROVE` — CRITICAL/HIGH/MEDIUM/LOW 모두 0.
+- 서울 법정동 catalog 467, 중구 74, cohort SHA-256, exact input/semantic fingerprint와 immutable ownership을 확인했다.
+- 검증: 118/118 tests, Release build 0 errors, `git diff --check` 통과.
+- 기존 RhinoCommon `NU1701` warning만 비차단 항목으로 남았다.

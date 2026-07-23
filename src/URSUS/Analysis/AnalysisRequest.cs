@@ -3,6 +3,7 @@ using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
 using URSUS.DataSources;
+using URSUS.SiteBriefing;
 
 namespace URSUS.Analysis;
 
@@ -10,6 +11,7 @@ public sealed class AnalysisRequest
 {
     public IReadOnlyList<string> DataSets { get; }
     public IReadOnlyList<double>? Weights { get; }
+    public string? InputAddress1 { get; }
     public string? Address1 { get; }
     public string? Address2 { get; }
     public double? RadiusKm { get; }
@@ -39,6 +41,7 @@ public sealed class AnalysisRequest
             throw new ArgumentException("DataSets에는 중복 항목을 지정할 수 없습니다.", nameof(dataSets));
         DataSets = Array.AsReadOnly(copiedDataSets);
         Weights = weights == null ? null : Array.AsReadOnly(weights.ToArray());
+        InputAddress1 = address1;
         Address1 = address1?.Trim();
         Address2 = address2?.Trim();
         RadiusKm = radiusKm;
@@ -58,7 +61,7 @@ public sealed class AnalysisRequest
             .Append("|force:").Append(ForceRefresh)
             .Append("|intent:").Append(QueryIntent)
             .Append("|period:").Append(ExplicitPeriod ?? string.Empty)
-            .Append("|a1:").Append(Address1 ?? string.Empty)
+            .Append("|a1:").Append(AddressQueryNormalizer.Normalize(Address1))
             .Append("|a2:").Append(Address2 ?? string.Empty)
             .Append("|radius:").Append(RadiusKm?.ToString("R", CultureInfo.InvariantCulture) ?? string.Empty)
             .Append("|keys:").Append(KeyFingerprint);

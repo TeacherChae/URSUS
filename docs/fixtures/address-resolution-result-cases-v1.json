@@ -429,7 +429,8 @@
             "y": 1952043.0283577868,
             "transformVersion": "URSUS.Epsg5179/1"
           },
-          "selectionBasis": "Only successful address candidate; legal district is unresolved."
+          "selectionBasis": "Only successful address candidate; legal district is unresolved.",
+          "candidateKind": "Road"
         },
         "legalDistrictAlternatives": [
           {
@@ -497,7 +498,8 @@
             "y": 1952054.0738442433,
             "transformVersion": "URSUS.Epsg5179/1"
           },
-          "selectionBasis": "Only successful address candidate; WFS topology overlaps."
+          "selectionBasis": "Only successful address candidate; WFS topology overlaps.",
+          "candidateKind": "Parcel"
         },
         "legalDistrictAlternatives": [
           {
@@ -698,7 +700,8 @@
             "y": 1953524.0216645044,
             "transformVersion": "URSUS.Epsg5179/1"
           },
-          "selectionBasis": "Only successful address candidate; no legal-district topology matched."
+          "selectionBasis": "Only successful address candidate; no legal-district topology matched.",
+          "candidateKind": "Road"
         },
         "legalDistrictAlternatives": [],
         "providerFailures": []
@@ -758,6 +761,488 @@
         "referenceCohort": null,
         "candidates": [],
         "representativeLocation": null,
+        "legalDistrictAlternatives": [],
+        "providerFailures": []
+      }
+    },
+    {
+      "caseId": "dual-success-boundary-reported-error",
+      "inputNature": "Road and Parcel candidates succeeded before the Boundary WFS failed.",
+      "expected": {
+        "status": "ProviderFailure",
+        "reasonCode": "ProviderReportedError",
+        "resolvedSite": null,
+        "referenceCohort": null,
+        "candidates": [
+          {
+            "kind": "Road",
+            "refinedText": "서울특별시 중구 세종대로 110 (태평로1가)",
+            "wgs84": {
+              "crs": "EPSG:4326",
+              "longitude": 126.97834678005411,
+              "latitude": 37.56670100709671
+            },
+            "responseContract": "VWorld address/2.0",
+            "responseFingerprint": "702f1e6f788434921910ab4ce1ec479cd18c096a1d20a22acb1402194cbcb13f",
+            "inputAddress": "합성 dual-mode 입력 주소",
+            "refinedStructure": {
+              "level0": "대한민국",
+              "level1": "서울특별시",
+              "level2": "중구",
+              "level3": "태평로1가",
+              "level4L": "세종대로",
+              "level4LC": "",
+              "level4A": "명동",
+              "level4AC": "1114055000",
+              "level5": "110",
+              "detail": "서울특별시 청사 신관"
+            }
+          },
+          {
+            "kind": "Parcel",
+            "refinedText": "서울특별시 중구 태평로1가 31",
+            "wgs84": {
+              "crs": "EPSG:4326",
+              "longitude": 126.9782290751147,
+              "latitude": 37.56657117348658
+            },
+            "responseContract": "VWorld address/2.0",
+            "responseFingerprint": "2fa7acf1d6d8079fcbd98d7213d9c6cbcb01113ce5a95fb19965ecd9eb4af6e3",
+            "inputAddress": "합성 dual-mode 입력 주소",
+            "refinedStructure": {
+              "level0": "대한민국",
+              "level1": "서울특별시",
+              "level2": "중구",
+              "level3": "",
+              "level4L": "태평로1가",
+              "level4LC": "1114010300100310000",
+              "level4A": "명동",
+              "level4AC": "1114055000",
+              "level5": "31",
+              "detail": "서울특별시청 본관동"
+            }
+          }
+        ],
+        "representativeLocation": null,
+        "legalDistrictAlternatives": [],
+        "providerFailures": [
+          {
+            "mode": "Boundary",
+            "canonicalCode": "PROVIDER_REPORTED_ERROR",
+            "providerCode": null,
+            "providerLevel": null,
+            "safeMessage": "Boundary provider rejected the request."
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "dual-success-boundary-schema-invalid",
+      "inputNature": "Road and Parcel candidates succeeded before the Boundary WFS failed.",
+      "expected": {
+        "status": "ProviderFailure",
+        "reasonCode": "ProviderSchemaInvalid",
+        "resolvedSite": null,
+        "referenceCohort": null,
+        "candidates": [
+          {
+            "kind": "Road",
+            "refinedText": "서울특별시 중구 세종대로 110 (태평로1가)",
+            "wgs84": {
+              "crs": "EPSG:4326",
+              "longitude": 126.97834678005411,
+              "latitude": 37.56670100709671
+            },
+            "responseContract": "VWorld address/2.0",
+            "responseFingerprint": "702f1e6f788434921910ab4ce1ec479cd18c096a1d20a22acb1402194cbcb13f",
+            "inputAddress": "합성 dual-mode 입력 주소",
+            "refinedStructure": {
+              "level0": "대한민국",
+              "level1": "서울특별시",
+              "level2": "중구",
+              "level3": "태평로1가",
+              "level4L": "세종대로",
+              "level4LC": "",
+              "level4A": "명동",
+              "level4AC": "1114055000",
+              "level5": "110",
+              "detail": "서울특별시 청사 신관"
+            }
+          },
+          {
+            "kind": "Parcel",
+            "refinedText": "서울특별시 중구 태평로1가 31",
+            "wgs84": {
+              "crs": "EPSG:4326",
+              "longitude": 126.9782290751147,
+              "latitude": 37.56657117348658
+            },
+            "responseContract": "VWorld address/2.0",
+            "responseFingerprint": "2fa7acf1d6d8079fcbd98d7213d9c6cbcb01113ce5a95fb19965ecd9eb4af6e3",
+            "inputAddress": "합성 dual-mode 입력 주소",
+            "refinedStructure": {
+              "level0": "대한민국",
+              "level1": "서울특별시",
+              "level2": "중구",
+              "level3": "",
+              "level4L": "태평로1가",
+              "level4LC": "1114010300100310000",
+              "level4A": "명동",
+              "level4AC": "1114055000",
+              "level5": "31",
+              "detail": "서울특별시청 본관동"
+            }
+          }
+        ],
+        "representativeLocation": null,
+        "legalDistrictAlternatives": [],
+        "providerFailures": [
+          {
+            "mode": "Boundary",
+            "canonicalCode": "PROVIDER_SCHEMA_INVALID",
+            "providerCode": null,
+            "providerLevel": null,
+            "safeMessage": "Boundary provider response did not satisfy contract VWorld WFS/2.0.0."
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "dual-success-boundary-transport-failure",
+      "inputNature": "Road and Parcel candidates succeeded before the Boundary WFS failed.",
+      "expected": {
+        "status": "ProviderFailure",
+        "reasonCode": "ProviderTransportFailure",
+        "resolvedSite": null,
+        "referenceCohort": null,
+        "candidates": [
+          {
+            "kind": "Road",
+            "refinedText": "서울특별시 중구 세종대로 110 (태평로1가)",
+            "wgs84": {
+              "crs": "EPSG:4326",
+              "longitude": 126.97834678005411,
+              "latitude": 37.56670100709671
+            },
+            "responseContract": "VWorld address/2.0",
+            "responseFingerprint": "702f1e6f788434921910ab4ce1ec479cd18c096a1d20a22acb1402194cbcb13f",
+            "inputAddress": "합성 dual-mode 입력 주소",
+            "refinedStructure": {
+              "level0": "대한민국",
+              "level1": "서울특별시",
+              "level2": "중구",
+              "level3": "태평로1가",
+              "level4L": "세종대로",
+              "level4LC": "",
+              "level4A": "명동",
+              "level4AC": "1114055000",
+              "level5": "110",
+              "detail": "서울특별시 청사 신관"
+            }
+          },
+          {
+            "kind": "Parcel",
+            "refinedText": "서울특별시 중구 태평로1가 31",
+            "wgs84": {
+              "crs": "EPSG:4326",
+              "longitude": 126.9782290751147,
+              "latitude": 37.56657117348658
+            },
+            "responseContract": "VWorld address/2.0",
+            "responseFingerprint": "2fa7acf1d6d8079fcbd98d7213d9c6cbcb01113ce5a95fb19965ecd9eb4af6e3",
+            "inputAddress": "합성 dual-mode 입력 주소",
+            "refinedStructure": {
+              "level0": "대한민국",
+              "level1": "서울특별시",
+              "level2": "중구",
+              "level3": "",
+              "level4L": "태평로1가",
+              "level4LC": "1114010300100310000",
+              "level4A": "명동",
+              "level4AC": "1114055000",
+              "level5": "31",
+              "detail": "서울특별시청 본관동"
+            }
+          }
+        ],
+        "representativeLocation": null,
+        "legalDistrictAlternatives": [],
+        "providerFailures": [
+          {
+            "mode": "Boundary",
+            "canonicalCode": "PROVIDER_TRANSPORT_FAILURE",
+            "providerCode": null,
+            "providerLevel": null,
+            "safeMessage": "Boundary provider request timed out."
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "mixed-road-strict-parcel-edge",
+      "inputNature": "Road is strictly contained while Parcel is on a legal-district edge.",
+      "expected": {
+        "status": "NeedsSelection",
+        "reasonCode": "DistrictEdge",
+        "resolvedSite": null,
+        "referenceCohort": null,
+        "candidates": [
+          {
+            "kind": "Road",
+            "refinedText": "서울특별시 중구 세종대로 110 (태평로1가)",
+            "wgs84": {
+              "crs": "EPSG:4326",
+              "longitude": 126.97834678005411,
+              "latitude": 37.56670100709671
+            },
+            "responseContract": "VWorld address/2.0",
+            "responseFingerprint": "702f1e6f788434921910ab4ce1ec479cd18c096a1d20a22acb1402194cbcb13f",
+            "inputAddress": "합성 dual-mode 입력 주소",
+            "refinedStructure": {
+              "level0": "대한민국",
+              "level1": "서울특별시",
+              "level2": "중구",
+              "level3": "태평로1가",
+              "level4L": "세종대로",
+              "level4LC": "",
+              "level4A": "명동",
+              "level4AC": "1114055000",
+              "level5": "110",
+              "detail": "서울특별시 청사 신관"
+            }
+          },
+          {
+            "kind": "Parcel",
+            "refinedText": "서울특별시 중구 태평로1가 31",
+            "wgs84": {
+              "crs": "EPSG:4326",
+              "longitude": 126.9782290751147,
+              "latitude": 37.56657117348658
+            },
+            "responseContract": "VWorld address/2.0",
+            "responseFingerprint": "2fa7acf1d6d8079fcbd98d7213d9c6cbcb01113ce5a95fb19965ecd9eb4af6e3",
+            "inputAddress": "합성 dual-mode 입력 주소",
+            "refinedStructure": {
+              "level0": "대한민국",
+              "level1": "서울특별시",
+              "level2": "중구",
+              "level3": "",
+              "level4L": "태평로1가",
+              "level4LC": "1114010300100310000",
+              "level4A": "명동",
+              "level4AC": "1114055000",
+              "level5": "31",
+              "detail": "서울특별시청 본관동"
+            }
+          }
+        ],
+        "representativeLocation": {
+          "wgs84": {
+            "crs": "EPSG:4326",
+            "longitude": 126.9782290751147,
+            "latitude": 37.56657117348658
+          },
+          "projectedCoordinate": {
+            "crs": "EPSG:5179",
+            "x": 953921.4393687112,
+            "y": 1952039.864972507,
+            "transformVersion": "URSUS.Epsg5179/1"
+          },
+          "selectionBasis": "Parcel candidate triggered the unresolved district result; Road was strictly contained.",
+          "candidateKind": "Parcel"
+        },
+        "legalDistrictAlternatives": [
+          {
+            "candidateKind": "Parcel",
+            "providerCode": "11140103",
+            "canonicalCode": "11140103",
+            "fullName": "서울특별시 중구 태평로1가",
+            "displayName": "태평로1가",
+            "matchKind": "Edge",
+            "distanceMeters": 0.004
+          },
+          {
+            "candidateKind": "Parcel",
+            "providerCode": "11140104",
+            "canonicalCode": "11140104",
+            "fullName": "서울특별시 중구 을지로1가",
+            "displayName": "을지로1가",
+            "matchKind": "Edge",
+            "distanceMeters": 0.004
+          }
+        ],
+        "providerFailures": []
+      }
+    },
+    {
+      "caseId": "mixed-road-strict-parcel-multiple",
+      "inputNature": "Road is strictly contained while Parcel is strictly contained by overlapping legal districts.",
+      "expected": {
+        "status": "NeedsSelection",
+        "reasonCode": "MultipleDistrictContainment",
+        "resolvedSite": null,
+        "referenceCohort": null,
+        "candidates": [
+          {
+            "kind": "Road",
+            "refinedText": "서울특별시 중구 세종대로 110 (태평로1가)",
+            "wgs84": {
+              "crs": "EPSG:4326",
+              "longitude": 126.97834678005411,
+              "latitude": 37.56670100709671
+            },
+            "responseContract": "VWorld address/2.0",
+            "responseFingerprint": "702f1e6f788434921910ab4ce1ec479cd18c096a1d20a22acb1402194cbcb13f",
+            "inputAddress": "합성 dual-mode 입력 주소",
+            "refinedStructure": {
+              "level0": "대한민국",
+              "level1": "서울특별시",
+              "level2": "중구",
+              "level3": "태평로1가",
+              "level4L": "세종대로",
+              "level4LC": "",
+              "level4A": "명동",
+              "level4AC": "1114055000",
+              "level5": "110",
+              "detail": "서울특별시 청사 신관"
+            }
+          },
+          {
+            "kind": "Parcel",
+            "refinedText": "서울특별시 중구 태평로1가 31",
+            "wgs84": {
+              "crs": "EPSG:4326",
+              "longitude": 126.9782290751147,
+              "latitude": 37.56657117348658
+            },
+            "responseContract": "VWorld address/2.0",
+            "responseFingerprint": "2fa7acf1d6d8079fcbd98d7213d9c6cbcb01113ce5a95fb19965ecd9eb4af6e3",
+            "inputAddress": "합성 dual-mode 입력 주소",
+            "refinedStructure": {
+              "level0": "대한민국",
+              "level1": "서울특별시",
+              "level2": "중구",
+              "level3": "",
+              "level4L": "태평로1가",
+              "level4LC": "1114010300100310000",
+              "level4A": "명동",
+              "level4AC": "1114055000",
+              "level5": "31",
+              "detail": "서울특별시청 본관동"
+            }
+          }
+        ],
+        "representativeLocation": {
+          "wgs84": {
+            "crs": "EPSG:4326",
+            "longitude": 126.9782290751147,
+            "latitude": 37.56657117348658
+          },
+          "projectedCoordinate": {
+            "crs": "EPSG:5179",
+            "x": 953921.4393687112,
+            "y": 1952039.864972507,
+            "transformVersion": "URSUS.Epsg5179/1"
+          },
+          "selectionBasis": "Parcel candidate triggered the unresolved district result; Road was strictly contained.",
+          "candidateKind": "Parcel"
+        },
+        "legalDistrictAlternatives": [
+          {
+            "candidateKind": "Parcel",
+            "providerCode": "11140103",
+            "canonicalCode": "11140103",
+            "fullName": "서울특별시 중구 태평로1가",
+            "displayName": "태평로1가",
+            "matchKind": "Strict",
+            "distanceMeters": 12.0
+          },
+          {
+            "candidateKind": "Parcel",
+            "providerCode": "11140104",
+            "canonicalCode": "11140104",
+            "fullName": "서울특별시 중구 을지로1가",
+            "displayName": "을지로1가",
+            "matchKind": "Strict",
+            "distanceMeters": 8.0
+          }
+        ],
+        "providerFailures": []
+      }
+    },
+    {
+      "caseId": "mixed-road-strict-parcel-outside",
+      "inputNature": "Road is strictly contained while Parcel is outside Boundary coverage.",
+      "expected": {
+        "status": "OutOfCoverage",
+        "reasonCode": "OutsideBoundaryCoverage",
+        "resolvedSite": null,
+        "referenceCohort": null,
+        "candidates": [
+          {
+            "kind": "Road",
+            "refinedText": "서울특별시 중구 세종대로 110 (태평로1가)",
+            "wgs84": {
+              "crs": "EPSG:4326",
+              "longitude": 126.97834678005411,
+              "latitude": 37.56670100709671
+            },
+            "responseContract": "VWorld address/2.0",
+            "responseFingerprint": "702f1e6f788434921910ab4ce1ec479cd18c096a1d20a22acb1402194cbcb13f",
+            "inputAddress": "합성 dual-mode 입력 주소",
+            "refinedStructure": {
+              "level0": "대한민국",
+              "level1": "서울특별시",
+              "level2": "중구",
+              "level3": "태평로1가",
+              "level4L": "세종대로",
+              "level4LC": "",
+              "level4A": "명동",
+              "level4AC": "1114055000",
+              "level5": "110",
+              "detail": "서울특별시 청사 신관"
+            }
+          },
+          {
+            "kind": "Parcel",
+            "refinedText": "서울특별시 중구 태평로1가 31",
+            "wgs84": {
+              "crs": "EPSG:4326",
+              "longitude": 126.9782290751147,
+              "latitude": 37.56657117348658
+            },
+            "responseContract": "VWorld address/2.0",
+            "responseFingerprint": "2fa7acf1d6d8079fcbd98d7213d9c6cbcb01113ce5a95fb19965ecd9eb4af6e3",
+            "inputAddress": "합성 dual-mode 입력 주소",
+            "refinedStructure": {
+              "level0": "대한민국",
+              "level1": "서울특별시",
+              "level2": "중구",
+              "level3": "",
+              "level4L": "태평로1가",
+              "level4LC": "1114010300100310000",
+              "level4A": "명동",
+              "level4AC": "1114055000",
+              "level5": "31",
+              "detail": "서울특별시청 본관동"
+            }
+          }
+        ],
+        "representativeLocation": {
+          "wgs84": {
+            "crs": "EPSG:4326",
+            "longitude": 126.9782290751147,
+            "latitude": 37.56657117348658
+          },
+          "projectedCoordinate": {
+            "crs": "EPSG:5179",
+            "x": 953921.4393687112,
+            "y": 1952039.864972507,
+            "transformVersion": "URSUS.Epsg5179/1"
+          },
+          "selectionBasis": "Parcel candidate triggered the unresolved district result; Road was strictly contained.",
+          "candidateKind": "Parcel"
+        },
         "legalDistrictAlternatives": [],
         "providerFailures": []
       }
@@ -837,6 +1322,26 @@
     {
       "caseId": "cohort-incomplete-wrong-failure-mode",
       "mutation": "Change cohort-boundary-incomplete provider failure mode from Boundary to Road, or remove its only failure.",
+      "expectedException": "ArgumentException"
+    },
+    {
+      "caseId": "generic-two-candidates-with-address-mode-failure",
+      "mutation": "In a generic provider failure with two candidates, change the only failure mode from Boundary to Road.",
+      "expectedException": "ArgumentException"
+    },
+    {
+      "caseId": "outside-representative-wrong-candidate-kind",
+      "mutation": "For mixed-road-strict-parcel-outside, change RepresentativeLocation.CandidateKind from Parcel to Road while keeping the Parcel coordinate.",
+      "expectedException": "ArgumentException"
+    },
+    {
+      "caseId": "disagreement-same-canonical-code",
+      "mutation": "Make Road and Parcel alternatives in dual-mode-district-disagreement use the same canonical code.",
+      "expectedException": "ArgumentException"
+    },
+    {
+      "caseId": "dual-candidates-different-input-provenance",
+      "mutation": "Give Road and Parcel candidates different verbatim InputAddress values in one result.",
       "expectedException": "ArgumentException"
     }
   ]
