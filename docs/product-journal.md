@@ -1,7 +1,7 @@
 # URSUS Product Journal
 
 > 제품 아이디어, 임시 가설, PRD 초안, 결정과 검증 결과를 날짜별로 쌓는 living document
-> 마지막 갱신: 2026-07-23 / 현재 제품 버전: 0.3.0
+> 마지막 갱신: 2026-07-24 / 현재 제품 버전: 0.3.0
 
 ## 이 문서를 쓰는 방법
 
@@ -159,6 +159,26 @@ Raw statistical/geometry records
 6. 실패 시 같은 schema/semantics의 다음 provider candidate 검증
 
 첫 실제 후보는 서울 250m 생활인구 통계와 서울시가 함께 배포하는 250m 격자 파일이다. NGII Geometry를 섞는 경로는 두 code namespace의 동일성 또는 공식 crosswalk가 입증된 뒤에만 연다. 집계구는 그 단위로만 제공되는 통계를 채택할 때 SGIS 기준연도 경계와 한 pair로 검증한다.
+
+### 2026-07-24 검증 결과: 첫 acquisition gate HOLD
+
+서울시가 함께 배포하는 실제 pair를 내려받아 `OA-22784 / 250_LOCAL_RESD_20260719.zip`, `서울시_250m격자.zip`, 2025.05 매뉴얼을 비교했다.
+
+확인된 장점:
+
+- 통계 `250M격자`와 Geometry `CELL_ID`가 8,567개 실제 ID를 공유한다.
+- 10,125개 Geometry는 모두 유일하고 valid한 250m Polygon이며 면적은 62,500m²다.
+- 투영 파라미터는 EPSG:5179와 같고, `CELL_X/CELL_Y`가 Polygon 중심과 정확히 일치한다.
+
+그러나 gate는 닫지 않았다.
+
+1. 통계의 실제 unique key는 `일자 + 시간 + 행정동코드 + 250M격자`다. 같은 시간·격자에 최대 4개의 행정동 row가 있다.
+2. 매뉴얼은 이를 250m 격자 데이터라고 부르지만 행정동별 row를 한 격자 값으로 합치는 공식 규칙을 설명하지 않는다.
+3. 일부 행정동 part는 3 이하 비식별 값 `*`이다. 이를 0으로 바꾸거나 숫자 part만 더하면 exact total을 발명하게 된다.
+4. 통계 ID 하나가 Geometry에 없고, 매뉴얼의 10,021개와 실제 Shapefile 10,125개도 일치하지 않는다.
+5. 서울시는 2026-07-31 이후 데이터 정의서·매뉴얼·활용 매뉴얼·격자 파일 보완을 공지했다.
+
+따라서 “같은 provider와 같은 격자 ID”는 확인했지만 “한 격자당 정확한 단일 통계값”은 아직 입증하지 못했다. 2026-07-31 이후 artifact를 다시 캡처하고 cross-admin aggregation과 `*` semantics가 공식화되기 전에는 live adapter를 구현하지 않는다. 증거와 hash는 `docs/fixtures/seoul-250m-acquisition-gate-1.json`, 리뷰는 `.omx/reviews/spatial-preprocessing/acquisition-gate-1.md`에 고정했다.
 
 ---
 

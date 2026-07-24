@@ -1,11 +1,46 @@
 using URSUS.DataSources;
 using URSUS.Geometry;
 using URSUS.Preprocessing;
+using System.Text.Json.Nodes;
 
 namespace URSUS.Tests;
 
 internal static class SpatialPreprocessingTests
 {
+    [Test]
+    private static void Seoul250mAcquisitionGate_RemainsClosedOnObservedGrainAndIdDrift()
+    {
+        JsonObject fixture = JsonNode.Parse(File.ReadAllText(FindRepositoryFile(
+            "docs", "fixtures", "seoul-250m-acquisition-gate-1.json")))!.AsObject();
+
+        AssertEx.Equal("HOLD", fixture["verdict"]!.GetValue<string>());
+        AssertEx.Equal(
+            0,
+            fixture["statisticArtifact"]!["rawPrimaryKeyDuplicateCount"]!.GetValue<int>());
+        AssertEx.True(
+            fixture["statisticArtifact"]!["dateHourGridDuplicateExtraRowCount"]!.GetValue<int>() > 0);
+        AssertEx.Equal(
+            1,
+            fixture["idAlignment"]!["statisticOnlyIdCount"]!.GetValue<int>());
+        AssertEx.Equal(
+            0,
+            fixture["idAlignment"]!["statisticOnlyIdNumericRows"]!.GetValue<int>());
+        AssertEx.Equal(
+            10125,
+            fixture["geometryArtifact"]!["validGeometryCount"]!.GetValue<int>());
+        AssertEx.False(
+            fixture["providerManual"]!["definesCrossAdministrativeGridAggregation"]!
+                .GetValue<bool>());
+
+        var blockingCodes = fixture["blockingReasons"]!.AsArray()
+            .Select(reason => reason!["code"]!.GetValue<string>())
+            .ToHashSet(StringComparer.Ordinal);
+        AssertEx.True(blockingCodes.Contains("RAW_GRAIN_NOT_GRID_UNIQUE"));
+        AssertEx.True(blockingCodes.Contains("AGGREGATION_SEMANTICS_UNPROVEN"));
+        AssertEx.True(blockingCodes.Contains("MASKED_PART_AGGREGATION_UNDEFINED"));
+        AssertEx.True(blockingCodes.Contains("ARTIFACT_ID_SET_MISMATCH"));
+    }
+
     [Test]
     private static void SpatialSchema_UsesAuthorityNamespaceVersionAndLevelAsIdentity()
     {
@@ -410,4 +445,16 @@ internal static class SpatialPreprocessingTests
             semantics,
             coverage,
             preferenceRank);
+
+    private static string FindRepositoryFile(params string[] parts)
+    {
+        var directory = new DirectoryInfo(AppContext.BaseDirectory);
+        while (directory != null)
+        {
+            string candidate = Path.Combine(new[] { directory.FullName }.Concat(parts).ToArray());
+            if (File.Exists(candidate)) return candidate;
+            directory = directory.Parent;
+        }
+        throw new FileNotFoundException($"Repository file not found: {Path.Combine(parts)}");
+    }
 }

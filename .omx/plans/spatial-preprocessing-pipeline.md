@@ -1,7 +1,7 @@
 # URSUS Spatial Data Preprocessing Pipeline
 
-상태: `Foundation implemented and reviewed — live dataset acquisition gates pending`
-기준일: 2026-07-23
+상태: `Foundation implemented and reviewed — Seoul 250m acquisition Gate 1 HOLD`
+기준일: 2026-07-24
 목표: 통계값과 Geometry를 출처 이름이나 겉보기 해상도로 결합하지 않고, 공간 단위·코드 namespace·버전·공식 crosswalk가 검증된 경우에만 일대일로 결합한다.
 
 ## 1. 현재 구조 감사
@@ -188,8 +188,38 @@ Exit:
 
 실제 provider adapter는 이 계약 위에서 dataset별 acquisition gate를 별도로 통과해야 한다.
 
-## 7. 중단 조건
+## 7. Acquisition Gate 1 — 서울 250m 생활인구 + 서울 격자
+
+상태: `HOLD` — 2026-07-24 실데이터 검증
+
+검증 artifact:
+
+- `OA-22784 / 250_LOCAL_RESD_20260719.zip`
+- 서울 생활인구 페이지의 `서울시_250m격자.zip`
+- `서울 250M 격자 생활인구추계 매뉴얼`, 2025.05
+- `docs/fixtures/seoul-250m-acquisition-gate-1.json`
+
+확인:
+
+- `250M격자`와 Geometry `CELL_ID`는 8,567개 실제 ID를 공유한다.
+- Geometry 10,125개는 unique, valid, non-empty 250m Polygon이다.
+- 통계 raw unique key는 `일자 + 시간 + 행정동코드 + 250M격자`다.
+- date-hour-grid에는 최대 4개의 행정동 row가 있어 그대로 exact join할 수 없다.
+- 비식별 `*`가 행정동 part에 섞이므로 0 치환이나 부분합은 exact value가 아니다.
+- 통계에만 있는 ID가 1개 있고, 매뉴얼의 10,021개와 실제 Geometry 10,125개도 다르다.
+
+Gate 재개:
+
+1. 서울시가 예고한 2026-07-31 이후 grid/manual artifact를 다시 캡처한다.
+2. 행정동 경계를 가로지르는 한 grid의 공식 집계 규칙을 확인한다.
+3. `*`를 missing 또는 공식 interval로 보존하는 output semantics를 결정한다.
+4. numeric output ID와 Geometry ID가 exact set임을 다시 검사한다.
+5. Geometry의 독립 version/license evidence를 기록한다.
+
+이전에는 live adapter를 구현하지 않는다. 상세 판정은 `.omx/reviews/spatial-preprocessing/acquisition-gate-1.md`에 기록한다.
+
+## 8. 중단 조건
 
 - exact join이 입증되지 않은 데이터를 성공 choropleth로 만들지 않는다.
-- 기존 142개 회귀 테스트 또는 전체 build가 실패하면 gate를 닫지 않는다.
+- 전체 회귀 테스트 또는 관련 project build가 실패하면 gate를 닫지 않는다.
 - provider 문서와 실제 fixture가 ID namespace/version을 입증하지 못하면 adapter 구현으로 우회하지 않는다.

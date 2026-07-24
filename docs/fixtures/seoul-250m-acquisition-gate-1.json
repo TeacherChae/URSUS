@@ -1,0 +1,163 @@
+{
+  "schemaVersion": 1,
+  "gateId": "seoul-living-population-250m-paired-grid/1",
+  "capturedAtUtc": "2026-07-24T00:02:23Z",
+  "verdict": "HOLD",
+  "verdictSummary": "The official statistic and grid artifacts visibly share CELL_ID values, but the raw statistic grain is date-hour-administrative-district-grid rather than a unique date-hour-grid observation. The current manual does not define the required cross-administrative aggregation, one masked statistic ID is absent from the grid artifact, and Seoul has announced revised 250m guidance for 2026-07-31.",
+  "sources": {
+    "statisticDataset": "https://data.seoul.go.kr/dataList/OA-22784/S/1/datasetView.do",
+    "livingPopulationGuide": "https://data.seoul.go.kr/dataVisual/seoul/seoulLivingPopulation.do",
+    "gridViewer": "https://data.seoul.go.kr/opendata/seoulStay/grid_viewer.html",
+    "transitionNotice": "https://data.seoul.go.kr/together/notice/boardView.do?seq=721010a1522630fbf7a78d381a8326ee"
+  },
+  "statisticArtifact": {
+    "provider": "Seoul Metropolitan Government",
+    "datasetId": "OA-22784",
+    "fileName": "250_LOCAL_RESD_20260719.zip",
+    "observationDate": "2026-07-19",
+    "publishedAt": "2026-07-23",
+    "zipBytes": 14909794,
+    "zipSha256": "7ad899cfdcfc75ed6da39f86c9f4b570864629b58e78ee85841962582c14e36b",
+    "csvFileName": "250_LOCAL_RESD_20260719.csv",
+    "csvBytes": 58361966,
+    "csvSha256": "8f86a137a983721fd84d35b344ccdfade7d23008d29e8189df35be77e36066e0",
+    "encoding": "CP949",
+    "license": "Korea Open Government License Type 1",
+    "sourceIdField": "250M격자",
+    "rawPrimaryKey": [
+      "일자",
+      "시간",
+      "행정동코드",
+      "250M격자"
+    ],
+    "rawRowCount": 253371,
+    "rawPrimaryKeyDuplicateCount": 0,
+    "dateHourGridDuplicateExtraRowCount": 48502,
+    "dateHourGridAffectedRowCount": 92825,
+    "maximumAdministrativeRowsPerDateHourGrid": 4,
+    "hourCount": 24,
+    "administrativeDistrictCount": 427,
+    "dailyDistinctGridIdCount": 8568,
+    "gridsPresentInAll24Hours": 8506,
+    "maskedTotalRowCount": 14091,
+    "numericTotalRowCount": 239280,
+    "numericTotalParseFailureCount": 0,
+    "numericTotalMinimum": 4.0,
+    "maskedValue": "*",
+    "maskedMeaning": "Count at or below 3, per the provider manual"
+  },
+  "geometryArtifact": {
+    "provider": "Seoul Metropolitan Government",
+    "downloadLabel": "서울시_250m격자",
+    "fileName": "서울시_250m격자.zip",
+    "artifactModifiedAt": "2025-05-13",
+    "zipBytes": 329428,
+    "zipSha256": "5f7f95db30f1d4a433d9905b281c3fb95b59cd8200985512a897326208bf525e",
+    "shapeFileName": "match/match.shp",
+    "shapeSha256": "a434464c66405c3584d359bc3f3fe67886d02863afa1e2d3e4796fb5f52beaf4",
+    "dbfSha256": "30e1da90723389dacc66379e10ba5181c7e6c81d6f4733415f493f5c9f70218d",
+    "shxSha256": "dc58c1896dd71bd60ff7d49a2430436bd03db74d7c8425b9a75046e0de9faef8",
+    "prjSha256": "e21b26451491c617318aab7d28abf4d07f5facc2aed1564e082ec8d4268cfa3b",
+    "sourceIdField": "CELL_ID",
+    "otherFields": [
+      "CELL_X",
+      "CELL_Y",
+      "GID"
+    ],
+    "featureCount": 10125,
+    "uniqueCellIdCount": 10125,
+    "geometryType": "Polygon",
+    "validGeometryCount": 10125,
+    "emptyGeometryCount": 0,
+    "areaSquareMeters": 62500,
+    "centerAndBoundsMismatchCount": 0,
+    "bounds": [
+      935000,
+      1936500,
+      972250,
+      1967000
+    ],
+    "projectionParameters": {
+      "name": "Korea 2000 / Unified CS",
+      "latitudeOfOrigin": 38,
+      "centralMeridian": 127.5,
+      "scaleFactor": 0.9996,
+      "falseEasting": 1000000,
+      "falseNorthing": 2000000,
+      "unit": "metre",
+      "ellipsoid": "GRS 1980",
+      "epsg5179ParameterMatch": true,
+      "explicitProjectedCrsAuthorityInPrj": false
+    }
+  },
+  "providerManual": {
+    "fileLabel": "격자별_서울생활인구_매뉴얼",
+    "documentDate": "2025-05",
+    "bytes": 3364488,
+    "sha256": "40aa05083957e013096490da18ab977ea3115105a3415ad4e14c0ac028ba3b65",
+    "statedGridCount": 10021,
+    "actualGeometryCount": 10125,
+    "countDifference": 104,
+    "statesNationalStandard250mGrid": true,
+    "definesCrossAdministrativeGridAggregation": false
+  },
+  "idAlignment": {
+    "statisticField": "250M격자",
+    "geometryField": "CELL_ID",
+    "statisticDistinctIdCount": 8568,
+    "geometryDistinctIdCount": 10125,
+    "sharedIdCount": 8567,
+    "statisticOnlyIdCount": 1,
+    "statisticOnlyIds": [
+      "다사47256125"
+    ],
+    "statisticOnlyIdRows": 24,
+    "statisticOnlyIdNumericRows": 0,
+    "geometryOnlyRelativeToDailyStatisticCount": 1558,
+    "sameProviderAndVisibleSharedNamespace": true,
+    "completeArtifactIdSetEquality": false
+  },
+  "hour12Diagnostic": {
+    "rawRowCount": 10587,
+    "distinctGridIdCount": 8542,
+    "allAdministrativePartsNumericGridCount": 8039,
+    "atLeastOneMaskedAdministrativePartGridCount": 503,
+    "numericCandidateIdsPresentInGeometryCount": 8039,
+    "numericCandidateIdsAbsentFromGeometryCount": 0,
+    "note": "This is not an approved projection. Summing administrative rows into one grid value remains blocked until the provider defines that aggregation and masked-part treatment."
+  },
+  "blockingReasons": [
+    {
+      "code": "RAW_GRAIN_NOT_GRID_UNIQUE",
+      "detail": "Date, hour and grid ID are not unique; up to four administrative-district rows exist for one grid."
+    },
+    {
+      "code": "AGGREGATION_SEMANTICS_UNPROVEN",
+      "detail": "The May 2025 manual calls the output grid-based but does not define how multiple administrative rows for one grid must be combined."
+    },
+    {
+      "code": "MASKED_PART_AGGREGATION_UNDEFINED",
+      "detail": "A grid can contain numeric and '*' administrative parts. Treating '*' as zero would invent an exact total."
+    },
+    {
+      "code": "ARTIFACT_ID_SET_MISMATCH",
+      "detail": "One statistic ID is absent from the official grid artifact, although all 24 of its totals are masked."
+    },
+    {
+      "code": "DOCUMENTED_GRID_COUNT_DRIFT",
+      "detail": "The May 2025 manual states 10,021 grids while the downloaded shape file contains 10,125."
+    },
+    {
+      "code": "PROVIDER_GUIDANCE_TRANSITION_PENDING",
+      "detail": "Seoul announced enhanced definitions, manuals and grid files after 2026-07-31."
+    }
+  ],
+  "reopenConditions": [
+    "Re-download the grid and manuals after the announced 2026-07-31 publication change and capture new hashes.",
+    "Obtain an official definition of the unique observation key and the aggregation rule for grids crossing administrative districts.",
+    "Define '*' as missing or a documented interval; never coerce it to zero.",
+    "Require every numeric output grid ID to have exactly one valid 250m polygon.",
+    "Version the Seoul CELL_ID namespace independently; do not relabel it as an NGII namespace without official identity evidence.",
+    "Record a standalone license and version reference for the geometry artifact."
+  ]
+}
